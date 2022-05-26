@@ -1,5 +1,7 @@
 from .op import *
 
+assert len(Operator) == 3, "Unimplemented operator in parsing.py"
+assert len(OpType) == 2, "Unimplemented type in parsing.py"
 OPERATORS = {
     "+" : Operator.ADD,
     "-" : Operator.SUB,
@@ -7,6 +9,7 @@ OPERATORS = {
 }
 
 def lex_token(token: str) -> auto:
+    assert len(OpType) == 2, "Unimplemented type in lex_token"
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
     elif token.isnumeric():
