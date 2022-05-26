@@ -7,6 +7,7 @@ class OpType(Enum):
 class Operator(Enum):
     ADD = auto()
     SUB = auto()
+    MUL = auto()
     PRINT = auto()
 
 class Op:
