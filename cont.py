@@ -13,6 +13,10 @@ def main():
         if i.startswith("--"):
             if i == "--help":
                 print("Usage: cont.py <file> [options]")
+                print("Options:")
+                print("    --help        Show this help message")
+                print("    -r            Automaticaly compile fasm and run the program")
+                print("    -r64          Automaticaly compile fasm with fasm.x64 and run the program")
                 exit(0)
             else:
                 print(f"Unknown option: {i}")
