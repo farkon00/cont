@@ -9,6 +9,8 @@ def main():
         Op(OpType.PUSH_INT, 1),
         Op(OpType.PUSH_INT, 2),
         Op(OpType.OPERATOR, Operator.SUB),
+        Op(OpType.OPERATOR, Operator.PRINT),
+        Op(OpType.OPERATOR, Operator.PRINT)
     ]
 
     with open("output.asm", "w") as f:

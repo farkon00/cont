@@ -7,6 +7,7 @@ class OpType(Enum):
 class Operator(Enum):
     ADD = auto()
     SUB = auto()
+    PRINT = auto()
 
 class Op:
     def __init__(self, type: auto, operand) -> None:
