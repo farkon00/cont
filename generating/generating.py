@@ -3,7 +3,7 @@ from parsing.op import *
 assert len(Operator) == 4, "Unimplemented operator in generating.py"
 assert len(OpType) == 2, "Unimplemented type in generating.py"
 
-def generate_fasm(ops: list[Op]):
+def generate_fasm(ops: list):
     buf = ""
     buf += """
 format ELF64 executable 3

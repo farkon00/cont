@@ -19,7 +19,7 @@ def lex_token(token: str) -> auto:
         print(f"Unknown token: {token}")
     
 
-def parse_to_ops(program: str) -> list[Op]:
+def parse_to_ops(program: str) -> list:
     ops = []
     for token in program.split():
         ops.append(lex_token(token))

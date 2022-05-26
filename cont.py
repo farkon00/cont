@@ -1,4 +1,5 @@
 import sys
+import os
 
 from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
@@ -6,6 +7,7 @@ from generating.generating import generate_fasm
 def main():
     # Argv handeling
     run = False
+    is64 = False
     program = None
     for i in sys.argv[1:]:
         if i.startswith("--"):
@@ -18,6 +20,9 @@ def main():
         elif i.startswith("-"):
             if i == "-r":
                 run = True
+            elif i == "-r64":
+                run = True
+                is64 = True
             else:
                 print(f"Unknown option: {i}")
                 exit(1)
@@ -37,8 +42,11 @@ def main():
         f.write(generate_fasm(ops))
 
     if run:
-        print("Sorry, running isnt supported for now")
-        exit(1)
+        if is64:
+            os.system("fasm.x64 output.asm")
+        else:
+            os.system("fasm output.asm")
+        os.system("./output")
 
 if __name__ == "__main__":
     main()
