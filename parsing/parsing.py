@@ -1,12 +1,16 @@
 from .op import *
 
-assert len(Operator) == 5, "Unimplemented operator in parsing.py"
+assert len(Operator) == 9, "Unimplemented operator in parsing.py"
 assert len(OpType) == 2, "Unimplemented type in parsing.py"
 OPERATORS = {
     "+" : Operator.ADD,
     "-" : Operator.SUB,
     "*" : Operator.MUL,
     "div" : Operator.DIV,
+    "dup" : Operator.DUP,
+    "drop" : Operator.DROP,
+    "swap" : Operator.SWAP,
+    "rot" : Operator.ROT,
     "print" : Operator.PRINT,
 }
 

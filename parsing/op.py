@@ -9,6 +9,10 @@ class Operator(Enum):
     SUB = auto()
     MUL = auto()
     DIV = auto()
+    DUP = auto()
+    DROP = auto()
+    SWAP = auto()
+    ROT = auto()
     PRINT = auto()
 
 class Op:
