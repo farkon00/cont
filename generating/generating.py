@@ -1,7 +1,7 @@
 from parsing.op import * 
 
 assert len(Operator) == 9, "Unimplemented operator in generating.py"
-assert len(OpType) == 4, "Unimplemented type in generating.py"
+assert len(OpType) == 5, "Unimplemented type in generating.py"
 
 def generate_fasm(ops: list):
     buf = ""
@@ -57,7 +57,7 @@ syscall
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 4, "Unimplemented type in generate_op"
+    assert len(OpType) == 5, "Unimplemented type in generate_op"
     if op.type == OpType.PUSH_INT:
         return f"push {op.operand}\n"
     elif op.type == OpType.OPERATOR:
@@ -68,6 +68,12 @@ f"""
 pop rax
 cmp rax, 0
 jz addr_{op.operand.end}
+"""
+    elif op.type == OpType.ELSE:
+        return \
+f"""
+jmp addr_{op.operand.end}
+addr_{op.operand.start}:
 """
     elif op.type == OpType.ENDIF:
         return \
