@@ -15,7 +15,7 @@ def lex_token(token: str) -> Op:
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
     elif token.isnumeric():
-        return Op(OpType.PUSH_INT, int(token))
+        return Op(OpType.PUSH_INT, int(token) % 2**64)
     else:
         print(f"Unknown token: {token}")
     return Op(OpType.PUSH_INT, 0) # mypy, shut up
