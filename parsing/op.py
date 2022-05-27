@@ -23,6 +23,7 @@ class Operator(Enum):
     EQ = auto()
     LE = auto()
     GE = auto()
+    NE = auto()
     PRINT = auto()
 
 class Op:

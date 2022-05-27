@@ -1,6 +1,6 @@
 from parsing.op import * 
 
-assert len(Operator) == 14, "Unimplemented operator in generating.py"
+assert len(Operator) == 15, "Unimplemented operator in generating.py"
 assert len(OpType) == 7, "Unimplemented type in generating.py"
 
 def generate_fasm(ops: list):
@@ -98,7 +98,7 @@ addr_{op.operand.end}:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 14, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 15, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -146,7 +146,7 @@ cmp rax, rbx
 cmov{op.operand.name.lower()[0]} rcx, rdx
 push rcx
 """
-    elif op.operand in (Operator.LE, Operator.GE):
+    elif op.operand in (Operator.LE, Operator.GE, Operator.NE):
         return \
 f"""
 mov rcx, 0

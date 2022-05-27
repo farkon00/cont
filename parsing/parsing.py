@@ -1,7 +1,7 @@
 from .op import *
 from state import *
 
-assert len(Operator) == 14, "Unimplemented operator in parsing.py"
+assert len(Operator) == 15, "Unimplemented operator in parsing.py"
 assert len(OpType) == 7, "Unimplemented type in parsing.py"
 assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
@@ -19,6 +19,7 @@ OPERATORS = {
     "<=" : Operator.LE,
     ">=" : Operator.GE,
     "==" : Operator.EQ,
+    "!=" : Operator.NE,
     "print" : Operator.PRINT,
 }
 END_TYPES = {
@@ -68,7 +69,7 @@ def lex_token(token: str) -> Op:
         return Op(OpType.WHILE, block)
     else:
         print(f"Unknown token: {token}")
-    return Op(OpType.PUSH_INT, 0) # mypy, shut up
+        exit(0)
     
 
 def parse_to_ops(program: str) -> list:
