@@ -2,6 +2,8 @@ from enum import Enum, auto
 
 class OpType(Enum):
     PUSH_INT = auto()
+    IF = auto()
+    ENDIF = auto()
     OPERATOR = auto()
 
 class Operator(Enum):
