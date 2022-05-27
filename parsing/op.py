@@ -5,6 +5,8 @@ class OpType(Enum):
     IF = auto()
     ELSE = auto()
     ENDIF = auto()
+    WHILE = auto()
+    ENDWHILE = auto()
     OPERATOR = auto()
 
 class Operator(Enum):

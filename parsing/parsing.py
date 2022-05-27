@@ -2,8 +2,8 @@ from .op import *
 from state import *
 
 assert len(Operator) == 9, "Unimplemented operator in parsing.py"
-assert len(OpType) == 5, "Unimplemented type in parsing.py"
-assert len(BlockType) == 2, "Unimplemented block type in parsing.py"
+assert len(OpType) == 7, "Unimplemented type in parsing.py"
+assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
     "+" : Operator.ADD,
@@ -19,11 +19,12 @@ OPERATORS = {
 END_TYPES = {
     BlockType.IF : OpType.ENDIF,
     BlockType.ELSE : OpType.ENDIF,
+    BlockType.WHILE : OpType.ENDWHILE,
 }
 
 def lex_token(token: str) -> Op:
-    assert len(OpType) == 5, "Unimplemented type in lex_token"
-    assert len(BlockType) == 2, "Unimplemented block type in parsing.py"
+    assert len(OpType) == 7, "Unimplemented type in lex_token"
+    assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
@@ -39,7 +40,7 @@ def lex_token(token: str) -> Op:
             exit(0)
         block = State.block_stack.pop()
         block.end = State.get_new_ip()
-        return Op(END_TYPES[block.type], block.end)
+        return Op(END_TYPES[block.type], block)
     elif token == "else":
         if len(State.block_stack) <= 0:
             print("Error: if for else not found")
@@ -56,6 +57,10 @@ def lex_token(token: str) -> Op:
         new_block = Block(BlockType.ELSE, block.end)
         State.block_stack.append(new_block)
         return Op(OpType.ELSE, new_block)
+    elif token == "while":
+        block = Block(BlockType.WHILE, State.get_new_ip())
+        State.block_stack.append(block)
+        return Op(OpType.WHILE, block)
     else:
         print(f"Unknown token: {token}")
     return Op(OpType.PUSH_INT, 0) # mypy, shut up

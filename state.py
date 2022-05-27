@@ -5,6 +5,7 @@ from enum import Enum, auto
 class BlockType(Enum):
     IF = auto()
     ELSE = auto()
+    WHILE = auto()
 
 @dataclass
 class Block:
