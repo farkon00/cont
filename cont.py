@@ -15,8 +15,9 @@ def main():
                 print("Usage: cont.py <file> [options]")
                 print("Options:")
                 print("    --help        Show this help message")
-                print("    -r            Automaticaly compile fasm and run the program")
-                print("    -r64          Automaticaly compile fasm with fasm.x64 and run the program")
+                print("    -r            Automaticaly run the program")
+                print("    -r64          Automaticaly run the program and use fasm.x64")
+                print("    -x64          Use fasm.x64 for compiling fasm")
                 exit(0)
             else:
                 print(f"Unknown option: {i}")
@@ -26,6 +27,8 @@ def main():
                 run = True
             elif i == "-r64":
                 run = True
+                is64 = True
+            elif i == "-x64":
                 is64 = True
             else:
                 print(f"Unknown option: {i}")
@@ -45,11 +48,12 @@ def main():
     with open("output.asm", "w") as f:
         f.write(generate_fasm(ops))
 
+    if is64:
+        os.system("fasm.x64 output.asm")
+    else:
+        os.system("fasm output.asm")
+
     if run:
-        if is64:
-            os.system("fasm.x64 output.asm")
-        else:
-            os.system("fasm output.asm")
         os.system("./output")
 
 if __name__ == "__main__":
