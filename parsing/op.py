@@ -18,6 +18,11 @@ class Operator(Enum):
     DROP = auto()
     SWAP = auto()
     ROT = auto()
+    LT = auto()
+    GT = auto()
+    EQ = auto()
+    LE = auto()
+    GE = auto()
     PRINT = auto()
 
 class Op:

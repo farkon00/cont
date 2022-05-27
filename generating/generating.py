@@ -1,6 +1,6 @@
 from parsing.op import * 
 
-assert len(Operator) == 9, "Unimplemented operator in generating.py"
+assert len(Operator) == 14, "Unimplemented operator in generating.py"
 assert len(OpType) == 7, "Unimplemented type in generating.py"
 
 def generate_fasm(ops: list):
@@ -98,7 +98,7 @@ addr_{op.operand.end}:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 9, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 14, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -135,6 +135,28 @@ push rdx
         return "pop rbx\npop rax\npush rbx\npush rax\n"
     elif op.operand == Operator.ROT:
         return "pop rcx\npop rbx\npop rax\npush rcx\npush rbx\npush rax\n"
+    elif op.operand in (Operator.LT, Operator.GT, Operator.EQ):
+        return \
+f"""
+mov rcx, 0
+mov rdx, 1
+pop rax
+pop rbx
+cmp rax, rbx
+cmov{op.operand.name.lower()[0]} rcx, rdx
+push rcx
+"""
+    elif op.operand in (Operator.LE, Operator.GE):
+        return \
+f"""
+mov rcx, 0
+mov rdx, 1
+pop rax
+pop rbx
+cmp rax, rbx
+cmov{op.operand.name.lower()} rcx, rdx
+push rcx
+"""
     elif op.operand == Operator.PRINT:
         return \
 """
