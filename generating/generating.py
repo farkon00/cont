@@ -104,16 +104,16 @@ def generate_operator(op: Op):
     if op.operand in (Operator.ADD, Operator.SUB):
         return \
 f"""
-pop rax
 pop rbx
+pop rax
 {op.operand.name.lower()} rax, rbx
 push rax
 """
     elif op.operand == Operator.MUL:
         return \
 f"""
-pop rax
 pop rbx
+pop rax
 mul rbx
 push rax
 """
@@ -140,8 +140,8 @@ push rdx
 f"""
 mov rcx, 0
 mov rdx, 1
-pop rax
 pop rbx
+pop rax
 cmp rax, rbx
 cmov{op.operand.name.lower()[0]} rcx, rdx
 push rcx
@@ -151,8 +151,8 @@ push rcx
 f"""
 mov rcx, 0
 mov rdx, 1
-pop rax
 pop rbx
+pop rax
 cmp rax, rbx
 cmov{op.operand.name.lower()} rcx, rdx
 push rcx
