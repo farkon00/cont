@@ -75,16 +75,20 @@ def lex_token(token: str) -> Op | None:
     elif token == "memory":
         name = next(State.tokens)
         size = next(State.tokens)
-        if not size.isnumeric():
+        if not size[0].isnumeric():
+            State.loc = size[1]
             State.throw_error("memory size is not a number")
-        Memory.new_memory(name, int(size))
+        if name[0] in State.memories:
+            State.loc = name[1]
+            State.throw_error(f"memory with name \"\" already exists")
+        Memory.new_memory(name[0], int(size[0]))
         return None
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     else:
         State.throw_error(f"Unknown token: {token}")
     return None
-    
+
 def delete_comments(program: str) -> str:
     while True:
         index = program.find("//")
