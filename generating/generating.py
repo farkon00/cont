@@ -2,7 +2,9 @@ from parsing.op import *
 from state import Memory
 
 assert len(Operator) == 19, "Unimplemented operator in generating.py"
-assert len(OpType) == 8, "Unimplemented type in generating.py"
+assert len(OpType) == 9, "Unimplemented type in generating.py"
+
+SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
 def generate_fasm(ops: list):
     buf = ""
@@ -60,11 +62,19 @@ mem: rb {Memory.global_offset}
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 8, "Unimplemented type in generate_op"
-    if op.type in (OpType.PUSH_INT, OpType.PUSH_MEMORY):
+    assert len(OpType) == 9, "Unimplemented type in generate_op"
+    if op.type == OpType.PUSH_INT:
         return f"push {op.operand}\n"
+    elif op.type == OpType.PUSH_MEMORY:
+        return f"push mem+{op.operand}\n"
     elif op.type == OpType.OPERATOR:
         return generate_operator(op)
+    elif op.type == OpType.SYSCALL:
+        buf = ""
+        for i in range(op.operand + 1):
+            buf += f"pop {SYSCALL_ARGS[i]}\n"
+        buf += f"syscall\npush rax\n\n"
+        return buf
     elif op.type == OpType.IF:
         return \
 f"""
@@ -165,13 +175,13 @@ push rcx
 """
 pop rax
 pop rbx
-mov [mem+rax], rbx
+mov [rax], rbx
 """
     elif op.operand == Operator.LOAD:
         return \
 """
 pop rax
-mov rbx, [mem+rax]
+mov rbx, [rax]
 push rbx 
 """
     elif op.operand == Operator.STORE8:
@@ -179,14 +189,14 @@ push rbx
 """
 pop rax
 pop rbx
-mov [mem+rax], bl
+mov [rax], bl
 """
     elif op.operand == Operator.LOAD8:
         return \
 """
 pop rax
 xor rbx, rbx
-mov bl, [mem+rax]
+mov bl, [rax]
 push rbx
 """
     elif op.operand == Operator.PRINT:

@@ -8,6 +8,7 @@ class OpType(Enum):
     ENDIF = auto()
     WHILE = auto()
     ENDWHILE = auto()
+    SYSCALL = auto()
     OPERATOR = auto()
 
 class Operator(Enum):

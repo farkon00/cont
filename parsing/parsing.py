@@ -2,7 +2,7 @@ from .op import *
 from state import *
 
 assert len(Operator) == 19, "Unimplemented operator in parsing.py"
-assert len(OpType) == 8, "Unimplemented type in parsing.py"
+assert len(OpType) == 9, "Unimplemented type in parsing.py"
 assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
@@ -33,11 +33,13 @@ END_TYPES = {
 }
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 8, "Unimplemented type in lex_token"
+    assert len(OpType) == 9, "Unimplemented type in lex_token"
     assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
+    elif token.startswith("syscall") and "0" <= token[7] <= "6" and len(token) == 8:
+        return Op(OpType.SYSCALL, int(token[7]))
     elif token.isnumeric():
         return Op(OpType.PUSH_INT, int(token) % 2**64)
     elif token == "if":
