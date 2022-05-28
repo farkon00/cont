@@ -87,10 +87,18 @@ def lex_token(token: str) -> Op | None:
         print(f"Unknown token: {token}")
         exit(0)
     
+def delete_comments(program: str) -> str:
+    while True:
+        index = program.find("//")
+        if index == -1:
+            break
+        end_comm = program.find("\n", index)
+        program = program[:index] + program[end_comm if end_comm != -1 else len(program):]
+    return program
 
 def parse_to_ops(program: str) -> list:
     ops = []
-    tokens = (i for i in program.split())
+    tokens = (i for i in delete_comments(program).split())
     State.tokens = tokens
     for token in tokens:
         op = lex_token(token)
