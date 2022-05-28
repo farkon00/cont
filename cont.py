@@ -3,6 +3,7 @@ import os
 
 from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
+from type_checking.type_checking import type_check
 
 def main():
     # Argv handeling
@@ -45,6 +46,8 @@ def main():
         exit(1)
 
     ops = parse_to_ops(program)
+
+    type_check(ops)
 
     with open(f"{file_name}.asm", "w") as f:
         f.write(generate_fasm(ops))
