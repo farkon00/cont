@@ -8,14 +8,15 @@ assert len(BlockType) == 3, "Unimplemented block type in type_checking.py"
 
 class ptr: pass
 
-def check_stack(stack: list[Op], expected: list[type]):
+def check_stack(stack: list[type], expected: list[type]):
     if len(stack) < len(expected):
         print("Stack is too short")
         exit(1)
-    for _ in expected:
+    for _ in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
-        if got != exp:
+
+        if got != exp and None not in (exp, got):
             print(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
             exit(1)
 
@@ -32,6 +33,9 @@ def type_check_op(op: Op, stack: list[type]):
         stack.append(int)
     elif op.type == OpType.PUSH_MEMORY:
         stack.append(ptr)
+    elif op.type == OpType.SYSCALL:
+        check_stack(stack, [None] * (op.operand + 1))
+        stack.append(None)
     elif op.type == OpType.OPERATOR:
         type_check_operator(op, stack)
 
