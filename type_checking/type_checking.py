@@ -20,6 +20,21 @@ def check_stack(stack: list[type], expected: list[type]):
             print(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
             exit(1)
 
+def check_route_stack(stack1: list[type], stack2: list[type], error: str = "if-end"):
+    if len(stack1) > len(stack2):
+        print(f"Error: Stack has extra elements in different routes of {error}")
+        print(f"Types: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}")
+        exit(1)
+    if len(stack1) < len(stack2):
+        print(f"Error: Stack has not enought elements in different routes of {error}")
+        print(f"Types: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}")
+        exit(1)
+    for i in range(len(stack1)):
+        if stack1[i] != stack2[i] and None not in (stack1[i], stack2[i]):
+            print(f"Different types in different routes of {error}")
+            print(f"Element {len(stack1)-i}: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}")
+            exit(1)
+
 def type_check(ops: list[Op]):
     stack: list[type] = [] 
     
@@ -33,6 +48,13 @@ def type_check_op(op: Op, stack: list[type]):
         stack.append(int)
     elif op.type == OpType.PUSH_MEMORY:
         stack.append(ptr)
+    elif op.type == OpType.IF:
+        check_stack(stack, [int])
+
+        State.route_stack.append(stack.copy())
+    elif op.type == OpType.ENDIF:
+        before_if_stack = State.route_stack.pop()
+        check_route_stack(stack, before_if_stack) 
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)

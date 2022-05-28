@@ -31,6 +31,7 @@ class Memory:
 
 class State:
     block_stack: list[Block] = []
+    route_stack: list[list[type]] = []
     memories: dict[str, Memory] = {}
     
     tokens: Generator = (i for i in ()) # type: ignore
