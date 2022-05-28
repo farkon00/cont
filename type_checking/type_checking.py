@@ -11,11 +11,13 @@ class ptr: pass
 def check_stack(stack: list[Op], expected: list[type]):
     if len(stack) < len(expected):
         print("Stack too short")
+        exit(1)
     for i in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
         if got != exp:
             print(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
+            exit(1)
 
 def type_check(ops: list[Op]):
     stack: list[type] = [] 
@@ -40,5 +42,18 @@ def type_check_operator(op: Op, stack: list[Op]):
                       Operator.LT, Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
         check_stack(stack, [int, int])
         stack.append(int)
+    elif op.operand == Operator.DUP:
+        stack.append(stack[-1])
+    elif op.operand == Operator.DROP:
+        stack.pop()
+    elif op.operand == Operator.SWAP:
+        stack.append(stack.pop())
+        stack.append(stack.pop())
+    elif op.operand == Operator.ROT:
+        stack.append(stack.pop())
+        stack.append(stack.pop())
+        stack.append(stack.pop())
+    elif op.operand == Operator.PRINT:
+        check_stack(stack, [int])
     else:
         assert False, f"Unimplemented operator in type_check_operator {op.operand.name}"
