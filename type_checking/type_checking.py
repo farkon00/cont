@@ -62,6 +62,13 @@ def type_check_op(op: Op, stack: list[type]):
             check_route_stack(stack, route_stack[1])
         else:
             check_route_stack(route_stack[1], stack, "if-else") 
+    elif op.type == OpType.WHILE:
+        check_stack(stack, [int])
+        State.route_stack.append(("while", stack.copy()))
+    elif op.type == OpType.ENDWHILE:
+        check_stack(stack, [int])
+        route_stack = State.route_stack.pop()[1]
+        check_route_stack(stack, route_stack, "while")
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)
