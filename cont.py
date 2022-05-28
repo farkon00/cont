@@ -38,6 +38,7 @@ def main():
                 print(f"More than one file names were provided")
                 exit(1)
             with open(i, "r") as f:
+                file_name = os.path.splitext(i)[0]
                 program = f.read()
     if program is None:
         print("No program name was provided")
@@ -45,16 +46,16 @@ def main():
 
     ops = parse_to_ops(program)
 
-    with open("output.asm", "w") as f:
+    with open(f"{file_name}.asm", "w") as f:
         f.write(generate_fasm(ops))
 
     if is64:
-        os.system("fasm.x64 output.asm")
+        os.system(f"fasm.x64 {file_name}.asm")
     else:
-        os.system("fasm output.asm")
+        os.system(f"fasm {file_name}.asm")
 
     if run:
-        os.system("./output")
+        os.system(f"./{file_name}")
 
 if __name__ == "__main__":
     main()
