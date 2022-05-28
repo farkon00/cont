@@ -175,22 +175,19 @@ mov rbx, [mem+rax]
 push rbx 
 """
     elif op.operand == Operator.STORE8:
-        print("Not implemented !8")
-        exit(1)
         return \
 """
 pop rax
-pop ah
-mov [mem+rax], ah
+pop rbx
+mov [mem+rax], bl
 """
     elif op.operand == Operator.LOAD8:
-        print("Not implemented @8")
-        exit(1)
         return \
 """
 pop rax
-mov ah, [mem+rax]
-push ah 
+xor rbx, rbx
+mov bl, [mem+rax]
+push rbx
 """
     elif op.operand == Operator.PRINT:
         return \
