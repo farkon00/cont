@@ -36,7 +36,8 @@ def type_check_op(op: Op, stack: list[type]):
 def type_check_operator(op: Op, stack: list[Op]):
     assert len(Operator) == 19, "Unimplemented operator in type_check_operator"
 
-    if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.DIV):
+    if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.DIV, Operator.GT,
+                      Operator.LT, Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
         check_stack(stack, [int, int])
         stack.append(int)
     else:
