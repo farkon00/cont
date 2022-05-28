@@ -1,5 +1,5 @@
 from parsing.op import * 
-from state import Memory
+from state import Block, Memory
 
 assert len(Operator) == 19, "Unimplemented operator in generating.py"
 assert len(OpType) == 9, "Unimplemented type in generating.py"
@@ -61,40 +61,53 @@ mem: rb {Memory.global_offset}
 
     return buf
 
+def generate_op_comment(op : Op):
+    buf = f";; {op.type.name} "
+    if op.type == OpType.OPERATOR:
+        buf += f"{op.operand.name}\n"
+    elif isinstance(op.operand, Block):
+        buf += f"Block: {op.operand.type.name} {op.operand.start} - {op.operand.end}\n"
+    else:
+        buf += f"{op.operand}\n"
+    return buf
+
 def generate_op(op: Op):
     assert len(OpType) == 9, "Unimplemented type in generate_op"
+    
+    comment = generate_op_comment(op)
+
     if op.type == OpType.PUSH_INT:
-        return f"push {op.operand}\n"
+        return comment + f"push {op.operand}\n"
     elif op.type == OpType.PUSH_MEMORY:
-        return f"push mem+{op.operand}\n"
+        return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.OPERATOR:
-        return generate_operator(op)
+        return comment + generate_operator(op)
     elif op.type == OpType.SYSCALL:
         buf = ""
         for i in range(op.operand + 1):
             buf += f"pop {SYSCALL_ARGS[i]}\n"
         buf += f"syscall\npush rax\n\n"
-        return buf
+        return comment + buf
     elif op.type == OpType.IF:
-        return \
+        return comment + \
 f"""
 pop rax
 cmp rax, 0
 jz addr_{op.operand.end}
 """
     elif op.type == OpType.ELSE:
-        return \
+        return comment + \
 f"""
 jmp addr_{op.operand.end}
 addr_{op.operand.start}:
 """
     elif op.type == OpType.ENDIF:
-        return \
+        return comment + \
 f"""
 addr_{op.operand.end}:
 """
     elif op.type == OpType.WHILE:
-        return \
+        return comment + \
 f"""
 addr_{op.operand.start}:
 pop rax
@@ -102,7 +115,7 @@ cmp rax, 0
 jz addr_{op.operand.end}
 """
     elif op.type == OpType.ENDWHILE:
-        return \
+        return comment + \
 f"""
 jmp addr_{op.operand.start}
 addr_{op.operand.end}:
