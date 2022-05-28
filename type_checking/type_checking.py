@@ -10,28 +10,26 @@ class ptr: pass
 
 def check_stack(stack: list[type], expected: list[type]):
     if len(stack) < len(expected):
-        print("Stack is too short")
-        exit(1)
+        State.throw_error("Stack is too short")
     for _ in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
 
-        if got != exp and None not in (exp, got):
-            print(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
-            exit(1)
+        if got != exp and object not in (exp, got):
+            State.throw_error(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
 
 def check_route_stack(stack1: list[type], stack2: list[type], error: str = "if-end"):
     if len(stack1) > len(stack2):
-        print(f"Error: Stack has extra elements in different routes of {error}")
+        State.throw_error(f"Error: Stack has extra elements in different routes of {error}", False)
         print(f"Types: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}")
         exit(1)
     if len(stack1) < len(stack2):
-        print(f"Error: Stack has not enought elements in different routes of {error}")
+        State.throw_error(f"Error: Stack has not enought elements in different routes of {error}", False)
         print(f"Types: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}")
         exit(1)
     for i in range(len(stack1)):
-        if stack1[i] != stack2[i] and None not in (stack1[i], stack2[i]):
-            print(f"Different types in different routes of {error}")
+        if stack1[i] != stack2[i] and object not in (stack1[i], stack2[i]):
+            State.throw_error(f"Different types in different routes of {error}", False)
             print(f"Element {len(stack1)-i}: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}")
             exit(1)
 
@@ -43,6 +41,8 @@ def type_check(ops: list[Op]):
 
 def type_check_op(op: Op, stack: list[type]):
     assert len(OpType) == 9, "Unimplemented type in type_check_op"
+
+    State.loc = op.loc
 
     if op.type == OpType.PUSH_INT:
         stack.append(int)
@@ -67,15 +67,15 @@ def type_check_op(op: Op, stack: list[type]):
         State.route_stack.append(("while", stack.copy()))
     elif op.type == OpType.ENDWHILE:
         check_stack(stack, [int])
-        route_stack = State.route_stack.pop()[1]
-        check_route_stack(stack, route_stack, "while")
+        pre_while_stack = State.route_stack.pop()[1]
+        check_route_stack(stack, pre_while_stack, "while")
     elif op.type == OpType.SYSCALL:
-        check_stack(stack, [None] * (op.operand + 1))
-        stack.append(None)
+        check_stack(stack, [object] * (op.operand + 1))
+        stack.append(object)
     elif op.type == OpType.OPERATOR:
         type_check_operator(op, stack)
 
-def type_check_operator(op: Op, stack: list[Op]):
+def type_check_operator(op: Op, stack: list[type]):
     assert len(Operator) == 21, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.DIV, Operator.GT,

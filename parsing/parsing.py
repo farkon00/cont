@@ -50,21 +50,18 @@ def lex_token(token: str) -> Op | None:
         return Op(OpType.IF, block)
     elif token == "end":
         if len(State.block_stack) <= 0:
-            print("Error: block for end not found")
-            exit(0)
+            State.throw_error("block for end not found")
         block = State.block_stack.pop()
         block.end = State.get_new_ip()
         return Op(END_TYPES[block.type], block)
     elif token == "else":
         if len(State.block_stack) <= 0:
-            print("Error: if for else not found")
-            exit(0)
+            State.throw_error("if for else not found")
         
         block = State.block_stack.pop()
         
         if block.type != BlockType.IF:
-            print("Error: else without if")
-            exit(0)
+            State.throw_error("else without if")
 
         block.end = State.get_new_ip()
 
@@ -79,15 +76,14 @@ def lex_token(token: str) -> Op | None:
         name = next(State.tokens)
         size = next(State.tokens)
         if not size.isnumeric():
-            print("Error: memory size not a number")
-            exit(0)
+            State.throw_error("memory size is not a number")
         Memory.new_memory(name, int(size))
         return None
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     else:
-        print(f"Unknown token: {token}")
-        exit(0)
+        State.throw_error(f"Unknown token: {token}")
+    return None
     
 def delete_comments(program: str) -> str:
     while True:
@@ -98,12 +94,18 @@ def delete_comments(program: str) -> str:
         program = program[:index] + program[end_comm if end_comm != -1 else len(program):]
     return program
 
+def tokens(program: str):
+    for i, line in enumerate(delete_comments(program).split("\n")):
+        for j, token in enumerate(line.split()):
+            yield (token, f"{i}:{j}")
+
 def parse_to_ops(program: str) -> list:
     ops = []
-    tokens = (i for i in delete_comments(program).split())
-    State.tokens = tokens
-    for token in tokens:
+    State.tokens = tokens(program)
+    for token, loc in State.tokens:
+        State.loc = loc
         op = lex_token(token)
         if op is not None:
+            op.loc = loc
             ops.append(op)
     return ops

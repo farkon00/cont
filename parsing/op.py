@@ -35,6 +35,7 @@ class Operator(Enum):
     PRINT = auto()
 
 class Op:
-    def __init__(self, type: OpType, operand) -> None:
+    def __init__(self, type: OpType, operand, loc: str = "") -> None:
         self.type: OpType = type
         self.operand = operand 
+        self.loc: str = loc

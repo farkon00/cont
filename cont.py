@@ -1,6 +1,7 @@
 import sys
 import os
 
+from state import State
 from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
 from type_checking.type_checking import type_check
@@ -44,6 +45,8 @@ def main():
     if program is None:
         print("No program name was provided")
         exit(1)
+
+    State.filename = file_name
 
     ops = parse_to_ops(program)
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import sys
 from typing import Generator
 from enum import Enum, auto
 
@@ -31,13 +32,22 @@ class Memory:
 
 class State:
     block_stack: list[Block] = []
-    route_stack: list[list[type]] = []
+    route_stack: list[tuple[str, list[type]]] = []
     memories: dict[str, Memory] = {}
     
     tokens: Generator = (i for i in ()) # type: ignore
+
+    loc: str = ""
+    filename: str = ""
     current_ip: int = -1
 
     @staticmethod
     def get_new_ip():
         State.current_ip += 1
         return State.current_ip
+
+    @staticmethod
+    def throw_error(error: str, do_exit: bool = True):
+        sys.stderr.write(f"\033[1;31mError {State.filename}:{State.loc}:\033[0m {error}\n")
+        if do_exit:
+            exit(1)

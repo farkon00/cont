@@ -1,5 +1,5 @@
 from parsing.op import * 
-from state import Block, Memory
+from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
 assert len(OpType) == 9, "Unimplemented type in generating.py"
@@ -74,6 +74,7 @@ def generate_op_comment(op : Op):
 def generate_op(op: Op):
     assert len(OpType) == 9, "Unimplemented type in generate_op"
     
+    State.loc = op.loc
     comment = generate_op_comment(op)
 
     if op.type == OpType.PUSH_INT:
