@@ -1,7 +1,7 @@
 from .op import *
 from state import *
 
-assert len(Operator) == 19, "Unimplemented operator in parsing.py"
+assert len(Operator) == 21, "Unimplemented operator in parsing.py"
 assert len(OpType) == 9, "Unimplemented type in parsing.py"
 assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
@@ -24,6 +24,8 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
+    "*int" : Operator.CAST_INT,
+    "*ptr" : Operator.CAST_PTR,
     "print" : Operator.PRINT,
 }
 END_TYPES = {

@@ -30,6 +30,8 @@ class Operator(Enum):
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
+    CAST_INT = auto()
+    CAST_PTR = auto()
     PRINT = auto()
 
 class Op:

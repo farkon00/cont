@@ -1,7 +1,7 @@
 from parsing.op import * 
 from state import Block, Memory
 
-assert len(Operator) == 19, "Unimplemented operator in generating.py"
+assert len(Operator) == 21, "Unimplemented operator in generating.py"
 assert len(OpType) == 9, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
@@ -124,7 +124,7 @@ addr_{op.operand.end}:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 19, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 21, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -218,5 +218,7 @@ push rbx
 pop rdi
 call print
 """
+    elif op.operand in (Operator.CAST_INT, Operator.CAST_PTR):
+        return "" # Casts are type checking thing
     else:
         assert False, f"Generation isnt implemented for operator: {op.operand.name}"
