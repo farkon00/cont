@@ -80,7 +80,7 @@ def lex_token(token: str) -> Op | None:
             State.throw_error("memory size is not a number")
         if name[0] in State.memories:
             State.loc = name[1]
-            State.throw_error(f"memory with name \"\" already exists")
+            State.throw_error(f"memory with name \"{name[0]}\" already exists")
         Memory.new_memory(name[0], int(size[0]))
         return None
     elif token in State.memories:
