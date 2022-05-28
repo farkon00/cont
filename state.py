@@ -33,7 +33,7 @@ class State:
     block_stack: list[Block] = []
     memories: dict[str, Memory] = {}
     
-    tokens: Generator = (i for i in ())
+    tokens: Generator = (i for i in ()) # type: ignore
     current_ip: int = -1
 
     @staticmethod
