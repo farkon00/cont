@@ -8,19 +8,19 @@ __Cont__ is compiled concatenative programming language written in Python and he
 memory str 16
 
 72 str !8
-101 str 1 + !8
-108 str 2 + !8
-108 str 3 + !8
-111 str 4 + !8
-44 str 5 + !8
-32 str 6 + !8
-119 str 7 + !8
-111 str 8 + !8
-114 str 9 + !8
-108 str 10 + !8
-100 str 11 + !8
-33 str 12 + !8
-10 str 13 + !8
+101 str *int 1 + *ptr !8
+108 str *int 2 + *ptr !8
+108 str *int 3 + *ptr !8
+111 str *int 4 + *ptr !8
+44 str *int 5 + *ptr !8
+32 str *int 6 + *ptr !8
+119 str *int 7 + *ptr !8
+111 str *int 8 + *ptr !8
+114 str *int 9 + *ptr !8
+108 str *int 10 + *ptr !8
+100 str *int 11 + *ptr !8
+33 str *int 12 + *ptr !8
+10 str *int 13 + *ptr !8
 
 
 14
