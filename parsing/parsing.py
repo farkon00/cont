@@ -1,9 +1,10 @@
 from .op import *
 from state import *
+from type_checking.type_checking import ptr
 
 assert len(Operator) == 21, "Unimplemented operator in parsing.py"
-assert len(OpType) == 9, "Unimplemented type in parsing.py"
-assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
+assert len(OpType) == 11, "Unimplemented type in parsing.py"
+assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
     "+" : Operator.ADD,
@@ -32,11 +33,12 @@ END_TYPES = {
     BlockType.IF : OpType.ENDIF,
     BlockType.ELSE : OpType.ENDIF,
     BlockType.WHILE : OpType.ENDWHILE,
+    BlockType.PROC : OpType.ENDPROC,
 }
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 9, "Unimplemented type in lex_token"
-    assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
+    assert len(OpType) == 11, "Unimplemented type in lex_token"
+    assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
@@ -78,11 +80,54 @@ def lex_token(token: str) -> Op | None:
         if not size[0].isnumeric():
             State.loc = size[1]
             State.throw_error("memory size is not a number")
-        if name[0] in State.memories:
+        if name[0] in State.procs or name[0] in State.memories:
             State.loc = name[1]
-            State.throw_error(f"memory with name \"{name[0]}\" already exists")
+            State.throw_error(f"name for memory \"{name[0]}\" is already taken")
         Memory.new_memory(name[0], int(size[0]))
         return None
+    elif token == "proc":
+        name = next(State.tokens)
+        ip = State.get_new_ip()
+        in_types: list[type] = []
+        out_types: list[type] = []
+
+        if name[0] in State.procs or name[0] in State.memories:
+            State.loc = name[1]
+            State.throw_error(f"name for procedure \"{name[0]}\" is already taken")
+
+        proc_token = ("", "")
+        types = in_types
+        while ":" not in proc_token[0]:
+            try:
+                proc_token = next(State.tokens)
+            except GeneratorExit:
+                State.loc = name[1]
+                State.throw_error("proc contract was not closed")
+            proc_token_value = proc_token[0].split(":")[0].strip()
+            if not proc_token_value:
+                break
+            if proc_token_value == "int":
+                types.append(int)
+            elif proc_token_value == "ptr":
+                types.append(ptr)
+            elif proc_token_value == "->":
+                if types is out_types:
+                    State.loc = proc_token[1]
+                    State.throw_error("few -> separators was found in proc contract")
+                types = out_types
+            else:
+                State.loc = proc_token[1]
+                State.throw_error(f"unknown type \"{proc_token_value}\" in proc contract")
+
+        queued_token = proc_token[0].split(":")[1].strip()
+        if queued_token:
+            State.tokens_queue.append((queued_token, proc_token[1]))
+
+        block = Block(BlockType.PROC, ip)
+        State.procs[name[0]] = Proc(name[0], ip, in_types, out_types, block)
+        State.block_stack.append(block)
+
+        return Op(OpType.DEFPROC, name[0])
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     else:
@@ -101,6 +146,8 @@ def delete_comments(program: str) -> str:
 def tokens(program: str):
     for i, line in enumerate(delete_comments(program).split("\n")):
         for j, token in enumerate(line.split()):
+            if State.tokens_queue:
+                yield State.tokens_queue.pop(0)
             yield (token, f"{i}:{j}")
 
 def parse_to_ops(program: str) -> list:

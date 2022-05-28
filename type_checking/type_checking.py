@@ -3,8 +3,8 @@ from state import *
 from .type_to_str import type_to_str
 
 assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 9, "Unimplemented type in type_checking.py"
-assert len(BlockType) == 3, "Unimplemented block type in type_checking.py"
+assert len(OpType) == 11, "Unimplemented type in type_checking.py"
+assert len(BlockType) == 4, "Unimplemented block type in type_checking.py"
 
 class ptr: pass
 

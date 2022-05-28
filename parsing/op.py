@@ -8,6 +8,8 @@ class OpType(Enum):
     ENDIF = auto()
     WHILE = auto()
     ENDWHILE = auto()
+    DEFPROC = auto()
+    ENDPROC = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 

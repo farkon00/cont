@@ -8,6 +8,7 @@ class BlockType(Enum):
     IF = auto()
     ELSE = auto()
     WHILE = auto()
+    PROC = auto()
 
 @dataclass
 class Block:
@@ -30,12 +31,24 @@ class Memory:
         State.memories[name] = mem
         return mem
 
+
+@dataclass
+class Proc:
+    name: str
+    ip: int
+    in_stack: list[type]
+    out_stack: list[type]
+    block: Block
+
 class State:
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
+
     memories: dict[str, Memory] = {}
-    
+    procs: dict[str, Proc] = {}
+
     tokens: Generator = (i for i in ()) # type: ignore
+    tokens_queue: list[tuple[str, str]] = []
 
     loc: str = ""
     filename: str = ""

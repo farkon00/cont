@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 9, "Unimplemented type in generating.py"
+assert len(OpType) == 11, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -57,6 +57,8 @@ mov rdi, 0
 syscall
 segment readable writeable
 mem: rb {Memory.global_offset}
+call_stack: rb 8192
+call_stack_ptr: rb 8
 """
 
     return buf
@@ -72,7 +74,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 9, "Unimplemented type in generate_op"
+    assert len(OpType) == 11, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -119,6 +121,30 @@ jz addr_{op.operand.end}
         return comment + \
 f"""
 jmp addr_{op.operand.start}
+addr_{op.operand.end}:
+"""
+    elif op.type == OpType.DEFPROC:
+        return comment + \
+f"""
+jmp addr_{State.procs[op.operand].block.end}
+addr_{State.procs[op.operand].ip}:
+pop rax
+mov rbx, [call_stack_ptr]
+mov [call_stack+rbx], rax
+mov rax, [call_stack_ptr]
+add rax, 8
+mov [call_stack_ptr], rax
+"""
+    elif op.type == OpType.ENDPROC:
+        return comment + \
+f"""
+mov rbx, [call_stack_ptr]
+sub rbx, 8
+mov [call_stack_ptr], rbx
+
+mov rax, [call_stack+rbx]
+push rax
+ret
 addr_{op.operand.end}:
 """
     else:
