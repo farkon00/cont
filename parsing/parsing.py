@@ -28,7 +28,7 @@ END_TYPES = {
     BlockType.WHILE : OpType.ENDWHILE,
 }
 
-def lex_token(token: str) -> Op:
+def lex_token(token: str) -> Op | None:
     assert len(OpType) == 7, "Unimplemented type in lex_token"
     assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
@@ -67,6 +67,14 @@ def lex_token(token: str) -> Op:
         block = Block(BlockType.WHILE, State.get_new_ip())
         State.block_stack.append(block)
         return Op(OpType.WHILE, block)
+    elif token == "memory":
+        name = next(State.tokens)
+        size = next(State.tokens)
+        if not size.isnumeric():
+            print("Error: memory size not a number")
+            exit(0)
+        Memory.new_memory(name, int(size))
+        return None
     else:
         print(f"Unknown token: {token}")
         exit(0)
@@ -74,6 +82,10 @@ def lex_token(token: str) -> Op:
 
 def parse_to_ops(program: str) -> list:
     ops = []
-    for token in program.split():
-        ops.append(lex_token(token))
+    tokens = (i for i in program.split())
+    State.tokens = tokens
+    for token in tokens:
+        op = lex_token(token)
+        if op is not None:
+            ops.append(op)
     return ops

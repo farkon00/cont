@@ -1,4 +1,5 @@
 from parsing.op import * 
+from state import Memory
 
 assert len(Operator) == 15, "Unimplemented operator in generating.py"
 assert len(OpType) == 7, "Unimplemented type in generating.py"
@@ -48,10 +49,12 @@ _start:
     for i in ops:
         buf += generate_op(i)
 
-    buf += """
+    buf += f"""
 mov rax, 60
 mov rdi, 0
 syscall
+segment readable writeable
+mem: rb {Memory.global_offset}
 """
 
     return buf
