@@ -62,7 +62,7 @@ mem: rb {Memory.global_offset}
     return buf
 
 def generate_op_comment(op : Op):
-    buf = f";; {op.type.name} "
+    buf = f";; {State.filename}:{State.loc} {op.type.name} "
     if op.type == OpType.OPERATOR:
         buf += f"{op.operand.name}\n"
     elif isinstance(op.operand, Block):
