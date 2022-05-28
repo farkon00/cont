@@ -1,8 +1,8 @@
 from .op import *
 from state import *
 
-assert len(Operator) == 15, "Unimplemented operator in parsing.py"
-assert len(OpType) == 7, "Unimplemented type in parsing.py"
+assert len(Operator) == 19, "Unimplemented operator in parsing.py"
+assert len(OpType) == 8, "Unimplemented type in parsing.py"
 assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
@@ -20,6 +20,10 @@ OPERATORS = {
     ">=" : Operator.GE,
     "==" : Operator.EQ,
     "!=" : Operator.NE,
+    "!" : Operator.STORE,
+    "!8" : Operator.STORE8,
+    "@" : Operator.LOAD,
+    "@8" : Operator.LOAD8,
     "print" : Operator.PRINT,
 }
 END_TYPES = {
@@ -29,7 +33,7 @@ END_TYPES = {
 }
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 7, "Unimplemented type in lex_token"
+    assert len(OpType) == 8, "Unimplemented type in lex_token"
     assert len(BlockType) == 3, "Unimplemented block type in parsing.py"
 
     if token in OPERATORS:
@@ -75,6 +79,8 @@ def lex_token(token: str) -> Op | None:
             exit(0)
         Memory.new_memory(name, int(size))
         return None
+    elif token in State.memories:
+        return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     else:
         print(f"Unknown token: {token}")
         exit(0)

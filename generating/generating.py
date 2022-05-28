@@ -1,8 +1,8 @@
 from parsing.op import * 
 from state import Memory
 
-assert len(Operator) == 15, "Unimplemented operator in generating.py"
-assert len(OpType) == 7, "Unimplemented type in generating.py"
+assert len(Operator) == 19, "Unimplemented operator in generating.py"
+assert len(OpType) == 8, "Unimplemented type in generating.py"
 
 def generate_fasm(ops: list):
     buf = ""
@@ -60,8 +60,8 @@ mem: rb {Memory.global_offset}
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 7, "Unimplemented type in generate_op"
-    if op.type == OpType.PUSH_INT:
+    assert len(OpType) == 8, "Unimplemented type in generate_op"
+    if op.type in (OpType.PUSH_INT, OpType.PUSH_MEMORY):
         return f"push {op.operand}\n"
     elif op.type == OpType.OPERATOR:
         return generate_operator(op)
@@ -101,7 +101,7 @@ addr_{op.operand.end}:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 15, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 19, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -159,6 +159,38 @@ pop rax
 cmp rax, rbx
 cmov{op.operand.name.lower()} rcx, rdx
 push rcx
+"""
+    elif op.operand == Operator.STORE:
+        return \
+"""
+pop rax
+pop rbx
+mov [mem+rax], rbx
+"""
+    elif op.operand == Operator.LOAD:
+        return \
+"""
+pop rax
+mov rbx, [mem+rax]
+push rbx 
+"""
+    elif op.operand == Operator.STORE8:
+        print("Not implemented !8")
+        exit(1)
+        return \
+"""
+pop rax
+pop ah
+mov [mem+rax], ah
+"""
+    elif op.operand == Operator.LOAD8:
+        print("Not implemented @8")
+        exit(1)
+        return \
+"""
+pop rax
+mov ah, [mem+rax]
+push ah 
 """
     elif op.operand == Operator.PRINT:
         return \

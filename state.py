@@ -26,12 +26,12 @@ class Memory:
     def new_memory(name: str, size: int) -> "Memory":
         mem = Memory(name, Memory.global_offset)
         Memory.global_offset += size + (8 - size % 8 if size % 8 != 0 else 0)
-        State.memories.append(mem)
+        State.memories[name] = mem
         return mem
 
 class State:
     block_stack: list[Block] = []
-    memories: list[Memory] = []
+    memories: dict[str, Memory] = {}
     
     tokens: Generator = (i for i in ())
     current_ip: int = -1

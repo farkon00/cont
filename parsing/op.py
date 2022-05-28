@@ -2,6 +2,7 @@ from enum import Enum, auto
 
 class OpType(Enum):
     PUSH_INT = auto()
+    PUSH_MEMORY = auto()
     IF = auto()
     ELSE = auto()
     ENDIF = auto()
@@ -24,6 +25,10 @@ class Operator(Enum):
     LE = auto()
     GE = auto()
     NE = auto()
+    STORE = auto()
+    STORE8 = auto()
+    LOAD = auto()
+    LOAD8 = auto() 
     PRINT = auto()
 
 class Op:
