@@ -19,9 +19,9 @@ end
 
 proc nstr_to_str ptr -> int ptr: dup null_str_len swap end
 
-proc open2 int int ptr:
+proc open2 int int ptr -> int:
   swap drop opensys2
 end
-proc open int int int ptr:
+proc open int int int ptr -> int:
   swap drop opensys
 end
