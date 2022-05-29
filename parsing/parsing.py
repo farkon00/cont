@@ -46,6 +46,7 @@ def check_str_escape(string: str) -> str:
             elif i == "r": char = "\r"
             elif i == "\"": char = "\""
             elif i == "\\": char = "\\"
+            elif i == "0": char = "\0"
             else: State.throw_error(f"unknown escape sequence: \\{i}")
             escaped = False
         elif i == "\\":
