@@ -3,6 +3,8 @@ import sys
 from typing import Generator
 from enum import Enum, auto
 
+from parsing.op import Op
+
 
 class BlockType(Enum):
     IF = auto()
@@ -49,15 +51,22 @@ class State:
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
+    ops_by_ips: list[Op] = []
 
     loc: str = ""
     filename: str = ""
     current_ip: int = -1
 
     @staticmethod
-    def get_new_ip():
+    def get_new_ip(op: Op):
         State.current_ip += 1
+        State.ops_by_ips.append(op)
         return State.current_ip
+
+    @staticmethod
+    def get_proc_by_block(block: Block):
+        proc_op = State.ops_by_ips[block.start]
+        return State.procs[proc_op.operand]
 
     @staticmethod
     def throw_error(error: str, do_exit: bool = True):

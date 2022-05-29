@@ -54,8 +54,9 @@ def lex_token(token: str) -> Op | None:
         if len(State.block_stack) <= 0:
             State.throw_error("block for end not found")
         block = State.block_stack.pop()
-        block.end = State.get_new_ip()
-        return Op(END_TYPES[block.type], block)
+        op = Op(END_TYPES[block.type], block)
+        block.end = State.get_new_ip(op)
+        return op
     elif token == "else":
         if len(State.block_stack) <= 0:
             State.throw_error("if for else not found")
@@ -65,15 +66,18 @@ def lex_token(token: str) -> Op | None:
         if block.type != BlockType.IF:
             State.throw_error("else without if")
 
-        block.end = State.get_new_ip()
-
         new_block = Block(BlockType.ELSE, block.end)
         State.block_stack.append(new_block)
-        return Op(OpType.ELSE, new_block)
+
+        op = Op(OpType.ELSE, new_block)
+        block.end = State.get_new_ip(op)
+        return op
     elif token == "while":
-        block = Block(BlockType.WHILE, State.get_new_ip())
+        block = Block(BlockType.WHILE, -1)
+        op = Op(OpType.WHILE, block)
+        block.start = State.get_new_ip(op)
         State.block_stack.append(block)
-        return Op(OpType.WHILE, block)
+        return op 
     elif token == "memory":
         name = next(State.tokens)
         size = next(State.tokens)
@@ -87,7 +91,6 @@ def lex_token(token: str) -> Op | None:
         return None
     elif token == "proc":
         name = next(State.tokens)
-        ip = State.get_new_ip()
         in_types: list[type] = []
         out_types: list[type] = []
 
@@ -123,15 +126,18 @@ def lex_token(token: str) -> Op | None:
         if queued_token:
             State.tokens_queue.append((queued_token, proc_token[1]))
 
+        op = Op(OpType.DEFPROC, name[0])
+        ip = State.get_new_ip(op)
+
         block = Block(BlockType.PROC, ip)
         State.procs[name[0]] = Proc(name[0], ip, in_types, out_types, block)
         State.block_stack.append(block)
 
-        return Op(OpType.DEFPROC, name[0])
+        return op
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     elif token in State.procs:
-        return Op(OpType.CALL, State.procs[token].ip)
+        return Op(OpType.CALL, State.procs[token])
     else:
         State.throw_error(f"Unknown token: {token}")
     return None
@@ -150,7 +156,7 @@ def tokens(program: str):
         for j, token in enumerate(line.split()):
             if State.tokens_queue:
                 yield State.tokens_queue.pop(0)
-            yield (token, f"{i}:{j}")
+            yield (token, f"{i+1}:{j+1}")
 
 def parse_to_ops(program: str) -> list:
     ops = []

@@ -148,7 +148,7 @@ ret
 addr_{op.operand.end}:
 """
     elif op.type == OpType.CALL:
-        return comment + f"call addr_{op.operand}\n"
+        return comment + f"call addr_{op.operand.ip}\n"
     else:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
