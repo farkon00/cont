@@ -56,7 +56,7 @@ class State:
     is_string = False
     is_null = False
     string_buffer: str = ""
-    string_data: list[str] = [] 
+    string_data: list[bytes] = [] 
 
     loc: str = ""
     filename: str = ""
