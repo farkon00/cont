@@ -63,6 +63,8 @@ def lex_string(string: str) -> Op | None:
     if State.is_string:
         State.string_buffer += string
 
+    return None
+
 def lex_token(token: str) -> Op | None:
     assert len(OpType) == 13, "Unimplemented type in lex_token"
     assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
@@ -71,7 +73,7 @@ def lex_token(token: str) -> Op | None:
     if string:
         return string
     if State.is_string:
-        return
+        return None
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
