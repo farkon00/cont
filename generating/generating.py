@@ -62,7 +62,7 @@ call_stack_ptr: rb 8
 """
     for index, i in enumerate(State.string_data):
         # Second expression is converting string to its bytes representation
-        buf += f"str_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}\n"
+        buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
 
     return buf
 

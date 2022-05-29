@@ -77,10 +77,10 @@ def lex_string(string: str) -> Op | None:
         if not State.is_string:
             State.throw_error("string litteral was closed without opening")
 
-        State.string_data.append(check_str_escape(State.string_buffer + string))
+        State.string_data.append(bytes(check_str_escape(State.string_buffer + " " + string), "utf-8"))
         optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
         if State.is_null:
-            State.string_data[-1] += "\0"
+            State.string_data[-1] += bytes("\0", "utf-8")
 
         State.is_string = False
         State.is_null = False
@@ -94,7 +94,9 @@ def lex_string(string: str) -> Op | None:
         State.string_buffer = ""
 
     if State.is_string:
-        State.string_buffer += string
+        State.string_buffer += " " + string
+        if start_string:
+            State.string_buffer = State.string_buffer[1:] 
 
     return None
 
