@@ -1,0 +1,3 @@
+proc write int ptr int -> int:
+  1 syscall3
+end 

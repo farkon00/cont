@@ -11,12 +11,14 @@ class ptr: pass
 def check_stack(stack: list[type], expected: list[type]):
     if len(stack) < len(expected):
         State.throw_error("stack is too short")
-    for _ in range(len(expected)):
+    for i in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
 
         if got != exp and object not in (exp, got):
-            State.throw_error(f"expected type {type_to_str(exp)}, got {type_to_str(got)}")
+            State.throw_error(f"unexpected argument type", False)
+            print(f"\033[1;34mArgument {i}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}")
+            exit(1)
 
 def check_route_stack(stack1: list[type], stack2: list[type], error: str = "in different routes of if-end"):
     if len(stack1) > len(stack2):

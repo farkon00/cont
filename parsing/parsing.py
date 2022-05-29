@@ -1,3 +1,5 @@
+import os
+
 from .op import *
 from state import *
 from type_checking.type_checking import ptr
@@ -188,12 +190,23 @@ def lex_token(token: str) -> Op | None | list:
         return op
     elif token == "include":
         name = next(State.tokens)
-        try:
-            with open(name[0], "r") as f:
-                ops = parse_to_ops(f.read())
-                return ops
-        except:
-            State.throw_error(f"include file not found: {name[0]}")
+
+        path = ""
+        std_path = os.path.join(State.dir + "/std/", name[0])
+
+        if os.path.exists(name[0]):
+            path = name[0]
+        elif os.path.exists(std_path):
+            path = std_path
+        else:
+            State.loc = name[1]
+            State.throw_error(f"include file \"{name[0]}\" not found")
+
+        State.filename = os.path.splitext(path)[0]
+
+        with open(path, "r") as f:
+            ops = parse_to_ops(f.read())
+            return ops
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     elif token in State.procs:

@@ -51,6 +51,7 @@ def main():
         exit(1)
 
     State.filename = file_name
+    State.dir = os.path.dirname(__file__)
 
     ops = parse_to_ops(program)
 

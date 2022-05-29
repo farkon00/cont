@@ -80,6 +80,8 @@ class State:
     filename: str = ""
     current_ip: int = -1
 
+    dir: str = ""
+
     @staticmethod
     def get_new_ip(op: Op):
         State.current_ip += 1
