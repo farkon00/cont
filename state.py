@@ -11,6 +11,8 @@ class BlockType(Enum):
     ELSE = auto()
     WHILE = auto()
     PROC = auto()
+    BIND = auto()
+
 
 @dataclass
 class Block:
@@ -59,6 +61,7 @@ class StateSaver:
 class State:
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
+    bind_stack: list[str] = []
 
     memories: dict[str, Memory] = {}
     procs: dict[str, Proc] = {}

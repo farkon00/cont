@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 14, "Unimplemented type in generating.py"
+assert len(OpType) == 17, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -58,7 +58,9 @@ syscall
 segment readable writeable
 mem: rb {Memory.global_offset}
 call_stack: rb 8192
-call_stack_ptr: rb 8
+call_stack_ptr: rb 0
+bind_stack: rb 8192
+bind_stack_ptr: rb 0
 """
     for index, i in enumerate(State.string_data):
         # Second expression is converting string to its bytes representation
@@ -77,7 +79,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 14, "Unimplemented type in generate_op"
+    assert len(OpType) == 17, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -153,6 +155,32 @@ mov rax, [call_stack+rbx]
 push rax
 ret
 addr_{op.operand.end}:
+"""
+    elif op.type == OpType.BIND:
+        buf = comment
+        for i in range(op.operand):
+            buf += \
+"""
+pop rax
+mov rbx, [bind_stack_ptr]
+mov [bind_stack+rbx], rax
+mov rax, [bind_stack_ptr]
+add rax, 8
+mov [bind_stack_ptr], rax
+"""    
+        return buf
+    elif op.type == OpType.UNBIND:
+        return comment + \
+f"""
+mov rbx, [bind_stack_ptr]
+sub rbx, {op.operand * 8}
+mov [bind_stack_ptr], rbx
+"""  
+    elif op.type == OpType.PUSH_BIND_STACK:
+        return comment + \
+f"""
+mov rax, [bind_stack+{op.operand*8}]
+push rax
 """
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"

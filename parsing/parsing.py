@@ -6,10 +6,6 @@ from .op import *
 from state import *
 from type_checking.type_checking import ptr
 
-assert len(Operator) == 21, "Unimplemented operator in parsing.py"
-assert len(OpType) == 14, "Unimplemented type in parsing.py"
-assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
-
 OPERATORS = {
     "+" : Operator.ADD,
     "-" : Operator.SUB,
@@ -38,7 +34,12 @@ END_TYPES = {
     BlockType.ELSE : OpType.ENDIF,
     BlockType.WHILE : OpType.ENDWHILE,
     BlockType.PROC : OpType.ENDPROC,
+    BlockType.BIND : OpType.UNBIND,
 }
+
+assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
+assert len(OpType) == 17, "Unimplemented type in parsing.py"
+assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
     start_string = False
@@ -86,8 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 14, "Unimplemented type in lex_token"
-    assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
+    assert len(OpType) == 17, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -113,7 +113,13 @@ def lex_token(token: str) -> Op | None | list:
         if len(State.block_stack) <= 0:
             State.throw_error("block for end not found")
         block = State.block_stack.pop()
-        op = Op(END_TYPES[block.type], block)
+        if block.type != BlockType.BIND:
+            op = Op(END_TYPES[block.type], block)
+        else:
+            unbinded = State.ops_by_ips[block.start].operand
+            op = Op(OpType.UNBIND, unbinded)
+            State.bind_stack = State.bind_stack[:-unbinded] 
+
         block.end = State.get_new_ip(op)
         return op
 
@@ -161,6 +167,28 @@ def lex_token(token: str) -> Op | None | list:
         size = evaluate_block(State.loc)
         Memory.new_memory(name[0], size)
         return None
+    
+    elif token == "bind":
+        binded = 0
+        name_token = ("", "")
+        while ":" not in name_token[0]:
+            name_token = next(State.tokens)
+            parts = name_token[0].split(":") 
+            name = parts[0]
+            if len(parts) > 1:
+                queued_token = (parts[1].strip(), name_token[1])
+                if queued_token[0]:
+                    State.tokens_queue.append(queued_token)
+            if not name:
+                continue
+            if name in State.procs or name in State.memories:
+                State.loc = name_token[1]
+                State.throw_error(f"name for bind \"{name}\" is already taken")
+            State.bind_stack.append(name)
+            binded += 1
+        op = Op(OpType.BIND, binded)
+        State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
+        return op
         
     elif token == "proc":
         name = next(State.tokens)
@@ -249,6 +277,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token in State.procs:
         return Op(OpType.CALL, State.procs[token])
+
+    elif token in State.bind_stack:
+        return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
 
     else:
         State.throw_error(f"unknown token: {token}")

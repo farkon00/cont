@@ -3,8 +3,8 @@ from state import *
 from .type_to_str import type_to_str
 
 assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 14, "Unimplemented type in type_checking.py"
-assert len(BlockType) == 4, "Unimplemented block type in type_checking.py"
+assert len(OpType) == 17, "Unimplemented type in type_checking.py"
+assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 class ptr: pass
 
@@ -42,7 +42,7 @@ def type_check(ops: list[Op]):
         type_check_op(op, stack)
 
 def type_check_op(op: Op, stack: list[type]):
-    assert len(OpType) == 14, "Unimplemented type in type_check_op"
+    assert len(OpType) == 17, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -76,6 +76,14 @@ def type_check_op(op: Op, stack: list[type]):
         check_stack(stack, [int])
         pre_while_stack = State.route_stack.pop()[1]
         check_route_stack(stack, pre_while_stack, "in different routes of while")
+    elif op.type == OpType.BIND:
+        for _ in range(op.operand):
+            State.bind_stack.append(stack.pop())
+    elif op.type == OpType.UNBIND:
+        for _ in range(op.operand):
+            State.bind_stack.pop() 
+    elif op.type == OpType.PUSH_BIND_STACK:
+        stack.append(State.bind_stack[op.operand])
     elif op.type == OpType.DEFPROC:
         State.route_stack.append(("proc", stack.copy()))
         stack.clear()
