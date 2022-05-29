@@ -1,3 +1,5 @@
+proc read int ptr int -> int: 0 syscall3 end
+
 proc write int ptr int -> int:
   1 syscall3
 end 
