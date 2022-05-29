@@ -17,7 +17,7 @@ def check_stack(stack: list[type], expected: list[type]):
 
         if got != exp and object not in (exp, got):
             State.throw_error(f"unexpected argument type", False)
-            print(f"\033[1;34mArgument {i}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}")
+            print(f"\033[1;34mArgument {i+1}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}")
             exit(1)
 
 def check_route_stack(stack1: list[type], stack2: list[type], error: str = "in different routes of if-end"):
@@ -115,14 +115,11 @@ def type_check_operator(op: Op, stack: list[type]):
     elif op.operand == Operator.SWAP:
         if len(stack) < 2:
             State.throw_error("stack is too short")
-        stack.append(stack.pop(0))
-        stack.append(stack.pop(1))
+        stack[-2], stack[-1] = stack[-1], stack[-2]
     elif op.operand == Operator.ROT:
         if len(stack) < 3:
             State.throw_error("stack is too short")
-        stack.append(stack.pop())
-        stack.append(stack.pop())
-        stack.append(stack.pop())
+        stack[-3], stack[-2], stack[-1] = stack[-1], stack[-2], stack[-3]
     elif op.operand in (Operator.STORE,  Operator.STORE8):
         check_stack(stack, [int, ptr])
     elif op.operand in (Operator.LOAD,  Operator.LOAD8):
