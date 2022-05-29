@@ -5,7 +5,9 @@ __Cont__ is compiled concatenative programming language written in Python and he
 # Examples
 ## Hello world
 ```
-"Hello, world!\n" 1 1 syscall3
+include std.cn
+
+"Hello, world!\n" puts
 ```
 
 ## Fibanacci numbers
