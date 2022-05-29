@@ -2,7 +2,9 @@ include os.cn
 
 proc ptr+ ptr int -> ptr: swap *int      + *ptr end
 proc ptr- ptr int -> ptr: swap *int swap - *ptr end
-proc +ptr ptr int -> ptr:      *int      + *ptr end
-proc -ptr ptr int -> ptr:      *int      - *ptr end
+proc +ptr int ptr -> ptr:      *int      + *ptr end
+proc -ptr int ptr -> ptr:      *int      - *ptr end
 
 proc puts int ptr: 1 write drop end 
+// ptr ptr int
+proc input ptr -> int ptr: dup 1024 swap 0 read swap end
