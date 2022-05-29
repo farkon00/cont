@@ -53,6 +53,10 @@ class State:
     tokens_queue: list[tuple[str, str]] = []
     ops_by_ips: list[Op] = []
 
+    is_string = False
+    string_buffer: str = ""
+    string_data: list[str] = [] 
+
     loc: str = ""
     filename: str = ""
     current_ip: int = -1

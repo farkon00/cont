@@ -3,7 +3,7 @@ from state import *
 from .type_to_str import type_to_str
 
 assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 12, "Unimplemented type in type_checking.py"
+assert len(OpType) == 13, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 4, "Unimplemented block type in type_checking.py"
 
 class ptr: pass
@@ -40,13 +40,16 @@ def type_check(ops: list[Op]):
         type_check_op(op, stack)
 
 def type_check_op(op: Op, stack: list[type]):
-    assert len(OpType) == 12, "Unimplemented type in type_check_op"
+    assert len(OpType) == 13, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
     if op.type == OpType.PUSH_INT:
         stack.append(int)
     elif op.type == OpType.PUSH_MEMORY:
+        stack.append(ptr)
+    elif op.type == OpType.PUSH_STR:
+        stack.append(int)
         stack.append(ptr)
     elif op.type == OpType.IF:
         check_stack(stack, [int])

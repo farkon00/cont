@@ -3,7 +3,7 @@ from state import *
 from type_checking.type_checking import ptr
 
 assert len(Operator) == 21, "Unimplemented operator in parsing.py"
-assert len(OpType) == 12, "Unimplemented type in parsing.py"
+assert len(OpType) == 13, "Unimplemented type in parsing.py"
 assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
@@ -37,9 +37,33 @@ END_TYPES = {
 }
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 12, "Unimplemented type in lex_token"
+    assert len(OpType) == 13, "Unimplemented type in lex_token"
     assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
+    start_string = False
+    end_string = False
+    if token.startswith("\""):
+        start_string = True
+    if token.endswith("\""):
+        end_string = True
+    string = token
+    if start_string:
+        string = string[1:]
+        if State.is_string:
+            State.throw_error("String litteral was opened without closing previous one")
+        State.is_string = True
+        State.string_buffer = ""
+    if end_string:  
+        string = string[:-1]
+        if not State.is_string:
+            State.throw_error("String litteral was closed without opening")
+        State.string_data.append(State.string_buffer + string)
+        State.is_string = False
+        return Op(OpType.PUSH_STR, len(State.string_data) - 1, State.loc)
+    if State.is_string:
+        State.string_buffer += string
+        return None
+    
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
     elif token.startswith("syscall") and "0" <= token[7] <= "6" and len(token) == 8:

@@ -3,6 +3,7 @@ from enum import Enum, auto
 class OpType(Enum):
     PUSH_INT = auto()
     PUSH_MEMORY = auto()
+    PUSH_STR = auto()
     IF = auto()
     ELSE = auto()
     ENDIF = auto()
