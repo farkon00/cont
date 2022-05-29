@@ -164,20 +164,31 @@ def lex_token(token: str) -> Op | None | list:
         
     elif token == "proc":
         name = next(State.tokens)
+        name_value = name[0]
         in_types: list[type] = []
         out_types: list[type] = []
 
-        if name[0] in State.procs or name[0] in State.memories:
-            State.loc = name[1]
-            State.throw_error(f"name for procedure \"{name[0]}\" is already taken")
+        has_contaract = ":" not in name[0]
+        try:
+            parts = name[0].split(":")
+            name_value = parts[0]
+            queued_token = parts[1].strip()
+            if queued_token:
+                State.tokens_queue.append((queued_token, name[1]))
+        except IndexError:
+            pass
+
+        if name_value in State.procs or name_value in State.memories:
+            State.loc = f"{State.filename}:{name[1]}"
+            State.throw_error(f"name for procedure \"{name_value}\" is already taken")
 
         proc_token = ("", "")
         types = in_types
-        while ":" not in proc_token[0]:
+        while ":" not in proc_token[0] and has_contaract:
             try:
                 proc_token = next(State.tokens)
             except GeneratorExit:
-                State.loc = name[1]
+                State.loc = f"{State.filename}:{name[1]}"
                 State.throw_error("proc contract was not closed")
             proc_token_value = proc_token[0].split(":")[0].strip()
             if not proc_token_value:
@@ -192,18 +203,19 @@ def lex_token(token: str) -> Op | None | list:
                     State.throw_error("few -> separators was found in proc contract")
                 types = out_types
             else:
-                State.loc = proc_token[1]
+                State.loc = f"{State.filename}:{proc_token[1]}"
                 State.throw_error(f"unknown type \"{proc_token_value}\" in proc contract")
 
-        queued_token = proc_token[0].split(":")[1].strip()
-        if queued_token:
-            State.tokens_queue.append((queued_token, proc_token[1]))
+        if has_contaract:
+            queued_token = proc_token[0].split(":")[1].strip()
+            if queued_token:
+                State.tokens_queue.append((queued_token, proc_token[1]))
 
-        op = Op(OpType.DEFPROC, name[0])
+        op = Op(OpType.DEFPROC, name_value)
         ip = State.get_new_ip(op)
 
         block = Block(BlockType.PROC, ip)
-        State.procs[name[0]] = Proc(name[0], ip, in_types, out_types, block)
+        State.procs[name_value] = Proc(name_value, ip, in_types, out_types, block)
         State.block_stack.append(block)
 
         return op
@@ -273,7 +285,11 @@ def parse_to_ops(program: str) -> list:
             op.loc = f"{State.filename}:{loc}"
             ops.append(op)
 
-    saver.load()
+    if State.block_stack:
+        if State.block_stack[-1].start != -1:
+            State.loc = State.ops_by_ips[State.block_stack[-1].start].loc
+        State.throw_error("unclosed block")
 
+    saver.load()
 
     return ops
