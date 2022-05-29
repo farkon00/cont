@@ -61,7 +61,8 @@ class StateSaver:
 class State:
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
-    bind_stack: list[str] = []
+    bind_stack: list[str | type] = []
+    bind_stack_size: int = 0
 
     memories: dict[str, Memory] = {}
     procs: dict[str, Proc] = {}

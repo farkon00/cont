@@ -200,9 +200,9 @@ def lex_token(token: str) -> Op | None | list:
         try:
             parts = name[0].split(":")
             name_value = parts[0]
-            queued_token = parts[1].strip()
-            if queued_token:
-                State.tokens_queue.append((queued_token, name[1]))
+            queued_token = (parts[1].strip(), name[1])
+            if queued_token[0]:
+                State.tokens_queue.append(queued_token)
         except IndexError:
             pass
 
@@ -235,9 +235,9 @@ def lex_token(token: str) -> Op | None | list:
                 State.throw_error(f"unknown type \"{proc_token_value}\" in proc contract")
 
         if has_contaract:
-            queued_token = proc_token[0].split(":")[1].strip()
-            if queued_token:
-                State.tokens_queue.append((queued_token, proc_token[1]))
+            queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
+            if queued_token[0]:
+                State.tokens_queue.append(queued_token)
 
         op = Op(OpType.DEFPROC, name_value)
         ip = State.get_new_ip(op)

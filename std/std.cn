@@ -5,6 +5,12 @@ proc ptr- ptr int -> ptr: swap *int swap - *ptr end
 proc +ptr int ptr -> ptr:      *int      + *ptr end
 proc -ptr int ptr -> ptr:      *int      - *ptr end
 
+proc 2duppi ptr int -> ptr int ptr int:
+  bind a b:
+    a b a b
+  end
+end
+
 proc puts int ptr: 1 write drop end 
 proc input ptr -> int ptr: dup 1024 swap 0 read swap end
 

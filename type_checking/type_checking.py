@@ -77,8 +77,10 @@ def type_check_op(op: Op, stack: list[type]):
         pre_while_stack = State.route_stack.pop()[1]
         check_route_stack(stack, pre_while_stack, "in different routes of while")
     elif op.type == OpType.BIND:
-        for _ in range(op.operand):
-            State.bind_stack.append(stack.pop())
+        if len(stack) < op.operand:
+            State.throw_error("stack is too short for bind")
+        State.bind_stack.extend(stack[-op.operand:])
+        stack[-op.operand:] = []
     elif op.type == OpType.UNBIND:
         for _ in range(op.operand):
             State.bind_stack.pop() 

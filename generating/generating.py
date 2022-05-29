@@ -58,9 +58,9 @@ syscall
 segment readable writeable
 mem: rb {Memory.global_offset}
 call_stack: rb 8192
-call_stack_ptr: rb 0
+call_stack_ptr: rb 8
 bind_stack: rb 8192
-bind_stack_ptr: rb 0
+bind_stack_ptr: rb 8
 """
     for index, i in enumerate(State.string_data):
         # Second expression is converting string to its bytes representation
@@ -158,18 +158,24 @@ addr_{op.operand.end}:
 """
     elif op.type == OpType.BIND:
         buf = comment
+        State.bind_stack_size += op.operand
         for i in range(op.operand):
             buf += \
-"""
+f"""
 pop rax
 mov rbx, [bind_stack_ptr]
+add rbx, {(op.operand - i - 1) * 8}
 mov [bind_stack+rbx], rax
-mov rax, [bind_stack_ptr]
-add rax, 8
-mov [bind_stack_ptr], rax
 """    
+        buf += \
+f"""
+mov rax, [bind_stack_ptr]
+add rax, {op.operand * 8}
+mov [bind_stack_ptr], rax
+"""
         return buf
     elif op.type == OpType.UNBIND:
+        State.bind_stack_size -= op.operand
         return comment + \
 f"""
 mov rbx, [bind_stack_ptr]
@@ -179,7 +185,9 @@ mov [bind_stack_ptr], rbx
     elif op.type == OpType.PUSH_BIND_STACK:
         return comment + \
 f"""
-mov rax, [bind_stack+{op.operand*8}]
+mov rbx, bind_stack-{(State.bind_stack_size - op.operand)*8}
+mov rcx, [bind_stack_ptr]
+mov rax, [rbx+rcx]
 push rax
 """
     elif op.type == OpType.CALL:
