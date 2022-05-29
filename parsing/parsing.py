@@ -36,29 +36,6 @@ END_TYPES = {
     BlockType.PROC : OpType.ENDPROC,
 }
 
-def check_str_escape(string: str) -> str:
-    res = ""
-    escaped = False
-    for i in string:
-        if escaped:
-            if i == "n": char = "\n"
-            elif i == "t": char = "\t"
-            elif i == "r": char = "\r"
-            elif i == "\"": char = "\""
-            elif i == "\\": char = "\\"
-            elif i == "0": char = "\0"
-            else: State.throw_error(f"unknown escape sequence: \\{i}")
-            escaped = False
-        elif i == "\\":
-            escaped = True
-            char = ""
-        else:
-            char = i
-
-        res += char
-
-    return res
-
 def lex_string(string: str) -> Op | None:
     start_string = False
     end_string = False
@@ -72,12 +49,23 @@ def lex_string(string: str) -> Op | None:
         State.is_null = True
         string = string[1:]
 
+    if start_string:
+        string = string[1:]
+        if State.is_string:
+            State.throw_error("string litteral was opened without closing previous one")
+        State.is_string = True
+        State.string_buffer = ""
+
     if end_string:  
         string = string[:-1]
         if not State.is_string:
             State.throw_error("string litteral was closed without opening")
 
-        State.string_data.append(bytes(check_str_escape(State.string_buffer + " " + string), "utf-8"))
+        res = State.string_buffer + " " + string
+        if start_string:
+            res = res[1:]
+        res = bytes(res, "utf-8").decode("unicode_escape")
+        State.string_data.append(bytes(res, "utf-8"))
         optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
         if State.is_null:
             State.string_data[-1] += bytes("\0", "utf-8")
@@ -85,13 +73,6 @@ def lex_string(string: str) -> Op | None:
         State.is_string = False
         State.is_null = False
         return Op(optype, len(State.string_data) - 1, State.loc)
-
-    if start_string:
-        string = string[1:]
-        if State.is_string:
-            State.throw_error("string litteral was opened without closing previous one")
-        State.is_string = True
-        State.string_buffer = ""
 
     if State.is_string:
         State.string_buffer += " " + string
