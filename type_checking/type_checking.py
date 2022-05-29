@@ -98,9 +98,13 @@ def type_check_op(op: Op, stack: list[type]):
 def type_check_operator(op: Op, stack: list[type]):
     assert len(Operator) == 21, "Unimplemented operator in type_check_operator"
 
-    if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.DIV, Operator.GT,
-                      Operator.LT, Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
+    if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
+                      Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
         check_stack(stack, [int, int])
+        stack.append(int)
+    elif op.operand == Operator.DIV:
+        check_stack(stack, [int, int])
+        stack.append(int)
         stack.append(int)
     elif op.operand == Operator.DUP:
         if len(stack) < 1:
