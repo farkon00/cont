@@ -40,7 +40,25 @@ class Proc:
     ip: int
     in_stack: list[type]
     out_stack: list[type]
-    block: Block
+    block: Block    
+
+
+class StateSaver:
+    def __init__(self):
+        self.block_stack = State.block_stack
+        self.route_stack = State.route_stack
+        self.tokens = State.tokens
+        self.tokens_queue = State.tokens_queue
+        self.loc = State.loc
+        self.filename = State.filename
+
+    def load(self):
+        State.block_stack = self.block_stack
+        State.route_stack = self.route_stack
+        State.tokens = self.tokens
+        State.tokens_queue = self.tokens_queue
+        State.loc = self.loc
+        State.filename = self.filename
 
 class State:
     block_stack: list[Block] = []

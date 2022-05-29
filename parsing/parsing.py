@@ -81,7 +81,7 @@ def lex_string(string: str) -> Op | None:
 
     return None
 
-def lex_token(token: str) -> Op | None:
+def lex_token(token: str) -> Op | None | list:
     assert len(OpType) == 14, "Unimplemented type in lex_token"
     assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
@@ -186,6 +186,14 @@ def lex_token(token: str) -> Op | None:
         State.block_stack.append(block)
 
         return op
+    elif token == "include":
+        name = next(State.tokens)
+        try:
+            with open(name[0], "r") as f:
+                ops = parse_to_ops(f.read())
+                return ops
+        except:
+            State.throw_error(f"include file not found: {name[0]}")
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
     elif token in State.procs:
@@ -211,12 +219,17 @@ def tokens(program: str):
             yield (token, f"{i+1}:{j+1}")
 
 def parse_to_ops(program: str) -> list:
+    saver = StateSaver()
     ops = []
     State.tokens = tokens(program)
     for token, loc in State.tokens:
         State.loc = loc
         op = lex_token(token)
+        if isinstance(op, list):
+            ops.extend(op)
+            continue
         if op is not None:
             op.loc = loc
             ops.append(op)
+    saver.load()
     return ops
