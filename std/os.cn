@@ -1,5 +1,5 @@
 proc read int ptr int -> int: 0 syscall3 end
 proc write int ptr int -> int: 1 syscall3 end
 
-proc open int int ptr -> int: 2 syscall3 end
-proc open2 int ptr -> int: 2 syscall2 end
+proc opensys int int ptr -> int: 2 syscall3 end
+proc opensys2 int ptr -> int: 2 syscall2 end

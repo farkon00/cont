@@ -6,5 +6,15 @@ proc +ptr int ptr -> ptr:      *int      + *ptr end
 proc -ptr int ptr -> ptr:      *int      - *ptr end
 
 proc puts int ptr: 1 write drop end 
-// ptr ptr int
 proc input ptr -> int ptr: dup 1024 swap 0 read swap end
+
+proc null_str_len ptr -> int:
+  0 swap
+  dup @8 0 !=
+  while
+    swap 1 +
+    dup rot dup rot ptr+ @8 0 !=
+  end drop
+end
+
+proc nstr_to_str ptr -> int ptr: dup null_str_len swap end
