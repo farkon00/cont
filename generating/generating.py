@@ -67,7 +67,7 @@ call_stack_ptr: rb 8
     return buf
 
 def generate_op_comment(op : Op):
-    buf = f";; {State.filename}:{State.loc} {op.type.name} "
+    buf = f";; {State.loc} {op.type.name} "
     if op.type == OpType.OPERATOR:
         buf += f"{op.operand.name}\n"
     elif isinstance(op.operand, Block):

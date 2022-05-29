@@ -222,11 +222,15 @@ def lex_token(token: str) -> Op | None | list:
             State.loc = name[1]
             State.throw_error(f"include file \"{name[0]}\" not found")
 
-        State.filename = os.path.splitext(path)[0]
+        orig_file = State.filename
+        State.filename = os.path.basename(os.path.splitext(path)[0])
 
         with open(path, "r") as f:
             ops = parse_to_ops(f.read())
-            return ops
+        
+        State.filename = orig_file
+
+        return ops
 
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
@@ -256,8 +260,9 @@ def tokens(program: str):
 
 def parse_to_ops(program: str) -> list:
     saver = StateSaver()
-    ops = []
     State.tokens = tokens(program)
+    ops = []
+
     for token, loc in State.tokens:
         State.loc = loc
         op = lex_token(token)
@@ -265,7 +270,10 @@ def parse_to_ops(program: str) -> list:
             ops.extend(op)
             continue
         if op is not None:
-            op.loc = loc
+            op.loc = f"{State.filename}:{loc}"
             ops.append(op)
+
     saver.load()
+
+
     return ops

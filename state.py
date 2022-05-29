@@ -46,19 +46,15 @@ class Proc:
 class StateSaver:
     def __init__(self):
         self.block_stack = State.block_stack
-        self.route_stack = State.route_stack
         self.tokens = State.tokens
         self.tokens_queue = State.tokens_queue
         self.loc = State.loc
-        self.filename = State.filename
 
     def load(self):
         State.block_stack = self.block_stack
-        State.route_stack = self.route_stack
         State.tokens = self.tokens
         State.tokens_queue = self.tokens_queue
         State.loc = self.loc
-        State.filename = self.filename
 
 class State:
     block_stack: list[Block] = []
@@ -95,6 +91,6 @@ class State:
 
     @staticmethod
     def throw_error(error: str, do_exit: bool = True):
-        sys.stderr.write(f"\033[1;31mError {State.filename}:{State.loc}:\033[0m {error}\n")
+        sys.stderr.write(f"\033[1;31mError {State.loc}:\033[0m {error}\n")
         if do_exit:
             exit(1)
