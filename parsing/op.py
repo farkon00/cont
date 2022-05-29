@@ -10,6 +10,7 @@ class OpType(Enum):
     ENDWHILE = auto()
     DEFPROC = auto()
     ENDPROC = auto()
+    CALL = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 

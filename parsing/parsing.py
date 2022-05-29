@@ -3,7 +3,7 @@ from state import *
 from type_checking.type_checking import ptr
 
 assert len(Operator) == 21, "Unimplemented operator in parsing.py"
-assert len(OpType) == 11, "Unimplemented type in parsing.py"
+assert len(OpType) == 12, "Unimplemented type in parsing.py"
 assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
@@ -37,7 +37,7 @@ END_TYPES = {
 }
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 11, "Unimplemented type in lex_token"
+    assert len(OpType) == 12, "Unimplemented type in lex_token"
     assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
     if token in OPERATORS:
@@ -130,6 +130,8 @@ def lex_token(token: str) -> Op | None:
         return Op(OpType.DEFPROC, name[0])
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
+    elif token in State.procs:
+        return Op(OpType.CALL, State.procs[token].ip)
     else:
         State.throw_error(f"Unknown token: {token}")
     return None
