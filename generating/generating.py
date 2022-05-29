@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 13, "Unimplemented type in generating.py"
+assert len(OpType) == 14, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -77,7 +77,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 13, "Unimplemented type in generate_op"
+    assert len(OpType) == 14, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -88,6 +88,8 @@ def generate_op(op: Op):
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_STR:
         return comment + f"push {len(State.string_data[op.operand])}\npush str_{op.operand}\n"
+    elif op.type == OpType.PUSH_NULL_STR:
+        return comment + f"push str_{op.operand}\n"
     elif op.type == OpType.OPERATOR:
         return comment + generate_operator(op)
     elif op.type == OpType.SYSCALL:

@@ -3,7 +3,7 @@ from state import *
 from type_checking.type_checking import ptr
 
 assert len(Operator) == 21, "Unimplemented operator in parsing.py"
-assert len(OpType) == 13, "Unimplemented type in parsing.py"
+assert len(OpType) == 14, "Unimplemented type in parsing.py"
 assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
 OPERATORS = {
@@ -67,14 +67,24 @@ def lex_string(string: str) -> Op | None:
         start_string = True
     if string.endswith("\""):
         end_string = True
+    if string.startswith("n\""):
+        start_string = True
+        State.is_null = True
+        string = string[1:]
 
     if end_string:  
         string = string[:-1]
         if not State.is_string:
             State.throw_error("string litteral was closed without opening")
+
         State.string_data.append(check_str_escape(State.string_buffer + string))
+        optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
+        if State.is_null:
+            State.string_data[-1] += "\0"
+
         State.is_string = False
-        return Op(OpType.PUSH_STR, len(State.string_data) - 1, State.loc)
+        State.is_null = False
+        return Op(optype, len(State.string_data) - 1, State.loc)
 
     if start_string:
         string = string[1:]
@@ -89,7 +99,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 13, "Unimplemented type in lex_token"
+    assert len(OpType) == 14, "Unimplemented type in lex_token"
     assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
 
     string = lex_string(token)

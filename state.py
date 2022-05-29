@@ -54,6 +54,7 @@ class State:
     ops_by_ips: list[Op] = []
 
     is_string = False
+    is_null = False
     string_buffer: str = ""
     string_data: list[str] = [] 
 
