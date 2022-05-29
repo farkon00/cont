@@ -36,23 +36,15 @@ END_TYPES = {
     BlockType.PROC : OpType.ENDPROC,
 }
 
-def lex_token(token: str) -> Op | None:
-    assert len(OpType) == 13, "Unimplemented type in lex_token"
-    assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
-
+def lex_string(string: str) -> Op | None:
     start_string = False
     end_string = False
-    if token.startswith("\""):
+
+    if string.startswith("\""):
         start_string = True
-    if token.endswith("\""):
+    if string.endswith("\""):
         end_string = True
-    string = token
-    if start_string:
-        string = string[1:]
-        if State.is_string:
-            State.throw_error("String litteral was opened without closing previous one")
-        State.is_string = True
-        State.string_buffer = ""
+
     if end_string:  
         string = string[:-1]
         if not State.is_string:
@@ -60,10 +52,27 @@ def lex_token(token: str) -> Op | None:
         State.string_data.append(State.string_buffer + string)
         State.is_string = False
         return Op(OpType.PUSH_STR, len(State.string_data) - 1, State.loc)
+
+    if start_string:
+        string = string[1:]
+        if State.is_string:
+            State.throw_error("String litteral was opened without closing previous one")
+        State.is_string = True
+        State.string_buffer = ""
+
     if State.is_string:
         State.string_buffer += string
-        return None
-    
+
+def lex_token(token: str) -> Op | None:
+    assert len(OpType) == 13, "Unimplemented type in lex_token"
+    assert len(BlockType) == 4, "Unimplemented block type in parsing.py"
+
+    string = lex_string(token)
+    if string:
+        return string
+    if State.is_string:
+        return
+
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
     elif token.startswith("syscall") and "0" <= token[7] <= "6" and len(token) == 8:
