@@ -71,6 +71,7 @@ def lex_token(token: str) -> Op | None:
 
         op = Op(OpType.ELSE, new_block)
         block.end = State.get_new_ip(op)
+        new_block.start = block.end
         return op
     elif token == "while":
         block = Block(BlockType.WHILE, -1)

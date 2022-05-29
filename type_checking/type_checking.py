@@ -61,7 +61,7 @@ def type_check_op(op: Op, stack: list[type]):
         if route_stack[0] == "if-end":
             check_route_stack(stack, route_stack[1])
         else:
-            check_route_stack(route_stack[1], stack, "in different routes of if-else") 
+            check_route_stack(stack, route_stack[1], "in different routes of if-else") 
     elif op.type == OpType.WHILE:
         check_stack(stack, [int])
         State.route_stack.append(("while", stack.copy()))
@@ -80,7 +80,7 @@ def type_check_op(op: Op, stack: list[type]):
         stack.clear()
         stack.extend(State.route_stack.pop()[1])
     elif op.type == OpType.CALL:
-        check_stack(stack, op.operand.in_stack)
+        check_stack(stack, op.operand.in_stack.copy())
         stack.extend(op.operand.out_stack)
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [object] * (op.operand + 1))
