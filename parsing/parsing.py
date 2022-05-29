@@ -68,7 +68,7 @@ def lex_string(string: str) -> Op | None:
         res = State.string_buffer + " " + string
         if start_string:
             res = res[1:]
-        res = bytes(res, "utf-8").decode("unicode_escape")
+        res = bytes(res, "raw_unicode_escape").decode("unicode_escape")
         State.string_data.append(bytes(res, "utf-8"))
         optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
         if State.is_null:
