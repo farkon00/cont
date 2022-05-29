@@ -36,6 +36,28 @@ END_TYPES = {
     BlockType.PROC : OpType.ENDPROC,
 }
 
+def check_str_escape(string: str) -> str:
+    res = ""
+    escaped = False
+    for i in string:
+        if escaped:
+            if i == "n": char = "\n"
+            elif i == "t": char = "\t"
+            elif i == "r": char = "\r"
+            elif i == "\"": char = "\""
+            elif i == "\\": char = "\\"
+            else: State.throw_error(f"unknown escape sequence: \\{i}")
+            escaped = False
+        elif i == "\\":
+            escaped = True
+            char = ""
+        else:
+            char = i
+
+        res += char
+
+    return res
+
 def lex_string(string: str) -> Op | None:
     start_string = False
     end_string = False
@@ -48,15 +70,15 @@ def lex_string(string: str) -> Op | None:
     if end_string:  
         string = string[:-1]
         if not State.is_string:
-            State.throw_error("String litteral was closed without opening")
-        State.string_data.append(State.string_buffer + string)
+            State.throw_error("string litteral was closed without opening")
+        State.string_data.append(check_str_escape(State.string_buffer + string))
         State.is_string = False
         return Op(OpType.PUSH_STR, len(State.string_data) - 1, State.loc)
 
     if start_string:
         string = string[1:]
         if State.is_string:
-            State.throw_error("String litteral was opened without closing previous one")
+            State.throw_error("string litteral was opened without closing previous one")
         State.is_string = True
         State.string_buffer = ""
 
@@ -175,7 +197,7 @@ def lex_token(token: str) -> Op | None:
     elif token in State.procs:
         return Op(OpType.CALL, State.procs[token])
     else:
-        State.throw_error(f"Unknown token: {token}")
+        State.throw_error(f"unknown token: {token}")
     return None
 
 def delete_comments(program: str) -> str:

@@ -10,26 +10,26 @@ class ptr: pass
 
 def check_stack(stack: list[type], expected: list[type]):
     if len(stack) < len(expected):
-        State.throw_error("Stack is too short")
+        State.throw_error("stack is too short")
     for _ in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
 
         if got != exp and object not in (exp, got):
-            State.throw_error(f"Expected type {type_to_str(exp)}, got {type_to_str(got)}")
+            State.throw_error(f"expected type {type_to_str(exp)}, got {type_to_str(got)}")
 
 def check_route_stack(stack1: list[type], stack2: list[type], error: str = "in different routes of if-end"):
     if len(stack1) > len(stack2):
-        State.throw_error(f"Error: Stack has extra elements {error}", False)
+        State.throw_error(f"stack has extra elements {error}", False)
         print(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}")
         exit(1)
     if len(stack1) < len(stack2):
-        State.throw_error(f"Error: Stack has not enought elements {error}", False)
+        State.throw_error(f"stack has not enought elements {error}", False)
         print(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}")
         exit(1)
     for i in range(len(stack1)):
         if stack1[i] != stack2[i] and object not in (stack1[i], stack2[i]):
-            State.throw_error(f"Different types {error}", False)
+            State.throw_error(f"different types {error}", False)
             print(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}")
             exit(1)
 
@@ -100,18 +100,18 @@ def type_check_operator(op: Op, stack: list[type]):
         stack.append(int)
     elif op.operand == Operator.DUP:
         if len(stack) < 1:
-            State.throw_error("Stack is too short")
+            State.throw_error("stack is too short")
         stack.append(stack[-1])
     elif op.operand == Operator.DROP:
         check_stack(stack, [object])
     elif op.operand == Operator.SWAP:
         if len(stack) < 2:
-            State.throw_error("Stack is too short")
+            State.throw_error("stack is too short")
         stack.append(stack.pop(0))
         stack.append(stack.pop(1))
     elif op.operand == Operator.ROT:
         if len(stack) < 3:
-            State.throw_error("Stack is too short")
+            State.throw_error("stack is too short")
         stack.append(stack.pop())
         stack.append(stack.pop())
         stack.append(stack.pop())
