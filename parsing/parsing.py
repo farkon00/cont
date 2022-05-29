@@ -1,5 +1,7 @@
 import os
 
+from compile_eval.compile_eval import evaluate_block
+
 from .op import *
 from state import *
 from type_checking.type_checking import ptr
@@ -95,14 +97,18 @@ def lex_token(token: str) -> Op | None | list:
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
+
     elif token.startswith("syscall") and "0" <= token[7] <= "6" and len(token) == 8:
         return Op(OpType.SYSCALL, int(token[7]))
+
     elif token.isnumeric():
         return Op(OpType.PUSH_INT, int(token) % 2**64)
+
     elif token == "if":
         block = Block(BlockType.IF, -1)
         State.block_stack.append(block)
         return Op(OpType.IF, block)
+
     elif token == "end":
         if len(State.block_stack) <= 0:
             State.throw_error("block for end not found")
@@ -110,6 +116,7 @@ def lex_token(token: str) -> Op | None | list:
         op = Op(END_TYPES[block.type], block)
         block.end = State.get_new_ip(op)
         return op
+
     elif token == "else":
         if len(State.block_stack) <= 0:
             State.throw_error("if for else not found")
@@ -126,12 +133,14 @@ def lex_token(token: str) -> Op | None | list:
         block.end = State.get_new_ip(op)
         new_block.start = block.end
         return op
+
     elif token == "while":
         block = Block(BlockType.WHILE, -1)
         op = Op(OpType.WHILE, block)
         block.start = State.get_new_ip(op)
         State.block_stack.append(block)
         return op 
+
     elif token == "memory":
         name = next(State.tokens)
         size = next(State.tokens)
@@ -143,6 +152,16 @@ def lex_token(token: str) -> Op | None | list:
             State.throw_error(f"name for memory \"{name[0]}\" is already taken")
         Memory.new_memory(name[0], int(size[0]))
         return None
+
+    elif token == "memo":
+        name = next(State.tokens)
+        if name[0] in State.procs or name[0] in State.memories:
+            State.loc = name[1]
+            State.throw_error(f"name for memory \"{name[0]}\" is already taken")
+        size = evaluate_block(State.loc)
+        Memory.new_memory(name[0], size)
+        return None
+        
     elif token == "proc":
         name = next(State.tokens)
         in_types: list[type] = []
@@ -188,6 +207,7 @@ def lex_token(token: str) -> Op | None | list:
         State.block_stack.append(block)
 
         return op
+
     elif token == "include":
         name = next(State.tokens)
 
@@ -207,10 +227,13 @@ def lex_token(token: str) -> Op | None | list:
         with open(path, "r") as f:
             ops = parse_to_ops(f.read())
             return ops
+
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
+
     elif token in State.procs:
         return Op(OpType.CALL, State.procs[token])
+
     else:
         State.throw_error(f"unknown token: {token}")
     return None
