@@ -4,6 +4,7 @@ proc ptr+ ptr int -> ptr: swap *int      + *ptr end
 proc ptr- ptr int -> ptr: swap *int swap - *ptr end
 proc +ptr int ptr -> ptr:      *int      + *ptr end
 proc -ptr int ptr -> ptr:      *int      - *ptr end
+proc ptr== ptr ptr -> int: *int swap *int == end
 
 proc sizeof(int) -> int: 8 end
 proc @int ptr -> int: @ end
