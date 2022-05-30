@@ -1,0 +1,92 @@
+include std.cn
+
+memory file 16
+memory file_buf 8016
+memory tests 1600
+
+memory current_test 8
+memory category_index 8
+memory code 2048
+memory stdout 2048
+memory stdin 2048
+memory stderr 2048
+
+proc add_test int ptr:
+  tests current_test @ ptr+ !str
+  current_test sizeof(str) incby
+end
+
+"tests/arithmetics\0" add_test
+
+proc get_curr_test -> int ptr int:
+  // ptr int bool 
+  tests current_test @ ptr+ @str
+  current_test 16 incby
+
+  swap dup 0 !=
+  bind ptr int bool:
+    int ptr bool
+  end
+end
+
+proc next_category ptr -> ptr:
+  0 category_index !
+  dup code ptr== if stdout
+  else dup stdout ptr== if stdin
+  else dup stdin ptr== if stderr
+  else 
+    "Too many category changes with :\\n\n" puts
+    "Exiting, fix last test\n" puts
+    1 exit stderr
+  end end end
+  swap drop
+end
+
+0 current_test !
+1 while
+  get_curr_test if
+    bind pathlen path:
+      0 pathlen path open2 dup print
+    end
+    file_buf
+    8000 rot // Takes fd
+    read dup print
+    file_buf file !str
+
+    file @str
+    bind len data:
+      0 code
+      len 0 >
+      while 
+        bind index out:
+          2 data index ptr+
+          "\n:"
+          streq
+          if
+            index 3 +
+            out next_category
+          else
+            data index            ptr+ @8
+            out  category_index @ ptr+ !8
+            category_index inc
+            index 1 +
+            out
+          end
+          index len <
+        end
+      end
+    end drop drop
+
+    1 // Continue loop
+  else
+    drop drop 0 // To stop loop
+  end
+end 
+//"code\n" puts
+code nstr_to_str puts
+//"out\n" puts
+stdout nstr_to_str puts
+//"in\n" puts
+stdin nstr_to_str puts
+//"err\n" puts
+stderr nstr_to_str puts
