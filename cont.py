@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import os
 
@@ -12,7 +13,10 @@ def main():
     is64 = False
     unsafe = False
     program = None
-    for i in sys.argv[1:]:
+
+    args = (i for i in sys.argv[1:])
+
+    for i in args:
         if i.startswith("--"):
             if i == "--help":
                 print("Usage: cont.py <file> [options]")
@@ -22,6 +26,9 @@ def main():
                 print("    -r64          Automaticaly run the program and use fasm.x64")
                 print("    -x64          Use fasm.x64 for compiling fasm")
                 print("    -unsafe       Dont perform type checking")
+                print("     -o <path>    Moves stdout of program to <path>")
+                print("     -i <path>    Moves stdin of program to <path>")
+                print("     -e <path>    Moves stderr of program to <path>")
                 exit(0)
             else:
                 print(f"Unknown option: {i}")
@@ -36,6 +43,24 @@ def main():
                 is64 = True
             elif i == "-unsafe":
                 unsafe = True
+            elif i == "-o":
+                try:
+                    sys.stdout = open(next(args), "w")
+                except GeneratorExit:
+                    print("Error: No file specified for -o")
+                    exit(1)
+            elif i == "-i":
+                try:
+                    sys.stdin = open(next(args), "r")
+                except GeneratorExit:
+                    print("Error: No file specified for -i")
+                    exit(1)
+            elif i == "-e":
+                try:
+                    sys.stderr = open(next(args), "w")
+                except GeneratorExit:
+                    print("Error: No file specified for -e")
+                    exit(1)
             else:
                 print(f"Unknown option: {i}")
                 exit(1)
@@ -62,12 +87,12 @@ def main():
         f.write(generate_fasm(ops))
 
     if is64:
-        os.system(f"fasm.x64 {file_name}.asm")
+        subprocess.run(["fasm.x64", f"{file_name}.asm"], stdin=sys.stdin, stderr=sys.stderr)
     else:
-        os.system(f"fasm {file_name}.asm")
+        subprocess.run(["fasm", f"{file_name}.asm"], stdin=sys.stdin, stderr=sys.stderr)
 
     if run:
-        os.system(f"./{file_name}")
+        subprocess.run([f"./{file_name}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
 
 if __name__ == "__main__":
     main()

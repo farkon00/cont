@@ -17,22 +17,22 @@ def check_stack(stack: list[type], expected: list[type]):
 
         if got != exp and object not in (exp, got):
             State.throw_error(f"unexpected argument type", False)
-            print(f"\033[1;34mArgument {i+1}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}")
+            sys.stderr.write(f"\033[1;34mArgument {i+1}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n")
             exit(1)
 
 def check_route_stack(stack1: list[type], stack2: list[type], error: str = "in different routes of if-end"):
     if len(stack1) > len(stack2):
         State.throw_error(f"stack has extra elements {error}", False)
-        print(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}")
+        sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}\n")
         exit(1)
     if len(stack1) < len(stack2):
         State.throw_error(f"stack has not enought elements {error}", False)
-        print(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}")
+        sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n")
         exit(1)
     for i in range(len(stack1)):
         if stack1[i] != stack2[i] and object not in (stack1[i], stack2[i]):
             State.throw_error(f"different types {error}", False)
-            print(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}")
+            sys.stderr.write(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n")
             exit(1)
 
 def type_check(ops: list[Op]):
