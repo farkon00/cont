@@ -12,6 +12,40 @@ proc sizeof(ptr) -> int: 8 end
 proc @ptr ptr -> ptr: @ *ptr end
 proc !ptr ptr ptr: swap *int swap ! end
 
+proc inc ptr:
+  dup @int 1 + swap ! 
+end
+proc dec ptr:
+  dup @int 1 - swap ! 
+end
+proc inc8 ptr:
+  dup @8 1 + swap !8 
+end
+proc dec8 ptr:
+  dup @8 1 - swap !8 
+end
+
+proc incby ptr int:
+  bind ptr by:
+    ptr @int by + ptr !
+  end
+end
+proc decby ptr int:
+  bind ptr by:
+    ptr @int by - ptr !
+  end
+end
+proc inc8by ptr int:
+  bind ptr by:
+    ptr @8 by + ptr !8
+  end
+end
+proc dec8by ptr int:
+  bind ptr by:
+    ptr @8 by - ptr !8
+  end
+end
+
 proc sizeof(str) -> int: 16 end
 
 proc @str.len ptr -> int: @ end
