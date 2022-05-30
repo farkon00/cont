@@ -46,6 +46,12 @@ proc dec8by ptr int:
   end
 end
 
+proc boolify int -> int: 0 > end
+
+proc and int int -> int: boolify swap boolify + 1 > end
+proc or int int -> int: boolify swap boolify + 0 > end
+proc not int -> int: boolify 1 - boolify end
+
 proc sizeof(str) -> int: 16 end
 
 proc @str.len ptr -> int: @ end
@@ -87,4 +93,30 @@ proc open2 int int ptr -> int:
 end
 proc open int int int ptr -> int:
   swap drop opensys
+end
+
+proc streq int ptr int ptr -> int:
+  bind len data len2 data2:
+    len2 len == if
+      0 1
+      len 0 >
+      while
+        drop
+        bind curlen:
+          curlen
+          data curlen ptr+ @8
+          data2 curlen ptr+ @8
+          ==
+        end
+        bind curlen res:
+          curlen 1 + res
+          curlen 1 + len <
+          res and
+        end
+      end
+      swap drop
+    else
+      0
+    end 
+  end
 end
