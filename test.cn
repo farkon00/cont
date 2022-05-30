@@ -46,11 +46,11 @@ end
 1 while
   get_curr_test if
     bind pathlen path:
-      0 pathlen path open2 dup print
+      0 pathlen path open2
     end
     file_buf
     8000 rot // Takes fd
-    read dup print
+    read
     file_buf file !str
 
     file @str
@@ -77,6 +77,22 @@ end
       end
     end drop drop
 
+    stdin 1 ptr+ dup null_str_len 1 - swap // len stdin
+    1 "stdin.txt" open2 // fd
+    write
+    2048 > if
+      "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+      1 exit
+    end
+
+    code dup null_str_len 1 - swap // len stdin
+    1 "code.txt" open2 // fd
+    write
+    2048 > if
+      "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+      1 exit
+    end
+    
     1 // Continue loop
   else
     drop drop 0 // To stop loop

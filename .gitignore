@@ -1,5 +1,7 @@
 *.asm
 *.fasm
+code.txt
+stdin.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
