@@ -4,4 +4,4 @@ proc write int ptr int -> int: 1 syscall3 end
 proc opensys int int ptr -> int: 2 syscall3 end
 proc opensys2 int ptr -> int: 2 syscall2 end
 
-proc exit int: 60 syscall1 end 
+proc exit int: 60 syscall1 drop end 
