@@ -5,6 +5,19 @@ proc ptr- ptr int -> ptr: swap *int swap - *ptr end
 proc +ptr int ptr -> ptr:      *int      + *ptr end
 proc -ptr int ptr -> ptr:      *int      - *ptr end
 
+proc sizeof(int) -> int: 8 end
+proc @int ptr -> int: @ end
+proc sizeof(ptr) -> int: 8 end
+proc @ptr ptr -> ptr: @ *ptr end
+
+proc sizeof(str) -> int: 16 end
+proc @str.len ptr -> int: @ end
+proc @str.data ptr -> ptr: 8 ptr+ @ptr end
+proc @str ptr -> int ptr: 
+  dup @str.len 
+  swap @str.data 
+end
+
 proc 2duppi ptr int -> ptr int ptr int:
   bind a b:
     a b a b
