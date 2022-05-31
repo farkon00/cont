@@ -1,3 +1,7 @@
+// WIP
+// Probably wont work, because its not finished yet
+// If you want to help me fix it, go ahead, submit pr
+
 include std.cn
 
 memory file 16
@@ -103,7 +107,7 @@ n"-r"                 build_argv
             "\n:"
             streq
             if
-              index 3 +
+              index 2 +
               out next_category
             else
               data index            ptr+ @8
