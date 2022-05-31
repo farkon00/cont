@@ -96,6 +96,21 @@ proc open int int int ptr -> int:
   swap drop opensys
 end
 
+proc clear_buf int ptr:
+  bind len ptr:
+    0
+    len 0 >
+    while
+      bind index: 
+        0 ptr index ptr+ !8
+        index 1 +
+      end
+      dup len < 
+    end
+    drop
+  end
+end
+
 proc streq int ptr int ptr -> int:
   bind len data len2 data2:
     len2 len == if

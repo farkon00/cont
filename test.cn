@@ -2,9 +2,11 @@ include std.cn
 
 memory file 16
 memory file_buf 8016
+memory compare_file 2048
 memory tests 1600
-memo args 11 8 * end 
+memo args 11 8 * end
 memory args_index 8
+memory wstatus 8
 
 memory current_test 8
 memory category_index 8
@@ -41,12 +43,32 @@ proc next_category ptr -> ptr:
   dup code ptr== if stdout
   else dup stdout ptr== if stdin
   else dup stdin ptr== if stderr
-  else 
-    "Too many category changes with :\\n\n" puts
-    "Exiting, fix last test\n" puts
-    1 exit stderr
+  else stderr
   end end end
   swap drop
+end
+
+proc compare int ptr ptr int ptr -> int:
+  bind show res exp testlen test:
+    res nstr_to_str
+    exp nstr_to_str swap 2 - swap 1 ptr+
+    streq
+    if
+      show if
+        "\033[1;32mTest passed:⠀" puts
+        testlen test puts
+        "\n" puts
+      end
+      1
+    else
+      "\033[1;31mTest failed:⠀" puts
+      testlen test puts
+      "\033[0m\n===========================\n" puts
+      res nstr_to_str puts
+      "\n===========================\n" puts
+      0
+    end
+  end
 end
 
 n"python3"            build_argv
@@ -65,82 +87,100 @@ n"-r"                 build_argv
   get_curr_test if
     bind pathlen path:
       0 pathlen path open2
-    end
-    file_buf
-    8000 rot // Takes fd
-    read
-    file_buf file !str
+      
+      file_buf
+      8000 rot // Takes fd
+      read
+      file_buf file !str
 
-    file @str
-    bind len data:
-      0 code
-      len 0 >
-      while 
-        bind index out:
-          2 data index ptr+
-          "\n:"
-          streq
-          if
-            index 3 +
-            out next_category
-          else
-            data index            ptr+ @8
-            out  category_index @ ptr+ !8
-            category_index inc
-            index 1 +
-            out
+      file @str
+      bind len data:
+        0 code
+        len 0 >
+        while 
+          bind index out:
+            2 data index ptr+
+            "\n:"
+            streq
+            if
+              index 3 +
+              out next_category
+            else
+              data index            ptr+ @8
+              out  category_index @ ptr+ !8
+              category_index inc
+              index 1 +
+              out
+            end
+            index len <
           end
-          index len <
         end
-      end
-    end drop drop
+      end drop drop
 
-    200 65 n"stdin.txt" opensys
-    bind fd:
-      stdin 1 ptr+ dup null_str_len 1 - swap // len stdin 
-      fd write
-      2048 > if
-        "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
-        1 exit
+      200 65 n"stdin.txt" opensys
+      bind fd:
+        stdin 1 ptr+ dup null_str_len 1 - swap // len stdin 
+        fd write
+        2048 > if
+          "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+          1 exit
+        end
+        fd close drop
       end
-      fd close drop
-    end
 
-    200 65 n"code.txt" opensys
-    bind fd:
-      code dup null_str_len 1 - swap // len stdin
-      fd write
-      2048 > if
-        "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
-        1 exit
+      200 65 n"code.txt" opensys
+      bind fd:
+        code dup null_str_len 1 - swap // len stdin
+        fd write
+        2048 > if
+          "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+          1 exit
+        end
+        fd close drop
       end
-      fd close drop
-    end
 
-    fork
-    bind pid:
-      pid 0 == if
-      else pid 0 > if
-        0 *ptr
-        args
-        n"/usr/bin/python"
-        execve print
-      else
-        "Fork failed\n" puts
-        1 exit
-      end end 
+      fork
+      bind pid:
+        pid 0 == if
+          0 *ptr
+          args
+          n"/usr/bin/python3"
+          execve drop
+        else pid 0 > if
+          0 *ptr
+          0
+          wstatus
+          18446744073709551615 // -1
+          wait4 drop
+
+          2048 compare_file clear_buf
+          0 n"stdout.txt" opensys2
+          bind fd:
+            2048
+            compare_file
+            fd read drop
+            fd close drop
+          end
+          0 compare_file stdout pathlen path compare // Will go to line with second compare at the end of stack
+
+          2048 compare_file clear_buf
+          0 n"stderr.txt" opensys2
+          bind fd:
+            2048
+            compare_file
+            fd read drop
+            fd close drop
+          end
+          compare_file stderr pathlen path compare drop
+        else
+          "Fork failed\n" puts
+          1 exit
+        end end 
+      end
     end
 
     1 // Continue loop
   else
     drop drop 0 // To stop loop
   end
-end 
-//"code\n" puts
-//code nstr_to_str puts
-//"out\n" puts
-//stdout nstr_to_str puts
-//"in\n" puts
-//stdin nstr_to_str puts
-//"err\n" puts
-//stderr nstr_to_str puts
+end

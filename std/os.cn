@@ -7,5 +7,6 @@ proc close int -> int: 3 syscall1 end
 
 proc fork -> int: 57 syscall0 end  
 proc execve ptr ptr ptr -> int: 59 syscall3 end
+proc wait4 ptr int ptr int -> int: 61 syscall4 end
 
 proc exit int: 60 syscall1 drop end 

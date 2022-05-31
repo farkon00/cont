@@ -3,10 +3,8 @@ include std.cn
 memory buf 1024
 buf input puts
 :
-stdout  stdout
+stdin1
 :
-stdin
-stdin2
+stdin1
 :
-stderr
-std NO!
+ 
