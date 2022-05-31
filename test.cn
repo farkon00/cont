@@ -3,6 +3,8 @@ include std.cn
 memory file 16
 memory file_buf 8016
 memory tests 1600
+memo args 11 8 * end 
+memory args_index 8
 
 memory current_test 8
 memory category_index 8
@@ -17,6 +19,11 @@ proc add_test int ptr:
 end
 
 "tests/arithmetics\0" add_test
+
+proc build_argv ptr:
+  args args_index @ ptr+ !ptr
+  args_index 8 incby
+end
 
 proc get_curr_test -> int ptr int:
   // ptr int bool 
@@ -41,6 +48,17 @@ proc next_category ptr -> ptr:
   end end end
   swap drop
 end
+
+n"python3"            build_argv
+n"cont.py"            build_argv
+n"code.txt"           build_argv
+n"-o"                 build_argv
+n"stdout.txt"         build_argv
+n"-i"                 build_argv
+n"stdin.txt"          build_argv
+n"-e"                 build_argv
+n"stderr.txt"         build_argv
+n"-r"                 build_argv
 
 0 current_test !
 1 while
@@ -77,32 +95,52 @@ end
       end
     end drop drop
 
-    stdin 1 ptr+ dup null_str_len 1 - swap // len stdin
-    1 "stdin.txt" open2 // fd
-    write
-    2048 > if
-      "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
-      1 exit
+    200 65 n"stdin.txt" opensys
+    bind fd:
+      stdin 1 ptr+ dup null_str_len 1 - swap // len stdin 
+      fd write
+      2048 > if
+        "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+        1 exit
+      end
+      fd close drop
     end
 
-    code dup null_str_len 1 - swap // len stdin
-    1 "code.txt" open2 // fd
-    write
-    2048 > if
-      "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
-      1 exit
+    200 65 n"code.txt" opensys
+    bind fd:
+      code dup null_str_len 1 - swap // len stdin
+      fd write
+      2048 > if
+        "Error while writing file, may be stdin.txt and code.txt arent created in current directory\n" puts
+        1 exit
+      end
+      fd close drop
     end
-    
+
+    fork
+    bind pid:
+      pid 0 == if
+      else pid 0 > if
+        0 *ptr
+        args
+        n"/usr/bin/python"
+        execve print
+      else
+        "Fork failed\n" puts
+        1 exit
+      end end 
+    end
+
     1 // Continue loop
   else
     drop drop 0 // To stop loop
   end
 end 
 //"code\n" puts
-code nstr_to_str puts
+//code nstr_to_str puts
 //"out\n" puts
-stdout nstr_to_str puts
+//stdout nstr_to_str puts
 //"in\n" puts
-stdin nstr_to_str puts
+//stdin nstr_to_str puts
 //"err\n" puts
-stderr nstr_to_str puts
+//stderr nstr_to_str puts

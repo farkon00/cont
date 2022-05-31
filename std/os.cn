@@ -3,7 +3,9 @@ proc write int ptr int -> int: 1 syscall3 end
 
 proc opensys int int ptr -> int: 2 syscall3 end
 proc opensys2 int ptr -> int: 2 syscall2 end
+proc close int -> int: 3 syscall1 end
 
+proc fork -> int: 57 syscall0 end  
 proc execve ptr ptr ptr -> int: 59 syscall3 end
 
 proc exit int: 60 syscall1 drop end 
