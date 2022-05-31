@@ -79,6 +79,11 @@ proc 2duppi ptr int -> ptr int ptr int:
     a b a b
   end
 end
+proc 2dupip int ptr -> int ptr int ptr:
+  bind a b:
+    a b a b
+  end
+end
 
 proc puts int ptr: STDOUT write drop end 
 proc input ptr -> int ptr: dup 1024 swap STDIN read swap end
