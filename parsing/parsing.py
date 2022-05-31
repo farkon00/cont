@@ -153,7 +153,7 @@ def lex_token(token: str) -> Op | None | list:
         if not size[0].isnumeric():
             State.loc = size[1]
             State.throw_error("memory size is not a number")
-        if name[0] in State.procs or name[0] in State.memories:
+        if name[0] in State.procs or name[0] in State.memories or name[0] in State.constants:
             State.loc = name[1]
             State.throw_error(f"name for memory \"{name[0]}\" is already taken")
         Memory.new_memory(name[0], int(size[0]))
@@ -161,11 +161,17 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "memo":
         name = next(State.tokens)
-        if name[0] in State.procs or name[0] in State.memories:
+        if name[0] in State.procs or name[0] in State.memories or name[0] in State.constants:
             State.loc = name[1]
             State.throw_error(f"name for memory \"{name[0]}\" is already taken")
         size = evaluate_block(State.loc)
         Memory.new_memory(name[0], size)
+        return None
+
+    elif token == "const":
+        name = next(State.tokens)
+        State.check_name(name)
+        State.constants[name[0]] = evaluate_block(State.loc)
         return None
     
     elif token == "bind":
@@ -280,6 +286,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token in State.bind_stack:
         return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
+
+    elif token in State.constants:
+        return Op(OpType.PUSH_INT, State.constants[token])
 
     else:
         State.throw_error(f"unknown token: {token}")

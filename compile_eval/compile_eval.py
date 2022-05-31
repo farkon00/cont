@@ -25,6 +25,7 @@ def evaluate_token(token: str, stack: list):
     elif token == "==": stack.append(int(stack.pop(-2) == stack.pop()))
     elif token == "!=": stack.append(int(stack.pop(-2) != stack.pop()))
     elif token in State.memories: stack.append(State.memories[token])
+    elif token in State.constants: stack.append(State.constants[token])
     else:
         State.throw_error(f"unknown or unavailiable while compile time evaluation token {token}")
 

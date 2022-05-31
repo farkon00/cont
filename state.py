@@ -66,6 +66,7 @@ class State:
 
     memories: dict[str, Memory] = {}
     procs: dict[str, Proc] = {}
+    constants: dict[str, int] = {}
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
@@ -87,6 +88,12 @@ class State:
         State.current_ip += 1
         State.ops_by_ips.append(op)
         return State.current_ip
+
+    @staticmethod
+    def check_name(token: tuple[str, str], error="procedure"):
+        if token[0] in State.procs or token[0] in State.memories or token[0] in State.constants:
+            State.loc = token[1]
+            State.throw_error(f"name for {error} \"{token[0]}\" is already taken")
 
     @staticmethod
     def get_proc_by_block(block: Block):
