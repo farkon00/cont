@@ -121,6 +121,22 @@ proc clear_buf int ptr:
   end
 end
 
+proc cpy_buf int ptr ptr:
+  bind size buf des:
+    0
+    size 0 >
+    while
+      bind index: 
+        buf index ptr+ @8
+        des index ptr+ !8
+        index 1 +
+      end
+      dup size < 
+    end
+    drop
+  end
+end 
+
 proc streq int ptr int ptr -> int:
   bind len data len2 data2:
     len2 len == if
