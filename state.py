@@ -93,6 +93,14 @@ class State:
 
     dir: str = ""
 
+    UNAVAILABLE_NAMES: list[str] = [
+        "if", "else", "end", "while", "proc", "bind", 
+        *["syscall" + str(i) for i in range(7)], 
+        "+", "-", "*", "div", "dup", "drop", "swap", "rot",
+        "<", ">", "<=", ">=", "==", "!=", "!", "!8", "@", 
+        "@8", "*int", "*ptr", "print"
+    ]
+
     @staticmethod
     def get_new_ip(op: Op):
         State.current_ip += 1
@@ -104,6 +112,9 @@ class State:
         if token[0] in State.procs or token[0] in State.memories or token[0] in State.constants:
             State.loc = token[1]
             State.throw_error(f"name for {error} \"{token[0]}\" is already taken")
+        if token[0] in State.UNAVAILABLE_NAMES:
+            State.loc = token[1]
+            State.throw_error(f"name for {error} \"{token[0]}\" is unavailable")
 
     @staticmethod
     def get_proc_by_block(block: Block):
