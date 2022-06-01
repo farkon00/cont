@@ -55,9 +55,10 @@ end
 
 proc boolify int -> int: 0 > end
 
-proc and int int -> int: boolify swap boolify + 1 > end
-proc or int int -> int: boolify swap boolify + 0 > end
-proc not int -> int: boolify 1 - boolify end
+proc and int int -> int: boolify swap boolify + 1 >  end
+proc or int int -> int:  boolify swap boolify + 0 >  end
+proc not int -> int:     boolify 1 -  boolify        end
+proc xor int int -> int: boolify swap boolify + 1 == end
 
 const str.len 0 end
 const str.data sizeof(int) end // Offset is 1 integer
