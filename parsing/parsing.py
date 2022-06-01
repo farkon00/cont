@@ -5,7 +5,6 @@ from parsing.parse_type import parse_type
 
 from .op import *
 from state import *
-from type_checking.type_checking import voidf_ptr
 
 OPERATORS = {
     "+" : Operator.ADD,
