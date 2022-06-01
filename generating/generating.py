@@ -57,7 +57,7 @@ mov rdi, 0
 syscall
 segment readable writeable
 mem: rb {Memory.global_offset}
-call_stack: rb 8192
+call_stack: rb 65536
 call_stack_ptr: rb 8
 bind_stack: rb 8192
 bind_stack_ptr: rb 8
