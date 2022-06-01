@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 17, "Unimplemented type in generating.py"
+assert len(OpType) == 18, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -79,7 +79,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 17, "Unimplemented type in generate_op"
+    assert len(OpType) == 18, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -88,6 +88,14 @@ def generate_op(op: Op):
         return comment + f"push {op.operand}\n"
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
+    elif op.type == OpType.PUSH_LOCAL_MEM:
+        return comment + \
+f"""
+mov rbx, [call_stack_ptr]
+add rbx, call_stack
+sub rbx, {State.current_proc.memory_size + op.operand + 8}\n
+push rbx
+"""
     elif op.type == OpType.PUSH_STR:
         return comment + f"push {len(State.string_data[op.operand])}\npush str_{op.operand}\n"
     elif op.type == OpType.PUSH_NULL_STR:
@@ -133,19 +141,20 @@ jmp addr_{op.operand.start}
 addr_{op.operand.end}:
 """
     elif op.type == OpType.DEFPROC:
+        State.current_proc = State.procs[op.operand]
         return comment + \
 f"""
-jmp addr_{State.procs[op.operand].block.end}
-addr_{State.procs[op.operand].ip}:
+jmp addr_{State.current_proc.block.end}
+addr_{State.current_proc.ip}:
 pop rax
 mov rbx, [call_stack_ptr]
+add rbx, {State.current_proc.memory_size}
 mov [call_stack+rbx], rax
-mov rax, [call_stack_ptr]
-add rax, 8
-mov [call_stack_ptr], rax
+add rbx, 8
+mov [call_stack_ptr], rbx
 """
     elif op.type == OpType.ENDPROC:
-        return comment + \
+        asm = comment + \
 f"""
 mov rbx, [call_stack_ptr]
 sub rbx, 8
@@ -153,9 +162,14 @@ mov [call_stack_ptr], rbx
 
 mov rax, [call_stack+rbx]
 push rax
+sub rbx, {State.current_proc.memory_size}
+mov [call_stack_ptr], rbx
 ret
 addr_{op.operand.end}:
 """
+
+        State.current_proc = None
+        return asm
     elif op.type == OpType.BIND:
         buf = comment
         State.bind_stack_size += op.operand

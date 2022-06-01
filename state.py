@@ -30,19 +30,27 @@ class Memory:
 
     @staticmethod
     def new_memory(name: str, size: int) -> "Memory":
-        mem = Memory(name, Memory.global_offset)
-        Memory.global_offset += size + (8 - size % 8 if size % 8 != 0 else 0)
-        State.memories[name] = mem
+        if State.current_proc is None:
+            mem = Memory(name, Memory.global_offset)
+            Memory.global_offset += size + (8 - size % 8 if size % 8 != 0 else 0)
+            State.memories[name] = mem
+        else:
+            mem = Memory(name, State.current_proc.memory_size)
+            State.current_proc.memory_size += size + (8 - size % 8 if size % 8 != 0 else 0)
+            State.current_proc.memories[name] = mem
         return mem
 
 
 @dataclass
 class Proc:
-    name: str
-    ip: int
-    in_stack: list[type]
-    out_stack: list[type]
-    block: Block    
+    def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):
+        self.name: str = name
+        self.ip: int = ip
+        self.in_stack: list[type] = in_stack
+        self.out_stack: list[type] = out_stack
+        self.block: Block = block
+        self.memories: dict[str, Memory] = {}
+        self.memory_size : int = 0
 
 
 class StateSaver:
@@ -79,7 +87,9 @@ class State:
 
     loc: str = ""
     filename: str = ""
+
     current_ip: int = -1
+    current_proc: Proc | None = None
 
     dir: str = ""
 

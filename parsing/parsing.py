@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 17, "Unimplemented type in parsing.py"
+assert len(OpType) == 18, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 17, "Unimplemented type in lex_token"
+    assert len(OpType) == 18, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -113,12 +113,15 @@ def lex_token(token: str) -> Op | None | list:
         if len(State.block_stack) <= 0:
             State.throw_error("block for end not found")
         block = State.block_stack.pop()
-        if block.type != BlockType.BIND:
-            op = Op(END_TYPES[block.type], block)
-        else:
+        if block.type == BlockType.BIND:
             unbinded = State.ops_by_ips[block.start].operand
             op = Op(OpType.UNBIND, unbinded)
-            State.bind_stack = State.bind_stack[:-unbinded] 
+            State.bind_stack = State.bind_stack[:-unbinded]
+        elif block.type == BlockType.PROC:
+            State.current_proc = None
+            op = Op(OpType.ENDPROC, block)
+        else:
+            op = Op(END_TYPES[block.type], block)
 
         block.end = State.get_new_ip(op)
         return op
@@ -152,18 +155,14 @@ def lex_token(token: str) -> Op | None | list:
         size = next(State.tokens)
         if not size[0].isnumeric():
             State.loc = size[1]
-            State.throw_error("memory size is not a number")
-        if name[0] in State.procs or name[0] in State.memories or name[0] in State.constants:
-            State.loc = name[1]
-            State.throw_error(f"name for memory \"{name[0]}\" is already taken")
+            State.throw_error("memory size is not a number") 
+        State.check_name(name, "memory")
         Memory.new_memory(name[0], int(size[0]))
         return None
 
     elif token == "memo":
         name = next(State.tokens)
-        if name[0] in State.procs or name[0] in State.memories or name[0] in State.constants:
-            State.loc = name[1]
-            State.throw_error(f"name for memory \"{name[0]}\" is already taken")
+        State.check_name(name, "memory")
         size = evaluate_block(State.loc)
         Memory.new_memory(name[0], size)
         return None
@@ -202,6 +201,9 @@ def lex_token(token: str) -> Op | None | list:
         in_types: list[type] = []
         out_types: list[type] = []
 
+        if State.current_proc is not None:
+            sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
+
         has_contaract = ":" not in name[0]
         try:
             parts = name[0].split(":")
@@ -212,9 +214,7 @@ def lex_token(token: str) -> Op | None | list:
         except IndexError:
             pass
 
-        if name_value in State.procs or name_value in State.memories:
-            State.loc = f"{State.filename}:{name[1]}"
-            State.throw_error(f"name for procedure \"{name_value}\" is already taken")
+        State.check_name((name_value, name[1]), "procedure")
 
         proc_token = ("", "")
         types = in_types
@@ -250,6 +250,7 @@ def lex_token(token: str) -> Op | None | list:
 
         block = Block(BlockType.PROC, ip)
         State.procs[name_value] = Proc(name_value, ip, in_types, out_types, block)
+        State.current_proc = State.procs[name_value]
         State.block_stack.append(block)
 
         return op
@@ -289,6 +290,10 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token in State.constants:
         return Op(OpType.PUSH_INT, State.constants[token])
+
+    elif State.current_proc is not None:
+        if token in State.current_proc.memories:
+            return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
 
     else:
         State.throw_error(f"unknown token: {token}")
