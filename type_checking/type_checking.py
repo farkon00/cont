@@ -6,7 +6,7 @@ assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
 assert len(OpType) == 18, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
-class ptr: pass
+class voidf_ptr: pass
 
 def check_stack(stack: list[type], expected: list[type]):
     if len(stack) < len(expected):
@@ -49,12 +49,12 @@ def type_check_op(op: Op, stack: list[type]):
     if op.type == OpType.PUSH_INT:
         stack.append(int)
     elif op.type in (OpType.PUSH_MEMORY, OpType.PUSH_LOCAL_MEM):
-        stack.append(ptr)
+        stack.append(voidf_ptr)
     elif op.type == OpType.PUSH_STR:
         stack.append(int)
-        stack.append(ptr)
+        stack.append(voidf_ptr)
     elif op.type == OpType.PUSH_NULL_STR:
-        stack.append(ptr)
+        stack.append(voidf_ptr)
     elif op.type == OpType.IF:
         check_stack(stack, [int])
         State.route_stack.append(("if-end", stack.copy()))
@@ -131,16 +131,16 @@ def type_check_operator(op: Op, stack: list[type]):
             State.throw_error("stack is too short")
         stack[-3], stack[-2], stack[-1] = stack[-1], stack[-2], stack[-3]
     elif op.operand in (Operator.STORE,  Operator.STORE8):
-        check_stack(stack, [int, ptr])
+        check_stack(stack, [int, voidf_ptr])
     elif op.operand in (Operator.LOAD,  Operator.LOAD8):
-        check_stack(stack, [ptr])
+        check_stack(stack, [voidf_ptr])
         stack.append(int)
     elif op.operand == Operator.CAST_INT:
         check_stack(stack, [object])
         stack.append(int)
     elif op.operand == Operator.CAST_PTR:
         check_stack(stack, [object])
-        stack.append(ptr)
+        stack.append(voidf_ptr)
     elif op.operand == Operator.PRINT:
         check_stack(stack, [int])
     else:

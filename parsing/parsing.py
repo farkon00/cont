@@ -1,10 +1,11 @@
 import os
 
 from compile_eval.compile_eval import evaluate_block
+from parsing.parse_type import parse_type
 
 from .op import *
 from state import *
-from type_checking.type_checking import ptr
+from type_checking.type_checking import voidf_ptr
 
 OPERATORS = {
     "+" : Operator.ADD,
@@ -227,18 +228,13 @@ def lex_token(token: str) -> Op | None | list:
             proc_token_value = proc_token[0].split(":")[0].strip()
             if not proc_token_value:
                 break
-            if proc_token_value == "int":
-                types.append(int)
-            elif proc_token_value == "ptr":
-                types.append(ptr)
             elif proc_token_value == "->":
                 if types is out_types:
                     State.loc = proc_token[1]
                     State.throw_error("few -> separators was found in proc contract")
                 types = out_types
             else:
-                State.loc = f"{State.filename}:{proc_token[1]}"
-                State.throw_error(f"unknown type \"{proc_token_value}\" in proc contract")
+                types.append(parse_type((proc_token_value, proc_token[1]), "procedure contaract"))
 
         if has_contaract:
             queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
