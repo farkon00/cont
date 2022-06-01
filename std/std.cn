@@ -1,5 +1,8 @@
 include os.cn
 
+proc / int int -> int: div drop end
+proc % int int -> int: div swap drop end
+
 proc ptr+ ptr int -> ptr: swap *int      + *ptr end
 proc ptr- ptr int -> ptr: swap *int swap - *ptr end
 proc +ptr int ptr -> ptr:      *int      + *ptr end
