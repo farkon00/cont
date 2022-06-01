@@ -25,8 +25,8 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
-    "*int" : Operator.CAST_INT,
-    "*ptr" : Operator.CAST_PTR,
+    "(int)" : Operator.CAST_INT,
+    "(ptr)" : Operator.CAST_PTR,
     "print" : Operator.PRINT,
 }
 END_TYPES = {

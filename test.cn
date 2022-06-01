@@ -146,12 +146,12 @@ n"-r"                 build_argv
       fork
       bind pid:
         pid 0 == if
-          0 *ptr
+          0 (ptr)
           args
           n"/usr/bin/python3"
           execve drop
         else pid 0 > if
-          0 *ptr
+          0 (ptr)
           0
           wstatus
           18446744073709551615 // -1
