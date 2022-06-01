@@ -89,6 +89,7 @@ def generate_op(op: Op):
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_LOCAL_MEM:
+        assert State.current_proc is not None, "Bug in parsing of local and global memories"
         return comment + \
 f"""
 mov rbx, [call_stack_ptr]
@@ -154,6 +155,7 @@ add rbx, 8
 mov [call_stack_ptr], rbx
 """
     elif op.type == OpType.ENDPROC:
+        assert State.current_proc is not None, "Bug in parsing of local and global memories"
         asm = comment + \
 f"""
 mov rbx, [call_stack_ptr]
