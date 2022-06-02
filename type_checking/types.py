@@ -1,12 +1,14 @@
 from state import State
 
 class Ptr:
-    def __init__(self, typ: type = None):
+    def __init__(self, typ = None):
         self.typ = typ
+
     def __eq__(self, other) -> bool:
         if isinstance(other, Ptr):
             return self.typ == other.typ or other.typ is None 
         return False
+        
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
@@ -52,3 +54,5 @@ def sizeof(_type) -> int:
         State.throw_error("Cant get size of any")
     else:
         assert False, f"Unimplemented type in sizeof: {_type}"
+    
+    return 0 # Mypy, shut up!
