@@ -259,6 +259,38 @@ def lex_token(token: str) -> Op | None | list:
 
         return op
 
+    elif token == "struct":
+        name = next(State.tokens)
+        State.check_name(name, "structure")
+        
+        current_token = ("", "")
+        field_type = -1
+        fields = {}
+        while True:
+            try:
+                current_token = next(State.tokens)
+            except:
+                State.loc = f"{State.filename}:{name[1]}"
+                State.throw_error("structure definition was not closed")
+            if current_token[0] == "end":
+                break
+            if field_type == -1:
+                field_type = parse_type(current_token, "structure definition")
+            else:
+                if current_token[0] in fields:
+                    State.loc = current_token[1]
+                    State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
+                fields[current_token[0]] = field_type
+                field_type = -1
+
+        if field_type != -1:
+            State.loc = current_token[1]
+            State.throw_error("field name was not defined")
+
+        State.structures[name[0]] = Struct(fields) # type: ignore
+
+        return None
+
     elif token == "include":
         name = next(State.tokens)
 
@@ -350,5 +382,7 @@ def parse_to_ops(program: str) -> list:
         State.throw_error("unclosed block")
 
     saver.load()
+
+    print(State.structures)
 
     return ops

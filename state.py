@@ -41,6 +41,11 @@ class Memory:
         return mem
 
 
+@dataclass
+class Struct:
+    fields: dict[str, object]
+
+
 class Proc:
     def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):
         self.name: str = name
@@ -75,6 +80,7 @@ class State:
     memories: dict[str, Memory] = {}
     variables: dict[str, object] = {} 
     procs: dict[str, Proc] = {}
+    structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
 
     tokens: Generator = (i for i in ()) # type: ignore
