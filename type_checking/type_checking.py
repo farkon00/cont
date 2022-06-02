@@ -7,16 +7,15 @@ assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
 assert len(OpType) == 21, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
-def check_stack(stack: list, expected: list):
+def check_stack(stack: list, expected: list, arg=0):
     if len(stack) < len(expected):
         State.throw_error("stack is too short")
     for i in range(len(expected)):
         got = stack.pop()
         exp = expected.pop()
-
-        if got != exp and None not in (exp, got):
+        if got != exp and exp is not None and got is not None:
             State.throw_error(f"unexpected argument type", False)
-            sys.stderr.write(f"\033[1;34mArgument {i+1}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n")
+            sys.stderr.write(f"\033[1;34mArgument {i+1+arg}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n")
             exit(1)
 
 def check_route_stack(stack1: list, stack2: list, error: str = "in different routes of if-end"):
@@ -29,7 +28,7 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
         sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n")
         exit(1)
     for i in range(len(stack1)):
-        if stack1[i] != stack2[i] and None not in (stack1[i], stack2[i]):
+        if stack1[i] != stack2[i] and stack1[i] is not None and stack2[i] is not None:
             State.throw_error(f"different types {error}", False)
             sys.stderr.write(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n")
             exit(1)
@@ -139,9 +138,25 @@ def type_check_operator(op: Op, stack: list):
         if len(stack) < 3:
             State.throw_error("stack is too short")
         stack[-3], stack[-2], stack[-1] = stack[-1], stack[-2], stack[-3]
-    elif op.operand in (Operator.STORE,  Operator.STORE8):
+    elif op.operand == Operator.STORE:
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
+        ptr = stack[-1]
+        check_stack(stack, [Ptr()])
+        if ptr.typ is None:
+            check_stack(stack, [Int()], arg=1)
+        else:
+            check_stack(stack, [ptr.typ], arg=1)
+    elif op.operand == Operator.STORE8:
         check_stack(stack, [Int(), Ptr()])
-    elif op.operand in (Operator.LOAD,  Operator.LOAD8):
+    elif op.operand == Operator.LOAD:
+        ptr = stack[-1]
+        check_stack(stack, [Ptr()])
+        if ptr.typ is None:
+            stack.append(Int())
+        else:
+            stack.append(ptr.typ)
+    elif op.operand == Operator.LOAD8:
         check_stack(stack, [Ptr()])
         stack.append(Int())
     elif op.operand == Operator.PRINT:
