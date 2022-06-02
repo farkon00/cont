@@ -6,7 +6,7 @@ class Ptr:
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Ptr):
-            return self.typ == other.typ or other.typ is None 
+            return self.typ == other.typ or other.typ is None or self.typ is None 
         return False
         
     def __ne__(self, other) -> bool:
