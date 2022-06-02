@@ -41,7 +41,6 @@ class Memory:
         return mem
 
 
-@dataclass
 class Proc:
     def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):
         self.name: str = name
@@ -51,6 +50,7 @@ class Proc:
         self.block: Block = block
         self.memories: dict[str, Memory] = {}
         self.memory_size : int = 0
+        self.variables : dict[str, object] = {}
 
 
 class StateSaver:

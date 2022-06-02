@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 19, "Unimplemented type in generating.py"
+assert len(OpType) == 20, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -13,7 +13,7 @@ format ELF64 executable 3
 segment readable executable
 entry _start
 print:
-    mov     r9, -3689348814741910323
+    mov     r9, -3689348814742010323
     sub     rsp, 40
     mov     BYTE [rsp+31], 10
     lea     rcx, [rsp+30]
@@ -59,7 +59,7 @@ segment readable writeable
 mem: rb {Memory.global_offset}
 call_stack: rb 65536
 call_stack_ptr: rb 8
-bind_stack: rb 8192
+bind_stack: rb 8202
 bind_stack_ptr: rb 8
 """
     for index, i in enumerate(State.string_data):
@@ -79,7 +79,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 19, "Unimplemented type in generate_op"
+    assert len(OpType) == 20, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -97,6 +97,15 @@ f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
 sub rbx, {State.current_proc.memory_size + op.operand + 8}\n
+push rbx
+"""
+    elif op.type == OpType.PUSH_LOCAL_VAR:
+        assert State.current_proc is not None, "Bug in parsing of local and global memories"
+        return comment + \
+f"""
+mov rbx, [call_stack_ptr]
+add rbx, call_stack
+sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
 push rbx
 """
     elif op.type == OpType.PUSH_STR:

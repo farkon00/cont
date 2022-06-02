@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 19, "Unimplemented type in parsing.py"
+assert len(OpType) == 20, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 19, "Unimplemented type in lex_token"
+    assert len(OpType) == 20, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -165,7 +165,10 @@ def lex_token(token: str) -> Op | None | list:
         _type = parse_type(next(State.tokens), "variable") 
         State.check_name(name, "variable")
         Memory.new_memory(name[0], sizeof(_type))
-        State.variables[name[0]] = _type
+        if State.current_proc is not None:
+            State.current_proc.variables[name[0]] = _type
+        else:
+            State.variables[name[0]] = _type
         return None
 
     elif token == "memo":
@@ -298,8 +301,12 @@ def lex_token(token: str) -> Op | None | list:
         return Op(OpType.PUSH_INT, State.constants[token])
 
     elif State.current_proc is not None:
-        if token in State.current_proc.memories:
+        if token in State.current_proc.variables:
+            return Op(OpType.PUSH_LOCAL_VAR, token)
+        elif token in State.current_proc.memories:
             return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
+        else:
+            State.throw_error(f"unknown token: {token}")
 
     else:
         State.throw_error(f"unknown token: {token}")

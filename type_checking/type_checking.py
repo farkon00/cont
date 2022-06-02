@@ -4,7 +4,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 19, "Unimplemented type in type_checking.py"
+assert len(OpType) == 20, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list):
@@ -41,7 +41,7 @@ def type_check(ops: list[Op]):
         type_check_op(op, stack)
 
 def type_check_op(op: Op, stack: list):
-    assert len(OpType) == 19, "Unimplemented type in type_check_op"
+    assert len(OpType) == 20, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -51,6 +51,9 @@ def type_check_op(op: Op, stack: list):
         stack.append(Ptr())
     elif op.type == OpType.PUSH_VAR:
         stack.append(Ptr(State.variables[op.operand]))
+    elif op.type == OpType.PUSH_LOCAL_VAR:
+        assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
+        stack.append(Ptr(State.current_proc.variables[op.operand]))
     elif op.type == OpType.PUSH_STR:
         stack.append(Int())
         stack.append(Ptr())
@@ -91,12 +94,14 @@ def type_check_op(op: Op, stack: list):
         State.route_stack.append(("proc", stack.copy()))
         stack.clear()
         stack.extend(State.procs[op.operand].in_stack)
+        State.current_proc = State.procs[op.operand]
     elif op.type == OpType.ENDPROC:
         check_route_stack(
             stack, State.get_proc_by_block(op.operand).out_stack, "in procedure definition"
         )
         stack.clear()
         stack.extend(State.route_stack.pop()[1])
+        State.current_proc = None
     elif op.type == OpType.CALL:
         check_stack(stack, op.operand.in_stack.copy())
         stack.extend(op.operand.out_stack)
