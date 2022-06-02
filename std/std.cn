@@ -14,10 +14,10 @@ proc NULL -> ptr: 0 (ptr) end
 const sizeof(int) 8 end
 const sizeof(ptr) 8 end
 
-proc @int ptr -> int: @ end
-proc !int int ptr: ! end
-proc @ptr ptr -> ptr: @ (ptr) end
-proc !ptr ptr ptr: swap (int) swap ! end
+proc @int *int -> int: @ end
+proc !int int *int: ! end
+proc @ptr *ptr -> ptr: @ end
+proc !ptr ptr *ptr: ! end
 
 proc inc ptr:
   dup @int 1 + swap ! 
