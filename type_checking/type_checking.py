@@ -14,7 +14,7 @@ def check_stack(stack: list, expected: list):
         got = stack.pop()
         exp = expected.pop()
 
-        if got != exp and object not in (exp, got):
+        if got != exp and None not in (exp, got):
             State.throw_error(f"unexpected argument type", False)
             sys.stderr.write(f"\033[1;34mArgument {i+1}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n")
             exit(1)
@@ -29,7 +29,7 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
         sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n")
         exit(1)
     for i in range(len(stack1)):
-        if stack1[i] != stack2[i] and object not in (stack1[i], stack2[i]):
+        if stack1[i] != stack2[i] and None not in (stack1[i], stack2[i]):
             State.throw_error(f"different types {error}", False)
             sys.stderr.write(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n")
             exit(1)
@@ -99,8 +99,8 @@ def type_check_op(op: Op, stack: list):
         check_stack(stack, op.operand.in_stack.copy())
         stack.extend(op.operand.out_stack)
     elif op.type == OpType.SYSCALL:
-        check_stack(stack, [object] * (op.operand + 1))
-        stack.append(object)
+        check_stack(stack, [None] * (op.operand + 1))
+        stack.append(None)
     elif op.type == OpType.OPERATOR:
         type_check_operator(op, stack)
 
@@ -120,7 +120,7 @@ def type_check_operator(op: Op, stack: list):
             State.throw_error("stack is too short")
         stack.append(stack[-1])
     elif op.operand == Operator.DROP:
-        check_stack(stack, [object])
+        check_stack(stack, [None])
     elif op.operand == Operator.SWAP:
         if len(stack) < 2:
             State.throw_error("stack is too short")
@@ -135,10 +135,10 @@ def type_check_operator(op: Op, stack: list):
         check_stack(stack, [Ptr()])
         stack.append(Int())
     elif op.operand == Operator.CAST_INT:
-        check_stack(stack, [object])
+        check_stack(stack, [None])
         stack.append(Int())
     elif op.operand == Operator.CAST_PTR:
-        check_stack(stack, [object])
+        check_stack(stack, [None])
         stack.append(Ptr())
     elif op.operand == Operator.PRINT:
         check_stack(stack, [Int()])
