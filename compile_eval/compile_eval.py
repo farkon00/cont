@@ -1,8 +1,8 @@
 from state import *
 from parsing.op import *
 
-assert len(OpType) == 20, "Unimplemented type in compile_eval.py"
-assert len(Operator) == 21, "Unimplemented operator in compile_eval.py"
+assert len(OpType) == 21, "Unimplemented type in compile_eval.py"
+assert len(Operator) == 19, "Unimplemented operator in compile_eval.py"
 
 def evaluate_token(token: str, stack: list):
     if token.isnumeric(): stack.append(int(token))

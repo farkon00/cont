@@ -3,8 +3,8 @@ from state import *
 from .types import type_to_str
 from .types import *
 
-assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 20, "Unimplemented type in type_checking.py"
+assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
+assert len(OpType) == 21, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list):
@@ -41,7 +41,7 @@ def type_check(ops: list[Op]):
         type_check_op(op, stack)
 
 def type_check_op(op: Op, stack: list):
-    assert len(OpType) == 20, "Unimplemented type in type_check_op"
+    assert len(OpType) == 21, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -59,6 +59,9 @@ def type_check_op(op: Op, stack: list):
         stack.append(Ptr())
     elif op.type == OpType.PUSH_NULL_STR:
         stack.append(Ptr())
+    elif op.type == OpType.CAST:
+        check_stack(stack, [None])
+        stack.append(op.operand)
     elif op.type == OpType.IF:
         check_stack(stack, [Int()])
         State.route_stack.append(("if-end", stack.copy()))
@@ -112,7 +115,7 @@ def type_check_op(op: Op, stack: list):
         type_check_operator(op, stack)
 
 def type_check_operator(op: Op, stack: list):
-    assert len(Operator) == 21, "Unimplemented operator in type_check_operator"
+    assert len(Operator) == 19, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
@@ -141,12 +144,6 @@ def type_check_operator(op: Op, stack: list):
     elif op.operand in (Operator.LOAD,  Operator.LOAD8):
         check_stack(stack, [Ptr()])
         stack.append(Int())
-    elif op.operand == Operator.CAST_INT:
-        check_stack(stack, [None])
-        stack.append(Int())
-    elif op.operand == Operator.CAST_PTR:
-        check_stack(stack, [None])
-        stack.append(Ptr())
     elif op.operand == Operator.PRINT:
         check_stack(stack, [Int()])
     else:

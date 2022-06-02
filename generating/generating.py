@@ -1,8 +1,8 @@
 from parsing.op import * 
 from state import *
 
-assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 20, "Unimplemented type in generating.py"
+assert len(Operator) == 19, "Unimplemented operator in generating.py"
+assert len(OpType) == 21, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -79,7 +79,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 20, "Unimplemented type in generate_op"
+    assert len(OpType) == 21, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -219,11 +219,13 @@ push rax
 """
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"
+    elif op.type == OpType.CAST:
+        return "" # Casts are type checking thing
     else:
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 21, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 19, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -317,7 +319,5 @@ push rbx
 pop rdi
 call print
 """
-    elif op.operand in (Operator.CAST_INT, Operator.CAST_PTR):
-        return "" # Casts are type checking thing
     else:
         assert False, f"Generation isnt implemented for operator: {op.operand.name}"

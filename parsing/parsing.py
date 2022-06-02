@@ -25,8 +25,6 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
-    "(int)" : Operator.CAST_INT,
-    "(ptr)" : Operator.CAST_PTR,
     "print" : Operator.PRINT,
 }
 END_TYPES = {
@@ -38,7 +36,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 20, "Unimplemented type in parsing.py"
+assert len(OpType) == 21, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +85,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 20, "Unimplemented type in lex_token"
+    assert len(OpType) == 21, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -299,6 +297,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token in State.constants:
         return Op(OpType.PUSH_INT, State.constants[token])
+
+    elif token.startswith("(") and token.endswith(")"):
+        return Op(OpType.CAST, parse_type((token[1:-1], State.loc), "cast"))
 
     elif State.current_proc is not None:
         if token in State.current_proc.variables:

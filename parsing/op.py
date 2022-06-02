@@ -8,6 +8,7 @@ class OpType(Enum):
     PUSH_LOCAL_VAR = auto()
     PUSH_STR = auto()
     PUSH_NULL_STR = auto()
+    CAST = auto()
     IF = auto()
     ELSE = auto()
     ENDIF = auto()
@@ -41,8 +42,6 @@ class Operator(Enum):
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
-    CAST_INT = auto()
-    CAST_PTR = auto()
     PRINT = auto()
 
 class Op:
