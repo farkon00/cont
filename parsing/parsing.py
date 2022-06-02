@@ -1,7 +1,7 @@
 import os
 
 from compile_eval.compile_eval import evaluate_block
-from parsing.parse_type import parse_type
+from type_checking.types import parse_type, sizeof
 
 from .op import *
 from state import *
@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 18, "Unimplemented type in parsing.py"
+assert len(OpType) == 19, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 18, "Unimplemented type in lex_token"
+    assert len(OpType) == 19, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -158,6 +158,14 @@ def lex_token(token: str) -> Op | None | list:
             State.throw_error("memory size is not a number") 
         State.check_name(name, "memory")
         Memory.new_memory(name[0], int(size[0]))
+        return None
+
+    elif token == "var":
+        name = next(State.tokens)
+        _type = parse_type(next(State.tokens), "variable") 
+        State.check_name(name, "variable")
+        Memory.new_memory(name[0], sizeof(_type))
+        State.variables[name[0]] = _type
         return None
 
     elif token == "memo":
@@ -273,6 +281,9 @@ def lex_token(token: str) -> Op | None | list:
         State.filename = orig_file
 
         return ops
+
+    elif token in State.variables:
+        return Op(OpType.PUSH_VAR, token)
 
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)

@@ -73,6 +73,7 @@ class State:
     bind_stack_size: int = 0
 
     memories: dict[str, Memory] = {}
+    variables: dict[str, object] = {} 
     procs: dict[str, Proc] = {}
     constants: dict[str, int] = {}
 

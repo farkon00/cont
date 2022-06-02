@@ -2,7 +2,7 @@ from parsing.op import *
 from state import *
 
 assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 18, "Unimplemented type in generating.py"
+assert len(OpType) == 19, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -79,7 +79,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 18, "Unimplemented type in generate_op"
+    assert len(OpType) == 19, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -88,6 +88,8 @@ def generate_op(op: Op):
         return comment + f"push {op.operand}\n"
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
+    elif op.type == OpType.PUSH_VAR:
+        return comment + f"push mem+{State.memories[op.operand].offset}\n"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         assert State.current_proc is not None, "Bug in parsing of local and global memories"
         return comment + \

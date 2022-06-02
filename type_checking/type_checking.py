@@ -1,10 +1,10 @@
 from parsing.op import *
 from state import *
-from .type_to_str import type_to_str
+from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 18, "Unimplemented type in type_checking.py"
+assert len(OpType) == 19, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list):
@@ -41,7 +41,7 @@ def type_check(ops: list[Op]):
         type_check_op(op, stack)
 
 def type_check_op(op: Op, stack: list):
-    assert len(OpType) == 18, "Unimplemented type in type_check_op"
+    assert len(OpType) == 19, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -49,6 +49,8 @@ def type_check_op(op: Op, stack: list):
         stack.append(Int())
     elif op.type in (OpType.PUSH_MEMORY, OpType.PUSH_LOCAL_MEM):
         stack.append(Ptr())
+    elif op.type == OpType.PUSH_VAR:
+        stack.append(Ptr(State.variables[op.operand]))
     elif op.type == OpType.PUSH_STR:
         stack.append(Int())
         stack.append(Ptr())

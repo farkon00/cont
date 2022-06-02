@@ -4,6 +4,7 @@ class OpType(Enum):
     PUSH_INT = auto()
     PUSH_MEMORY = auto()
     PUSH_LOCAL_MEM = auto()
+    PUSH_VAR = auto()
     PUSH_STR = auto()
     PUSH_NULL_STR = auto()
     IF = auto()
