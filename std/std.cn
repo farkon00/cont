@@ -3,21 +3,21 @@ include os.cn
 proc / int int -> int: div drop end
 proc % int int -> int: div swap drop end
 
-proc ptr+ ptr int -> ptr: swap *int      + *ptr end
-proc ptr- ptr int -> ptr: swap *int swap - *ptr end
-proc +ptr int ptr -> ptr:      *int      + *ptr end
-proc -ptr int ptr -> ptr:      *int      - *ptr end
-proc ptr== ptr ptr -> int: *int swap *int == end
+proc ptr+ ptr int -> ptr:  swap  (int)      + (ptr) end
+proc ptr- ptr int -> ptr:  swap  (int) swap - (ptr) end
+proc +ptr int ptr -> ptr:        (int)      + (ptr) end
+proc -ptr int ptr -> ptr:        (int)      - (ptr) end
+proc ptr== ptr ptr -> int: (int) swap  (int) ==     end
 
-proc NULL -> ptr: 0 *ptr end
+proc NULL -> ptr: 0 (ptr) end
 
 const sizeof(int) 8 end
 const sizeof(ptr) 8 end
 
 proc @int ptr -> int: @ end
 proc !int int ptr: ! end
-proc @ptr ptr -> ptr: @ *ptr end
-proc !ptr ptr ptr: swap *int swap ! end
+proc @ptr ptr -> ptr: @ (ptr) end
+proc !ptr ptr ptr: swap (int) swap ! end
 
 proc inc ptr:
   dup @int 1 + swap ! 

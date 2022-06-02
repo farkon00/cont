@@ -73,6 +73,7 @@ class State:
     bind_stack_size: int = 0
 
     memories: dict[str, Memory] = {}
+    variables: dict[str, object] = {} 
     procs: dict[str, Proc] = {}
     constants: dict[str, int] = {}
 
@@ -98,7 +99,7 @@ class State:
         *["syscall" + str(i) for i in range(7)], 
         "+", "-", "*", "div", "dup", "drop", "swap", "rot",
         "<", ">", "<=", ">=", "==", "!=", "!", "!8", "@", 
-        "@8", "*int", "*ptr", "print"
+        "@8", "(int)", "(ptr)", "print"
     ]
 
     @staticmethod

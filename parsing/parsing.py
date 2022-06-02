@@ -1,10 +1,10 @@
 import os
 
 from compile_eval.compile_eval import evaluate_block
+from type_checking.types import parse_type, sizeof
 
 from .op import *
 from state import *
-from type_checking.type_checking import ptr
 
 OPERATORS = {
     "+" : Operator.ADD,
@@ -25,8 +25,8 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
-    "*int" : Operator.CAST_INT,
-    "*ptr" : Operator.CAST_PTR,
+    "(int)" : Operator.CAST_INT,
+    "(ptr)" : Operator.CAST_PTR,
     "print" : Operator.PRINT,
 }
 END_TYPES = {
@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 18, "Unimplemented type in parsing.py"
+assert len(OpType) == 19, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 18, "Unimplemented type in lex_token"
+    assert len(OpType) == 19, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -160,6 +160,14 @@ def lex_token(token: str) -> Op | None | list:
         Memory.new_memory(name[0], int(size[0]))
         return None
 
+    elif token == "var":
+        name = next(State.tokens)
+        _type = parse_type(next(State.tokens), "variable") 
+        State.check_name(name, "variable")
+        Memory.new_memory(name[0], sizeof(_type))
+        State.variables[name[0]] = _type
+        return None
+
     elif token == "memo":
         name = next(State.tokens)
         State.check_name(name, "memory")
@@ -227,18 +235,13 @@ def lex_token(token: str) -> Op | None | list:
             proc_token_value = proc_token[0].split(":")[0].strip()
             if not proc_token_value:
                 break
-            if proc_token_value == "int":
-                types.append(int)
-            elif proc_token_value == "ptr":
-                types.append(ptr)
             elif proc_token_value == "->":
                 if types is out_types:
                     State.loc = proc_token[1]
                     State.throw_error("few -> separators was found in proc contract")
                 types = out_types
             else:
-                State.loc = f"{State.filename}:{proc_token[1]}"
-                State.throw_error(f"unknown type \"{proc_token_value}\" in proc contract")
+                types.append(parse_type((proc_token_value, proc_token[1]), "procedure contaract"))
 
         if has_contaract:
             queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
@@ -278,6 +281,9 @@ def lex_token(token: str) -> Op | None | list:
         State.filename = orig_file
 
         return ops
+
+    elif token in State.variables:
+        return Op(OpType.PUSH_VAR, token)
 
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
