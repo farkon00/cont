@@ -244,6 +244,13 @@ f"""
 push rbx
 mov rax, [struct_mem_ptr]
 add rax, {size}
+
+xor rdx, rdx
+mov rbx, 65536
+mov rax, rax
+div rbx
+mov rax, rdx
+
 mov [struct_mem_ptr], rax
 """
 
