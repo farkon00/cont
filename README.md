@@ -14,10 +14,11 @@ include std.cn
 ```
 0 1 150 
 1 while
-  rot swap dup 
-  rot + swap
-  dup print
-  rot 1 - 
-  dup 0 > 
+  bind prev2 prev num:
+    prev
+    prev2 prev +
+    num 1 -
+    dup 0 >
+  end
 end 
 ```
