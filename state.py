@@ -46,6 +46,7 @@ class Struct:
     name: str
     fields: dict[str, object]
     fields_types: list[object]
+    is_unpackable: bool
 
 class Proc:
     def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):
@@ -90,6 +91,7 @@ class State:
 
     is_string = False
     is_null = False
+    is_unpack = False
     string_buffer: str = ""
     string_data: list[bytes] = [] 
 

@@ -36,7 +36,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 24, "Unimplemented type in parsing.py"
+assert len(OpType) == 25, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -85,7 +85,10 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 24, "Unimplemented type in lex_token"
+    assert len(OpType) == 25, "Unimplemented type in lex_token"
+
+    if State.is_unpack and token != "struct":
+        State.throw_error("unpack must be followed by struct")
 
     string = lex_string(token)
     if string:
@@ -259,6 +262,9 @@ def lex_token(token: str) -> Op | None | list:
 
         return op
 
+    elif token == "unpack":
+        State.is_unpack = True
+
     elif token == "struct":
         name = next(State.tokens)
         State.check_name(name, "structure")
@@ -289,7 +295,8 @@ def lex_token(token: str) -> Op | None | list:
             State.loc = current_token[1]
             State.throw_error("field name was not defined")
 
-        State.structures[name[0]] = Struct(name[0], fields, struct_types) # type: ignore
+        State.structures[name[0]] = Struct(name[0], fields, struct_types, State.is_unpack) # type: ignore
+        State.is_unpack = False
 
         return None
 
