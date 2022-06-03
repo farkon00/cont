@@ -192,7 +192,7 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
             if not ptr.typ.is_unpackable:
                 State.throw_error(f"cant unpack {type_to_str(ptr.typ)}")
             stack.extend(ptr.typ.fields_types)
-            return Op(OpType.UNPACK, sum([sizeof(field) for field in ptr.typ.fields_types]))
+            return Op(OpType.UNPACK, sizeof(ptr.typ))
         else:
             stack.append(ptr.typ)
     elif op.operand == Operator.LOAD8:

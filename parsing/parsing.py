@@ -186,6 +186,10 @@ def lex_token(token: str) -> Op | None | list:
         State.check_name(name)
         State.constants[name[0]] = evaluate_block(State.loc)
         return None
+
+    elif token == "sizeof":
+        _type = parse_type(next(State.tokens), "sizeof", False)
+        return Op(OpType.PUSH_INT, sizeof(_type))
     
     elif token == "bind":
         binded = 0
