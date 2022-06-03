@@ -14,7 +14,7 @@ format ELF64 executable 3
 segment readable executable
 entry _start
 print:
-    mov     r9, -3689348814742010323
+    mov     r9, -3689348814741910323
     sub     rsp, 40
     mov     BYTE [rsp+31], 10
     lea     rcx, [rsp+30]
