@@ -11,14 +11,6 @@ proc ptr== ptr ptr -> int: (int) swap  (int) ==     end
 
 proc NULL -> ptr: 0 (ptr) end
 
-const sizeof(int) 8 end
-const sizeof(ptr) 8 end
-
-proc @int *int -> int: @ end
-proc !int int *int: ! end
-proc @ptr *ptr -> ptr: @ end
-proc !ptr ptr *ptr: ! end
-
 proc inc ptr:
   dup @int 1 + swap ! 
 end
@@ -60,22 +52,9 @@ proc or int int -> int:  boolify swap boolify + 0 >  end
 proc not int -> int:     boolify 1 -  boolify        end
 proc xor int int -> int: boolify swap boolify + 1 == end
 
-const str.len 0 end
-const str.data sizeof(int) end // Offset is 1 integer
-const sizeof(str) 16 end
-
-proc @str.len ptr -> int: @ end
-proc @str.data ptr -> ptr: str.data ptr+ @ptr end
-proc @str ptr -> int ptr: 
-  dup @str.len 
-  swap @str.data 
-end
-
-proc !str.len int ptr: ! end
-proc !str.data ptr ptr: str.data ptr+ !ptr end
-proc !str int ptr ptr: 
-  dup rot swap !str.data
-  !str.len 
+struct str
+  int len
+  ptr data
 end
 
 proc 2duppi ptr int -> ptr int ptr int:
@@ -89,8 +68,8 @@ proc 2dupip int ptr -> int ptr int ptr:
   end
 end
 
-proc puts int ptr: STDOUT write drop end 
-proc input ptr -> int ptr: dup 1024 swap STDIN read swap end
+proc puts @str: STDOUT write drop end 
+proc input ptr -> @str: dup 1024 swap STDIN read swap end
 
 proc null_str_len ptr -> int:
   0 swap
@@ -101,12 +80,12 @@ proc null_str_len ptr -> int:
   end drop
 end
 
-proc nstr_to_str ptr -> int ptr: dup null_str_len swap end
+proc nstr_to_str ptr -> @str: dup null_str_len swap end
 
-proc open2 int int ptr -> int:
+proc open2 int @str -> int:
   swap drop opensys2
 end
-proc open int int int ptr -> int:
+proc open int int @str -> int:
   swap drop opensys
 end
 
@@ -141,7 +120,7 @@ proc cpy_buf int ptr ptr:
   end
 end 
 
-proc streq int ptr int ptr -> int:
+proc streq @str @str -> int:
   bind len data len2 data2:
     len2 len == if
       0 1

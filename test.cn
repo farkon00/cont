@@ -4,7 +4,7 @@
 
 include std.cn
 
-memory file 16
+var file str
 memory file_buf 8016
 memory compare_file 2048
 memory tests 1600
@@ -21,7 +21,9 @@ memory stderr 2048
 
 proc add_test int ptr:
   tests current_test @ ptr+ !str
-  current_test sizeof(str) incby
+  current_test 
+  sizeof str
+  incby
 end
 
 "tests/arithmetics\0" add_test
