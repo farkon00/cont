@@ -36,7 +36,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 21, "Unimplemented type in parsing.py"
+assert len(OpType) == 22, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -85,7 +85,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 21, "Unimplemented type in lex_token"
+    assert len(OpType) == 22, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -266,6 +266,7 @@ def lex_token(token: str) -> Op | None | list:
         current_token = ("", "")
         field_type = -1
         fields = {}
+        struct_types = []
         while True:
             try:
                 current_token = next(State.tokens)
@@ -281,13 +282,14 @@ def lex_token(token: str) -> Op | None | list:
                     State.loc = current_token[1]
                     State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
                 fields[current_token[0]] = field_type
+                struct_types.append(field_type)
                 field_type = -1
 
         if field_type != -1:
             State.loc = current_token[1]
             State.throw_error("field name was not defined")
 
-        State.structures[name[0]] = Struct(fields) # type: ignore
+        State.structures[name[0]] = Struct(name[0], fields, struct_types) # type: ignore
 
         return None
 
@@ -315,17 +317,20 @@ def lex_token(token: str) -> Op | None | list:
 
         return ops
 
+    elif token in State.bind_stack:
+        return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
+
     elif token in State.variables:
         return Op(OpType.PUSH_VAR, token)
 
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
 
+    elif token in State.structures:
+        return Op(OpType.PACK, token)
+
     elif token in State.procs:
         return Op(OpType.CALL, State.procs[token])
-
-    elif token in State.bind_stack:
-        return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
 
     elif token in State.constants:
         return Op(OpType.PUSH_INT, State.constants[token])
@@ -382,7 +387,5 @@ def parse_to_ops(program: str) -> list:
         State.throw_error("unclosed block")
 
     saver.load()
-
-    print(State.structures)
 
     return ops

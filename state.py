@@ -43,8 +43,9 @@ class Memory:
 
 @dataclass
 class Struct:
+    name: str
     fields: dict[str, object]
-
+    fields_types: list[object]
 
 class Proc:
     def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):

@@ -1,4 +1,4 @@
-from state import State
+from state import State, Struct
 
 class Ptr:
     def __init__(self, typ = None):
@@ -30,6 +30,8 @@ def type_to_str(_type):
             return "*" + type_to_str(_type.typ)
         else:
             return "ptr"
+    elif isinstance(_type, Struct):
+        return _type.name
     elif _type is None:
         return "any"
     else:
@@ -50,6 +52,8 @@ def parse_type(token: tuple[str, str], error):
 def sizeof(_type) -> int:
     if isinstance(_type, Int) or isinstance(_type, Ptr):
         return 8
+    elif isinstance(_type, Struct):
+        return sum([sizeof(field) for field in _type.fields_types])
     elif _type is None:
         State.throw_error("Cant get size of any")
     else:

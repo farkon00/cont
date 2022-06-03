@@ -20,6 +20,7 @@ class OpType(Enum):
     PUSH_BIND_STACK = auto()
     UNBIND = auto()
     CALL = auto()
+    PACK = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 

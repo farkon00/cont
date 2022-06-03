@@ -1,8 +1,9 @@
 from parsing.op import * 
+from type_checking.types import sizeof
 from state import *
 
 assert len(Operator) == 19, "Unimplemented operator in generating.py"
-assert len(OpType) == 21, "Unimplemented type in generating.py"
+assert len(OpType) == 22, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -61,6 +62,8 @@ call_stack: rb 65536
 call_stack_ptr: rb 8
 bind_stack: rb 8202
 bind_stack_ptr: rb 8
+struct_mem: rb 65536
+struct_mem_ptr: rb 8
 """
     for index, i in enumerate(State.string_data):
         # Second expression is converting string to its bytes representation
@@ -79,7 +82,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 21, "Unimplemented type in generate_op"
+    assert len(OpType) == 22, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -219,6 +222,32 @@ push rax
 """
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"
+    elif op.type == OpType.PACK:
+        struct = State.structures[op.operand]
+        size = sizeof(struct)
+        offset = size
+        buf = comment + \
+"""
+mov rbx, struct_mem
+add rbx, [struct_mem_ptr]
+"""
+        offset = 0
+        for field in struct.fields_types:
+            offset += sizeof(field)
+            buf += \
+f"""
+pop rax
+mov [rbx+{size-offset}], rax
+"""
+        buf += \
+f"""
+push rbx
+mov rax, [struct_mem_ptr]
+add rax, {size}
+mov [struct_mem_ptr], rax
+"""
+
+        return buf
     elif op.type == OpType.CAST:
         return "" # Casts are type checking thing
     else:
