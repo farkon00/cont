@@ -37,7 +37,7 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: tuple[str, str], error, auto_ptr: bool = True):
+def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if name.startswith("*"):
@@ -51,6 +51,10 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True):
             return Ptr(State.structures[name])
         else:
             return State.structures[name]
+    elif name.startswith("@") and allow_unpack:
+        if name[1:] not in State.structures:
+            State.throw_error(f"structure \"{name[1:]}\" was not found")
+        return State.structures[name[1:]].fields_types
     else:
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 

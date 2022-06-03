@@ -1,5 +1,7 @@
 import os
 
+from typing import Iterable
+
 from compile_eval.compile_eval import evaluate_block
 from type_checking.types import parse_type, sizeof
 
@@ -245,7 +247,11 @@ def lex_token(token: str) -> Op | None | list:
                     State.throw_error("few -> separators was found in proc contract")
                 types = out_types
             else:
-                types.append(parse_type((proc_token_value, proc_token[1]), "procedure contaract"))
+                res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True)
+                if isinstance(res, Iterable):
+                    types.extend(res)
+                else:
+                    types.append(res)
 
         if has_contaract:
             queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
