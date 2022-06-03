@@ -23,6 +23,7 @@ class OpType(Enum):
     PACK = auto()
     UNPACK = auto()
     PUSH_FIELD = auto()
+    PUSH_FIELD_PTR = auto()
     MOVE_STRUCT = auto()
     SYSCALL = auto()
     OPERATOR = auto()

@@ -4,7 +4,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 25, "Unimplemented type in type_checking.py"
+assert len(OpType) == 26, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -42,7 +42,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 25, "Unimplemented type in type_check_op"
+    assert len(OpType) == 26, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -113,20 +113,26 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         struct = State.structures[op.operand]
         check_stack(stack, struct.fields_types.copy())
         stack.append(Ptr(struct))
-    elif op.type == OpType.PUSH_FIELD:
+    elif op.type in (OpType.PUSH_FIELD, OpType.PUSH_FIELD_PTR):
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         if not isinstance(ptr.typ, Struct):
             State.throw_error(f"cant access field of non-struct : {type_to_str(ptr.typ)}")
         if op.operand not in ptr.typ.fields:
-            State.throw_error(f"field {op.operand} not found on {op.operand}")
+            State.throw_error(f"field {op.operand} not found on {type_to_str(ptr.typ)}")
         offset = 0
         for i, j in ptr.typ.fields.items():
             if i == op.operand:
                 break
             offset += sizeof(j)
-        stack.append(ptr.typ.fields[op.operand])
-        return Op(OpType.PUSH_FIELD, offset, op.loc)
+        if op.type == OpType.PUSH_FIELD:
+            stack.append(ptr.typ.fields[op.operand])
+            return Op(OpType.PUSH_FIELD, offset, op.loc)
+        else:
+            stack.append(Ptr(ptr.typ.fields[op.operand]))
+            return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)

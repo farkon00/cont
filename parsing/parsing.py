@@ -36,7 +36,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 25, "Unimplemented type in parsing.py"
+assert len(OpType) == 26, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -85,7 +85,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 25, "Unimplemented type in lex_token"
+    assert len(OpType) == 26, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -344,6 +344,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token.startswith("(") and token.endswith(")"):
         return Op(OpType.CAST, parse_type((token[1:-1], State.loc), "cast"))
+
+    elif token.startswith(".*"):
+        return Op(OpType.PUSH_FIELD_PTR, token[2:])
 
     elif token.startswith("."):
         return Op(OpType.PUSH_FIELD, token[1:])
