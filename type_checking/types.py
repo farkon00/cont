@@ -41,7 +41,7 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if name.startswith("*"):
-        return Ptr(parse_type((token[0][1:], token[1]), error))
+        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr=auto_ptr, allow_unpack=allow_unpack))
     elif name == "int":
         return Int()
     elif name == "ptr":
