@@ -3,7 +3,7 @@ from type_checking.types import sizeof
 from state import *
 
 assert len(Operator) == 19, "Unimplemented operator in generating.py"
-assert len(OpType) == 26, "Unimplemented type in generating.py"
+assert len(OpType) == 27, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -82,7 +82,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 26, "Unimplemented type in generate_op"
+    assert len(OpType) == 27, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -222,6 +222,14 @@ push rax
 """
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"
+    elif op.type == OpType.TYPED_LOAD:
+        assert not isinstance(op.operand, Struct), "Bug in parsing of structure types"
+        return comment + \
+"""
+pop rax
+mov rbx, [rax]
+push rbx 
+"""
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         size = sizeof(struct)

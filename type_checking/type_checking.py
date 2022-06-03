@@ -4,7 +4,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 26, "Unimplemented type in type_checking.py"
+assert len(OpType) == 27, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -42,7 +42,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 26, "Unimplemented type in type_check_op"
+    assert len(OpType) == 27, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -109,6 +109,9 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     elif op.type == OpType.CALL:
         check_stack(stack, op.operand.in_stack.copy())
         stack.extend(op.operand.out_stack)
+    elif op.type == OpType.TYPED_LOAD:
+        check_stack(stack, [Ptr(op.operand)])
+        stack.append(op.operand)
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         check_stack(stack, struct.fields_types.copy())

@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 26, "Unimplemented type in parsing.py"
+assert len(OpType) == 27, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 26, "Unimplemented type in lex_token"
+    assert len(OpType) == 27, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -356,6 +356,10 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token.startswith("."):
         return Op(OpType.PUSH_FIELD, token[1:])
+
+    elif token.startswith("@"):
+        _type = parse_type((token[1:], State.loc), "load type")
+        return Op(OpType.TYPED_LOAD, _type)
 
     elif State.current_proc is not None:
         if token in State.current_proc.variables:

@@ -20,6 +20,7 @@ class OpType(Enum):
     PUSH_BIND_STACK = auto()
     UNBIND = auto()
     CALL = auto()
+    TYPED_LOAD = auto()
     PACK = auto()
     UNPACK = auto()
     PUSH_FIELD = auto()
