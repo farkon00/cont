@@ -17,8 +17,9 @@ include std.cn
   bind prev2 prev num:
     prev
     prev2 prev +
+    dup print
     num 1 -
     dup 0 >
   end
-end 
+end
 ```
