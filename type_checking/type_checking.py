@@ -4,7 +4,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 22, "Unimplemented type in type_checking.py"
+assert len(OpType) == 23, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -36,11 +36,13 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
 def type_check(ops: list[Op]):
     stack: list = [] 
     
-    for op in ops:
-        type_check_op(op, stack)
+    for index, op in enumerate(ops):
+        new_op = type_check_op(op, stack)
+        if new_op is not None:
+            ops[index] = new_op
 
-def type_check_op(op: Op, stack: list):
-    assert len(OpType) == 22, "Unimplemented type in type_check_op"
+def type_check_op(op: Op, stack: list) -> Op | None:
+    assert len(OpType) == 23, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -115,9 +117,11 @@ def type_check_op(op: Op, stack: list):
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)
     elif op.type == OpType.OPERATOR:
-        type_check_operator(op, stack)
+        return type_check_operator(op, stack)
 
-def type_check_operator(op: Op, stack: list):
+    return None
+
+def type_check_operator(op: Op, stack: list) -> Op | None:
     assert len(Operator) == 19, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
@@ -149,6 +153,9 @@ def type_check_operator(op: Op, stack: list):
         check_stack(stack, [Ptr()])
         if ptr.typ is None:
             check_stack(stack, [Int()], arg=1)
+        elif isinstance(ptr.typ, Struct):
+            check_stack(stack, [Ptr(ptr.typ)], arg=1)
+            return Op(OpType.MOVE_STRUCT, sizeof(ptr.typ), State.loc)
         else:
             check_stack(stack, [ptr.typ], arg=1)
     elif op.operand == Operator.STORE8:
@@ -158,6 +165,8 @@ def type_check_operator(op: Op, stack: list):
         check_stack(stack, [Ptr()])
         if ptr.typ is None:
             stack.append(Int())
+        elif isinstance(ptr.typ, Struct):
+            State.throw_error("cannot unpack structures to stack currently")
         else:
             stack.append(ptr.typ)
     elif op.operand == Operator.LOAD8:
@@ -167,3 +176,5 @@ def type_check_operator(op: Op, stack: list):
         check_stack(stack, [Int()])
     else:
         assert False, f"Unimplemented operator in type_check_operator {op.operand.name}"
+
+    return None

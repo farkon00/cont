@@ -36,7 +36,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 22, "Unimplemented type in parsing.py"
+assert len(OpType) == 23, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -85,7 +85,7 @@ def lex_string(string: str) -> Op | None:
     return None
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 22, "Unimplemented type in lex_token"
+    assert len(OpType) == 23, "Unimplemented type in lex_token"
 
     string = lex_string(token)
     if string:
@@ -160,7 +160,7 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "var":
         name = next(State.tokens)
-        _type = parse_type(next(State.tokens), "variable") 
+        _type = parse_type(next(State.tokens), "variable", False) 
         State.check_name(name, "variable")
         Memory.new_memory(name[0], sizeof(_type))
         if State.current_proc is not None:

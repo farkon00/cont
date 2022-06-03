@@ -37,7 +37,7 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: tuple[str, str], error):
+def parse_type(token: tuple[str, str], error, auto_ptr: bool = True):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if name.startswith("*"):
@@ -46,6 +46,11 @@ def parse_type(token: tuple[str, str], error):
         return Int()
     elif name == "ptr":
         return Ptr()
+    elif name in State.structures:
+        if auto_ptr:
+            return Ptr(State.structures[name])
+        else:
+            return State.structures[name]
     else:
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 
