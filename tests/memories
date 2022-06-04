@@ -1,0 +1,24 @@
+include std.cn
+
+memory a 16
+
+12 a !
+a @ print
+76 a 8 ptr+ !8
+a 8 ptr+ @ print
+
+proc local:
+  memory b 8
+  2123 b !8
+  b @ print
+end
+
+local
+local
+local
+:
+12
+76
+4200523
+4200523
+4200523
