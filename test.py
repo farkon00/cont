@@ -33,7 +33,7 @@ def test(test_name):
     else:
         exp_stderr = ""
 
-    subprocess.run(["python3", "cont.py", "tests/temp/code.cn", "-i", "tests/temp/stdin", "-e",
+    subprocess.run(["python", "cont.py", "tests/temp/code.cn", "-i", "tests/temp/stdin", "-e",
                     f"tests/results/{test_name}_stderr", "-o", f"tests/results/{test_name}_stdout", "-r"])
 
     with open(f"tests/results/{test_name}_stdout", "r") as f:
