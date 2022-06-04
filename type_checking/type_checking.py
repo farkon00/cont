@@ -97,8 +97,8 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     elif op.type == OpType.DEFPROC:
         State.route_stack.append(("proc", stack.copy()))
         stack.clear()
-        stack.extend(State.procs[op.operand].in_stack)
-        State.current_proc = State.procs[op.operand]
+        stack.extend(op.operand.in_stack)
+        State.current_proc = op.operand
     elif op.type == OpType.ENDPROC:
         check_route_stack(
             stack, State.get_proc_by_block(op.operand).out_stack, "in procedure definition"
@@ -118,7 +118,29 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         struct = State.structures[op.operand]
         check_stack(stack, struct.fields_types.copy())
         stack.append(Ptr(struct))
-    elif op.type in (OpType.PUSH_FIELD, OpType.PUSH_FIELD_PTR):
+    elif op.type in (OpType.PUSH_FIELD, ):
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
+        ptr = stack[-1]
+        check_stack(stack, [Ptr()])
+        if not isinstance(ptr.typ, Struct):
+            State.throw_error(f"cant access field of non-struct : {type_to_str(ptr.typ)}")
+        if op.operand not in (*ptr.typ.fields, *ptr.typ.methods):
+            State.throw_error(f"field {op.operand} not found on {type_to_str(ptr.typ)}")
+        if op.operand in ptr.typ.fields:
+            offset = 0
+            for i, j in ptr.typ.fields.items():
+                if i == op.operand:
+                    break
+                offset += sizeof(j)
+            stack.append(ptr.typ.fields[op.operand])
+            return Op(OpType.PUSH_FIELD, offset, op.loc)
+        else:
+            method = ptr.typ.methods[op.operand]
+            check_stack(stack + [ptr], method.in_stack.copy())
+            stack.extend(method.out_stack)
+            return Op(OpType.CALL, method, op.loc)
+    elif op.type == OpType.PUSH_FIELD_PTR:
         if len(stack) < 1:
             State.throw_error("stack is too short")
         ptr = stack[-1]
@@ -132,12 +154,8 @@ def type_check_op(op: Op, stack: list) -> Op | None:
             if i == op.operand:
                 break
             offset += sizeof(j)
-        if op.type == OpType.PUSH_FIELD:
-            stack.append(ptr.typ.fields[op.operand])
-            return Op(OpType.PUSH_FIELD, offset, op.loc)
-        else:
-            stack.append(Ptr(ptr.typ.fields[op.operand]))
-            return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
+        stack.append(Ptr(ptr.typ.fields[op.operand]))
+        return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)

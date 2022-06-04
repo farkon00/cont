@@ -156,14 +156,14 @@ jmp addr_{op.operand.start}
 addr_{op.operand.end}:
 """
     elif op.type == OpType.DEFPROC:
-        State.current_proc = State.procs[op.operand]
+        State.current_proc = op.operand
         return comment + \
 f"""
-jmp addr_{State.current_proc.block.end}
-addr_{State.current_proc.ip}:
+jmp addr_{op.operand.block.end}
+addr_{op.operand.ip}:
 pop rax
 mov rbx, [call_stack_ptr]
-add rbx, {State.current_proc.memory_size}
+add rbx, {op.operand.memory_size}
 mov [call_stack+rbx], rax
 add rbx, 8
 mov [call_stack_ptr], rbx

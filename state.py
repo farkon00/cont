@@ -41,23 +41,28 @@ class Memory:
         return mem
 
 
+class Proc:
+    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, owner=None):
+        self.name: str = name
+        self.ip: int = ip
+        self.in_stack: list[object] = in_stack + ([owner] if owner is not None else []) 
+        self.out_stack: list[object] = out_stack
+        self.block: Block = block
+        self.memories: dict[str, Memory] = {}
+        self.memory_size : int = 0
+        self.variables : dict[str, object] = {}
+        
+        if owner is not None:
+            owner.typ.methods[self.name] = self
+
+
 @dataclass
 class Struct:
     name: str
     fields: dict[str, object]
     fields_types: list[object]
     is_unpackable: bool
-
-class Proc:
-    def __init__(self, name: str, ip: int, in_stack: list[type], out_stack: list[type], block: Block):
-        self.name: str = name
-        self.ip: int = ip
-        self.in_stack: list[type] = in_stack
-        self.out_stack: list[type] = out_stack
-        self.block: Block = block
-        self.memories: dict[str, Memory] = {}
-        self.memory_size : int = 0
-        self.variables : dict[str, object] = {}
+    methods: dict[str, Proc]
 
 
 class StateSaver:
@@ -129,7 +134,7 @@ class State:
     @staticmethod
     def get_proc_by_block(block: Block):
         proc_op = State.ops_by_ips[block.start]
-        return State.procs[proc_op.operand]
+        return proc_op.operand
 
     @staticmethod
     def throw_error(error: str, do_exit: bool = True):

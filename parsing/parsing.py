@@ -3,7 +3,7 @@ import os
 from typing import Iterable
 
 from compile_eval.compile_eval import evaluate_block
-from type_checking.types import parse_type, sizeof, type_to_str
+from type_checking.types import Ptr, parse_type, sizeof
 
 from .op import *
 from state import *
@@ -214,13 +214,24 @@ def lex_token(token: str) -> Op | None | list:
         return op
         
     elif token == "proc":
-        name = next(State.tokens)
-        name_value = name[0]
-        in_types: list[type] = []
-        out_types: list[type] = []
+        first_token: tuple[str, str] = next(State.tokens)
+        in_types: list[object] = []
+        out_types: list[object] = []
+        owner: Ptr | None = None
 
         if State.current_proc is not None:
             sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
+
+        if first_token[0].startswith("[") and first_token[0].endswith("]"):
+            name = next(State.tokens)
+            if first_token[0][1:-1] not in State.structures:
+                State.loc = State.loc = f"{State.filename}:{first_token[1]}"
+                State.throw_error(f"structure {first_token[0][1:-1]} is not defined")
+            owner = Ptr(State.structures[first_token[0][1:-1]])
+        else:
+            name = first_token
+        
+        name_value = name[0]
 
         has_contaract = ":" not in name[0]
         try:
@@ -262,14 +273,16 @@ def lex_token(token: str) -> Op | None | list:
             if queued_token[0]:
                 State.tokens_queue.append(queued_token)
 
-        op = Op(OpType.DEFPROC, name_value)
+        block = Block(BlockType.PROC, -1)
+        proc = Proc(name_value, -1, in_types, out_types, block, owner)
+        op = Op(OpType.DEFPROC, proc)
         ip = State.get_new_ip(op)
-
-        block = Block(BlockType.PROC, ip)
-        State.procs[name_value] = Proc(name_value, ip, in_types, out_types, block)
-        State.current_proc = State.procs[name_value]
+        block.start = ip
+        proc.ip = ip
+        if owner is None:
+            State.procs[name_value] = proc
+        State.current_proc = proc
         State.block_stack.append(block)
-
         return op
 
     elif token == "unpack":
@@ -305,7 +318,7 @@ def lex_token(token: str) -> Op | None | list:
             State.loc = current_token[1]
             State.throw_error("field name was not defined")
 
-        State.structures[name[0]] = Struct(name[0], fields, struct_types, State.is_unpack) # type: ignore
+        State.structures[name[0]] = Struct(name[0], fields, struct_types, State.is_unpack, {}) # type: ignore
         State.is_unpack = False
 
         return None
