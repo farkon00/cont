@@ -1,19 +1,17 @@
-from os import mkdir
+import os
 import subprocess
 import pytest
 
-tests = [
-    "arithmetics"
-]
+tests = os.listdir("tests")
 
 try:
-    mkdir("tests/results")
+    os.mkdir("tests/results")
 except FileExistsError:
-    pass
+    tests.remove("results")
 try:
-    mkdir("tests/temp")
+    os.mkdir("tests/temp")
 except FileExistsError:
-    pass
+    tests.remove("temp")
 
 @pytest.mark.parametrize("test_name", tests)
 def test(test_name):
