@@ -11,7 +11,6 @@ def main():
     # Argv handeling
     run = False
     is64 = False
-    unsafe = False
     program = None
 
     args = (i for i in sys.argv[1:])
@@ -25,10 +24,9 @@ def main():
                 print("    -r            Automaticaly run the program")
                 print("    -r64          Automaticaly run the program and use fasm.x64")
                 print("    -x64          Use fasm.x64 for compiling fasm")
-                print("    -unsafe       Dont perform type checking")
-                print("     -o <path>    Moves stdout of program to <path>")
-                print("     -i <path>    Moves stdin of program to <path>")
-                print("     -e <path>    Moves stderr of program to <path>")
+                print("    -o <path>     Moves stdout of program to <path>")
+                print("    -i <path>     Moves stdin of program to <path>")
+                print("    -e <path>     Moves stderr of program to <path>")
                 exit(0)
             else:
                 print(f"Unknown option: {i}")
@@ -41,8 +39,6 @@ def main():
                 is64 = True
             elif i == "-x64":
                 is64 = True
-            elif i == "-unsafe":
-                unsafe = True
             elif i == "-o":
                 try:
                     sys.stdout = open(next(args), "w")
@@ -80,8 +76,7 @@ def main():
 
     ops = parse_to_ops(program)
 
-    if not unsafe:
-        type_check(ops)
+    type_check(ops)
 
     with open(f"{file_name}.asm", "w") as f:
         f.write(generate_fasm(ops))
