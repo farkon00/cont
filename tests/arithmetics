@@ -1,10 +1,26 @@
 include std.cn 
 
-memory buf 1024
-buf input puts
+1 2 + print
+123 348934 + print
+1242143 354 - print
+3421 35124123 - print
+234 45 * print
+12 43 * print
+12 6 / print
+690 42 / print
+69 42 % print
+2141 654 % print
+12432 654 div print print 
 :
-stdin1
-:
-stdin1
-:
- 
+3
+349057
+1241789
+18446744073674430914
+10530
+516
+2
+16
+27
+179
+6
+19

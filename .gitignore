@@ -6,6 +6,8 @@ test
 stdin.txt
 stdout.txt
 stderr.txt
+tests/results/
+tests/temp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
