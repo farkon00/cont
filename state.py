@@ -124,7 +124,7 @@ class State:
 
     @staticmethod
     def check_name(token: tuple[str, str], error="procedure"):
-        if token[0] in State.procs or token[0] in State.memories or token[0] in State.constants:
+        if token[0] in State.procs or token[0] in State.memories or token[0] in State.constants or token[0] in State.structures:
             State.loc = token[1]
             State.throw_error(f"name for {error} \"{token[0]}\" is already taken")
         if token[0] in State.UNAVAILABLE_NAMES:

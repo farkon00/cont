@@ -310,6 +310,7 @@ def lex_token(token: str) -> Op | None | list:
                 if current_token[0] in fields:
                     State.loc = current_token[1]
                     State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
+                State.check_name(current_token, "field")
                 fields[current_token[0]] = field_type
                 struct_types.append(field_type)
                 field_type = -1
