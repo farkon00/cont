@@ -1,0 +1,25 @@
+include std.cn
+
+1 if
+  "if true\n" puts
+end
+
+0 if
+  "if false\n" puts
+end
+
+1 if
+  "if true\n" puts
+else
+  "else true\n" puts
+end
+
+0 if
+  "if false\n" puts
+else
+  "else false\n" puts
+end
+:
+if true
+if true
+else false
