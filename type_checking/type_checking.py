@@ -162,6 +162,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
     elif op.type == OpType.CALL_LIKE:
         check_stack(stack, [Addr(), *op.operand.in_stack])
+        stack.extend(op.operand.out_stack)
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)
