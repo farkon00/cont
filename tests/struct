@@ -1,0 +1,35 @@
+unpack struct Vector2
+  int x
+  int y
+end
+
+struct Vector3
+  int x
+  int y
+  int z
+end
+
+proc [Vector2] 3diffy -> Vector3:
+  // I can use unpacking here, but i want to test getting fields
+  bind self:
+    self .x
+    self .y
+  end
+  0 Vector3
+end
+
+69 42 Vector2
+bind vec:
+  vec @ 
+  swap print print
+  vec .3diffy
+  dup .x print
+  dup .y print
+  dup .z print 
+end
+:
+69
+42
+69
+42
+0
