@@ -28,6 +28,7 @@ class OpType(Enum):
     PUSH_FIELD = auto()
     PUSH_FIELD_PTR = auto()
     MOVE_STRUCT = auto()
+    CALL_LIKE = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 
