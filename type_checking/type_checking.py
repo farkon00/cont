@@ -139,7 +139,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
             return Op(OpType.PUSH_FIELD, offset, op.loc)
         else:
             method = ptr.typ.methods[op.operand]
-            check_stack(stack + [ptr], method.in_stack.copy())
+            check_stack(stack, method.in_stack.copy()[:-1])
             stack.extend(method.out_stack)
             return Op(OpType.CALL, method, op.loc)
     elif op.type == OpType.PUSH_FIELD_PTR:
