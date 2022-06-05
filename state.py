@@ -53,7 +53,7 @@ class Proc:
         self.variables : dict[str, object] = {}
         
         if owner is not None:
-            owner.typ.methods[self.name] = self
+            owner.typ.add_method(self)
 
 
 class Struct:
@@ -65,6 +65,11 @@ class Struct:
         self.methods: dict[str, Proc] = {} if parent is None else parent.methods
         self.parent: "Struct" | None = parent
         self.children: list["Struct"] = []
+
+    def add_method(self, method: Proc):
+        self.methods[method.name] = method
+        for i in self.children:
+            i.add_method(method)
 
 
 class StateSaver:
