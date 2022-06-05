@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import sys
-from typing import Generator
+from typing import Generator, Optional
 from enum import Enum, auto
 
 from parsing.op import Op
@@ -56,13 +56,15 @@ class Proc:
             owner.typ.methods[self.name] = self
 
 
-@dataclass
 class Struct:
-    name: str
-    fields: dict[str, object]
-    fields_types: list[object]
-    is_unpackable: bool
-    methods: dict[str, Proc]
+    def __init__(self, name: str, fields: dict[str, object], fields_types: list[object], parent: Optional["Struct"]):
+        self.name: str = name
+        self.fields: dict[str, object] = fields
+        self.fields_types: list[object] = fields_types
+        self.is_unpackable: bool = State.is_unpack
+        self.methods: dict[str, Proc] = {} if parent is None else parent.methods
+        self.parent: "Struct" | None = parent
+        self.children: list["Struct"] = []
 
 
 class StateSaver:

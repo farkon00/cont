@@ -86,6 +86,78 @@ def lex_string(string: str) -> Op | None:
 
     return None
 
+def parse_proc_head():
+    first_token: tuple[str, str] = next(State.tokens)
+    in_types: list[object] = []
+    out_types: list[object] = []
+    owner: Ptr | None = None
+
+    if State.current_proc is not None:
+        sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
+
+    if first_token[0].startswith("[") and first_token[0].endswith("]"):
+        name = next(State.tokens)
+        if first_token[0][1:-1] not in State.structures:
+            State.loc = State.loc = f"{State.filename}:{first_token[1]}"
+            State.throw_error(f"structure {first_token[0][1:-1]} is not defined")
+        owner = Ptr(State.structures[first_token[0][1:-1]])
+    else:
+        name = first_token
+    
+    name_value = name[0]
+
+    has_contaract = ":" not in name[0]
+    try:
+        parts = name[0].split(":")
+        name_value = parts[0]
+        queued_token = (parts[1].strip(), name[1])
+        if queued_token[0]:
+            State.tokens_queue.append(queued_token)
+    except IndexError:
+        pass
+
+    State.check_name((name_value, name[1]), "procedure")
+
+    proc_token = ("", "")
+    types = in_types
+    while ":" not in proc_token[0] and has_contaract:
+        try:
+            proc_token = next(State.tokens)
+        except GeneratorExit:
+            State.loc = f"{State.filename}:{name[1]}"
+            State.throw_error("proc contract was not closed")
+        proc_token_value = proc_token[0].split(":")[0].strip()
+        if not proc_token_value:
+            break
+        elif proc_token_value == "->":
+            if types is out_types:
+                State.loc = proc_token[1]
+                State.throw_error("few -> separators was found in proc contract")
+            types = out_types
+        else:
+            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True)
+            if isinstance(res, Iterable):
+                types.extend(res)
+            else:
+                types.append(res)
+
+    if has_contaract:
+        queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
+        if queued_token[0]:
+            State.tokens_queue.append(queued_token)
+
+    block = Block(BlockType.PROC, -1)
+    proc = Proc(name_value, -1, in_types, out_types, block, owner)
+    op = Op(OpType.DEFPROC, proc)
+    ip = State.get_new_ip(op)
+    block.start = ip
+    proc.ip = ip
+    if owner is None:
+        State.procs[name_value] = proc
+    State.current_proc = proc
+    State.block_stack.append(block)
+    return op
+
 def lex_token(token: str) -> Op | None | list:
     assert len(OpType) == 28, "Unimplemented type in lex_token"
 
@@ -214,88 +286,27 @@ def lex_token(token: str) -> Op | None | list:
         return op
         
     elif token == "proc":
-        first_token: tuple[str, str] = next(State.tokens)
-        in_types: list[object] = []
-        out_types: list[object] = []
-        owner: Ptr | None = None
-
-        if State.current_proc is not None:
-            sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
-
-        if first_token[0].startswith("[") and first_token[0].endswith("]"):
-            name = next(State.tokens)
-            if first_token[0][1:-1] not in State.structures:
-                State.loc = State.loc = f"{State.filename}:{first_token[1]}"
-                State.throw_error(f"structure {first_token[0][1:-1]} is not defined")
-            owner = Ptr(State.structures[first_token[0][1:-1]])
-        else:
-            name = first_token
-        
-        name_value = name[0]
-
-        has_contaract = ":" not in name[0]
-        try:
-            parts = name[0].split(":")
-            name_value = parts[0]
-            queued_token = (parts[1].strip(), name[1])
-            if queued_token[0]:
-                State.tokens_queue.append(queued_token)
-        except IndexError:
-            pass
-
-        State.check_name((name_value, name[1]), "procedure")
-
-        proc_token = ("", "")
-        types = in_types
-        while ":" not in proc_token[0] and has_contaract:
-            try:
-                proc_token = next(State.tokens)
-            except GeneratorExit:
-                State.loc = f"{State.filename}:{name[1]}"
-                State.throw_error("proc contract was not closed")
-            proc_token_value = proc_token[0].split(":")[0].strip()
-            if not proc_token_value:
-                break
-            elif proc_token_value == "->":
-                if types is out_types:
-                    State.loc = proc_token[1]
-                    State.throw_error("few -> separators was found in proc contract")
-                types = out_types
-            else:
-                res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True)
-                if isinstance(res, Iterable):
-                    types.extend(res)
-                else:
-                    types.append(res)
-
-        if has_contaract:
-            queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
-            if queued_token[0]:
-                State.tokens_queue.append(queued_token)
-
-        block = Block(BlockType.PROC, -1)
-        proc = Proc(name_value, -1, in_types, out_types, block, owner)
-        op = Op(OpType.DEFPROC, proc)
-        ip = State.get_new_ip(op)
-        block.start = ip
-        proc.ip = ip
-        if owner is None:
-            State.procs[name_value] = proc
-        State.current_proc = proc
-        State.block_stack.append(block)
-        return op
+        return parse_proc_head()
 
     elif token == "unpack":
         State.is_unpack = True
 
     elif token == "struct":
-        name = next(State.tokens)
+        first_token = next(State.tokens)
+        parent = None
+        if first_token[0].startswith("(") and first_token[0].endswith(")"):
+            if first_token[0][1:-1] not in State.structures:
+                State.throw_error(f"structure \"{first_token[0][1:-1]}\" is not defined")
+            parent = State.structures[first_token[0][1:-1]]
+            name = next(State.tokens)
+        else:
+            name = first_token
         State.check_name(name, "structure")
         
         current_token = ("", "")
         field_type = -1
-        fields = {}
-        struct_types = []
+        fields = {} if parent is None else parent.fields
+        struct_types = [] if parent is None else parent.fields_types
         while True:
             try:
                 current_token = next(State.tokens)
@@ -319,8 +330,12 @@ def lex_token(token: str) -> Op | None | list:
             State.loc = current_token[1]
             State.throw_error("field name was not defined")
 
-        State.structures[name[0]] = Struct(name[0], fields, struct_types, State.is_unpack, {}) # type: ignore
+        struct = Struct(name[0], fields, struct_types, parent)
+        if parent is not None:
+            parent.children.append(struct)
+
         State.is_unpack = False
+        State.structures[name[0]] = struct
 
         return None
 
