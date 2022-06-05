@@ -12,6 +12,19 @@ class Ptr:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+class Array:
+    def __init__(self, len, typ = None):
+        self.len = len
+        self.typ = typ
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Array):
+            return (self.typ == other.typ and self.len == other.len) or other.typ is None or self.typ is None 
+        return False
+        
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
 class Int:
     def __eq__(self, other) -> bool:
         return isinstance(other, Int) or other is None
@@ -39,6 +52,8 @@ def type_to_str(_type):
             return "*" + type_to_str(_type.typ)
         else:
             return "ptr"
+    elif isinstance(_type, Array):
+        return type_to_str(_type.typ) + "[" + str(_type.len) + "]" 
     elif isinstance(_type, Struct):
         return _type.name
     elif _type is None:
@@ -66,6 +81,19 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         if name[1:] not in State.structures:
             State.throw_error(f"structure \"{name[1:]}\" was not found")
         return State.structures[name[1:]].fields_types
+    elif name.startswith("[") and name.endswith("]"):
+        if name[1:-1] in State.constants:
+            if auto_ptr:
+                return Ptr(Array(State.constants[name[1:-1]], parse_type(next(State.tokens), error, auto_ptr, allow_unpack)))
+            else:
+                return Array(State.constants[name[1:-1]], parse_type(next(State.tokens), error, auto_ptr, allow_unpack))
+        elif name[1:-1].isnumeric():
+            if auto_ptr:
+                return Ptr(Array(int(name[1:-1]), parse_type(next(State.tokens), error, auto_ptr, allow_unpack)))
+            else:
+                return Array(int(name[1:-1]), parse_type(next(State.tokens), error, auto_ptr, allow_unpack))
+        else:
+            State.throw_error(f"constant \"{name[1:-1]}\" was not found")
     else:
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 
@@ -74,6 +102,8 @@ def sizeof(_type) -> int:
         return 8
     elif isinstance(_type, Struct):
         return sum([sizeof(field) for field in _type.fields_types])
+    elif isinstance(_type, Array):
+        return _type.len * sizeof(_type.typ)
     elif _type is None:
         State.throw_error("cant get size of any")
     else:
@@ -102,6 +132,8 @@ def check_varient(got: object, exp: object):
     if isinstance(exp, Addr) and isinstance(got, Addr):
         return True
     if isinstance(exp, Ptr) and isinstance(got, Ptr):
+        return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
+    if isinstance(exp, Array) and isinstance(got, Array):
         return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
     if isinstance(exp, Struct) and isinstance(got, Struct):
         # equal is covariant
