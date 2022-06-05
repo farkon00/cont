@@ -69,3 +69,39 @@ def sizeof(_type) -> int:
         assert False, f"Unimplemented type in sizeof: {_type}"
     
     return 0 # Mypy, shut up!
+
+def check_contravariant(got: Struct, exp: Struct) -> bool:
+    """
+    Not recomended to use raw, use check_varient instead
+    If you only need contravariant check, refactor this function to work in all cases
+    Now it only works with structures
+    """
+    for i in got.children:
+        if i is exp:
+            return True
+        if check_contravariant(i, exp):
+            return True
+
+    return False
+
+
+def check_varient(got: object, exp: object):
+    if isinstance(exp, Int) and isinstance(got, Int):
+        return True
+    if isinstance(exp, Ptr) and isinstance(got, Ptr):
+        return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
+    if isinstance(exp, Struct) and isinstance(got, Struct):
+        # equal is covariant
+        return got == exp or check_contravariant(got, exp)
+
+    return False
+
+def down_cast(type1: object, type2: object) -> object:
+    """
+    Finds object lower in hierarchy and returns it
+    BEFORE CALLING ENSURE, THAT TYPES ARE RELATED
+    """
+    if type1 == type2:
+        return type2
+    else:
+        return type1

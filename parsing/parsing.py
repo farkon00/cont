@@ -305,8 +305,8 @@ def lex_token(token: str) -> Op | None | list:
         
         current_token = ("", "")
         field_type = -1
-        fields = {} if parent is None else parent.fields
-        struct_types = [] if parent is None else parent.fields_types
+        fields = {} if parent is None else parent.fields.copy()
+        struct_types = [] if parent is None else parent.fields_types.copy()
         while True:
             try:
                 current_token = next(State.tokens)

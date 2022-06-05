@@ -71,6 +71,21 @@ class Struct:
         for i in self.children:
             i.add_method(method)
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Struct):
+            return False
+        if self is other:
+            return True
+        curr: Struct | None = self
+        while curr is not None:
+            curr = curr.parent
+            if curr is other:
+                return True
+        return False
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
 
 class StateSaver:
     def __init__(self):

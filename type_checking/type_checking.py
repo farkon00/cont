@@ -28,10 +28,12 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
         sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n")
         exit(1)
     for i in range(len(stack1)):
-        if stack1[i] != stack2[i] and stack1[i] is not None and stack2[i] is not None:
+        if not check_varient(stack1[i], stack2[i]) and stack1[i] is not None and stack2[i] is not None:
             State.throw_error(f"different types {error}", False)
             sys.stderr.write(f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n")
             exit(1)
+
+        stack1[i] = down_cast(stack1[i], stack2[i])
 
 def type_check(ops: list[Op]):
     stack: list = [] 
@@ -118,7 +120,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         struct = State.structures[op.operand]
         check_stack(stack, struct.fields_types.copy())
         stack.append(Ptr(struct))
-    elif op.type in (OpType.PUSH_FIELD, ):
+    elif op.type == OpType.PUSH_FIELD:
         if len(stack) < 1:
             State.throw_error("stack is too short")
         ptr = stack[-1]
