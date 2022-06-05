@@ -14,7 +14,14 @@ class Ptr:
 
 class Int:
     def __eq__(self, other) -> bool:
-        return isinstance(other, Int) or other == None
+        return isinstance(other, Int) or other is None
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+class Addr:
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Addr) or other is None
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
@@ -25,6 +32,8 @@ def type_to_str(_type):
     """
     if isinstance(_type, Int):
         return "int"
+    elif isinstance(_type, Addr):
+        return "addr"
     elif isinstance(_type, Ptr):
         if _type.typ is not None:
             return "*" + type_to_str(_type.typ)
@@ -46,6 +55,8 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         return Int()
     elif name == "ptr":
         return Ptr()
+    elif name == "addr":
+        return Addr()
     elif name in State.structures:
         if auto_ptr:
             return Ptr(State.structures[name])
@@ -59,12 +70,12 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 
 def sizeof(_type) -> int:
-    if isinstance(_type, Int) or isinstance(_type, Ptr):
+    if isinstance(_type, Int) or isinstance(_type, Ptr) and isinstance(_type, Addr):
         return 8
     elif isinstance(_type, Struct):
         return sum([sizeof(field) for field in _type.fields_types])
     elif _type is None:
-        State.throw_error("Cant get size of any")
+        State.throw_error("cant get size of any")
     else:
         assert False, f"Unimplemented type in sizeof: {_type}"
     
@@ -87,6 +98,8 @@ def check_contravariant(got: Struct, exp: Struct) -> bool:
 
 def check_varient(got: object, exp: object):
     if isinstance(exp, Int) and isinstance(got, Int):
+        return True
+    if isinstance(exp, Addr) and isinstance(got, Addr):
         return True
     if isinstance(exp, Ptr) and isinstance(got, Ptr):
         return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None

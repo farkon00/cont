@@ -135,7 +135,7 @@ class State:
         *["syscall" + str(i) for i in range(7)], 
         "+", "-", "*", "div", "dup", "drop", "swap", "rot",
         "<", ">", "<=", ">=", "==", "!=", "!", "!8", "@", 
-        "@8", "(int)", "(ptr)", "print"
+        "@8", "print"
     ]
 
     @staticmethod

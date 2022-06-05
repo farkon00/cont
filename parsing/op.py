@@ -8,6 +8,7 @@ class OpType(Enum):
     PUSH_LOCAL_VAR = auto()
     PUSH_STR = auto()
     PUSH_NULL_STR = auto()
+    PUSH_PROC = auto()
     CAST = auto()
     IF = auto()
     ELSE = auto()
