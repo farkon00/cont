@@ -239,6 +239,7 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "var":
         name = next(State.tokens)
+        _type = parse_type(next(State.tokens), "variable", False) 
         State.check_name(name, "variable")
         Memory.new_memory(name[0], sizeof(_type))
         if State.current_proc is not None:
