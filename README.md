@@ -35,7 +35,7 @@ struct Vector2
   int y
 end
 
-struct (Vector3) Vector2
+struct (Vector2) Vector3
   int z
 end
 
