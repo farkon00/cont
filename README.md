@@ -3,6 +3,8 @@
 __Cont__ is compiled concatenative programming language written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).  
 
 # Examples
+You can find more examples in tests folder.
+
 ## Hello world
 ```
 include std.cn
