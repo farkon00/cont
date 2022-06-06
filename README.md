@@ -23,3 +23,28 @@ include std.cn
   end
 end
 ```
+
+## Structures
+Structures kinda support oop in cont. But dont expect some advenced oop features like interfaces 
+
+```
+struct Vector2
+  int x
+  int y
+end
+
+struct (Vector3) Vector2
+  int z
+end
+
+proc [Vector2] 3diffy -> Vector3:
+  bind self:
+    self .x self .y 0
+    Vector3
+  end
+end
+
+42 69 Vector2 .3diffy
+.x print
+// Btw you can call 3diffy on Vector3
+```
