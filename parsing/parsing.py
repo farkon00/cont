@@ -38,7 +38,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 30, "Unimplemented type in parsing.py"
+assert len(OpType) == 31, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -161,7 +161,7 @@ def parse_proc_head():
     return op
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 30, "Unimplemented type in lex_token"
+    assert len(OpType) == 31, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -239,7 +239,6 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "var":
         name = next(State.tokens)
-        _type = parse_type(next(State.tokens), "variable", False) 
         State.check_name(name, "variable")
         Memory.new_memory(name[0], sizeof(_type))
         if State.current_proc is not None:
@@ -371,6 +370,9 @@ def lex_token(token: str) -> Op | None | list:
             State.loc = name[1]
             State.throw_error(f"procedure \"{name[0]}\" is not defined")
         return Op(OpType.CALL_LIKE, State.procs[name[0]])
+
+    elif token == "[]":
+        return Op(OpType.INDEX)
 
     elif token in State.bind_stack:
         return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))

@@ -29,6 +29,7 @@ class OpType(Enum):
     PUSH_FIELD_PTR = auto()
     MOVE_STRUCT = auto()
     CALL_LIKE = auto()
+    INDEX = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 
@@ -54,7 +55,7 @@ class Operator(Enum):
     PRINT = auto()
 
 class Op:
-    def __init__(self, type: OpType, operand, loc: str = "") -> None:
+    def __init__(self, type: OpType, operand=None, loc: str = "") -> None:
         self.type: OpType = type
         self.operand = operand 
         self.loc: str = loc

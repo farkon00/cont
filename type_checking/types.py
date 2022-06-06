@@ -13,13 +13,14 @@ class Ptr:
         return not self.__eq__(other)
 
 class Array:
-    def __init__(self, len, typ = None):
+    def __init__(self, len=-1, typ=None):
         self.len = len
         self.typ = typ
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Array):
-            return (self.typ == other.typ and self.len == other.len) or other.typ is None or self.typ is None 
+            return (self.typ == other.typ and (self.len == other.len or -1 in (self.len, other.len)))\
+             or other.typ is None or self.typ is None 
         return False
         
     def __ne__(self, other) -> bool:
