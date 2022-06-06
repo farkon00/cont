@@ -61,11 +61,18 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False):
+def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False, end: str | None = None):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
+    if end is not None:
+        if end in name:
+            end_index = name.find(end)
+            State.tokens_queue.append((name[end_index+len(end):], token[1]))
+            name = name[:end_index] 
+            if not name.strip():
+                return None
     if name.startswith("*"):
-        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr=auto_ptr, allow_unpack=allow_unpack))
+        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack))
     elif name == "int":
         return Int()
     elif name == "ptr":
@@ -83,17 +90,15 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         return State.structures[name[1:]].fields_types
     elif name.startswith("[") and name.endswith("]"):
         if name[1:-1] in State.constants:
-            if auto_ptr:
-                return Ptr(Array(State.constants[name[1:-1]], parse_type(next(State.tokens), error, auto_ptr, allow_unpack)))
-            else:
-                return Array(State.constants[name[1:-1]], parse_type(next(State.tokens), error, auto_ptr, allow_unpack))
+            length = State.constants[name[1:-1]]
         elif name[1:-1].isnumeric():
-            if auto_ptr:
-                return Ptr(Array(int(name[1:-1]), parse_type(next(State.tokens), error, auto_ptr, allow_unpack)))
-            else:
-                return Array(int(name[1:-1]), parse_type(next(State.tokens), error, auto_ptr, allow_unpack))
+            length = int(name[1:-1])
         else:
             State.throw_error(f"constant \"{name[1:-1]}\" was not found")
+        arr = Array(length, parse_type(next(State.tokens), error, auto_ptr, allow_unpack, end))
+        if arr is None:
+            State.throw_error("array type was not defined")
+        return Ptr(arr) if auto_ptr else arr
     else:
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 

@@ -135,13 +135,15 @@ def parse_proc_head():
                 State.throw_error("few -> separators was found in proc contract")
             types = out_types
         else:
-            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True)
+            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True, end=":")
             if isinstance(res, Iterable):
                 types.extend(res)
+            elif res is None: # If ended in array type
+                break
             else:
                 types.append(res)
 
-    if has_contaract:
+    if has_contaract and ":" in proc_token:
         queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
         if queued_token[0]:
             State.tokens_queue.append(queued_token)
