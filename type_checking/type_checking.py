@@ -4,7 +4,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 31, "Unimplemented type in type_checking.py"
+assert len(OpType) == 32, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -44,7 +44,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 31, "Unimplemented type in type_check_op"
+    assert len(OpType) == 32, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -163,13 +163,13 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     elif op.type == OpType.CALL_LIKE:
         check_stack(stack, [Addr(), *op.operand.in_stack])
         stack.extend(op.operand.out_stack)
-    elif op.type == OpType.INDEX:
+    elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         if len(stack) < 1:
             State.throw_error("stack is too short")
         arr = stack[-1]
         check_stack(stack, [Int(), Ptr(Array())])
-        stack.append(arr.typ.typ)
-        return Op(OpType.INDEX, sizeof(arr.typ.typ))
+        stack.append(arr.typ.typ if op.type == OpType.INDEX else Ptr(arr.typ.typ))
+        return Op(op.type, sizeof(arr.typ.typ))
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)

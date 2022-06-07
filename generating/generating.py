@@ -3,7 +3,7 @@ from type_checking.types import sizeof
 from state import *
 
 assert len(Operator) == 19, "Unimplemented operator in generating.py"
-assert len(OpType) == 31, "Unimplemented type in generating.py"
+assert len(OpType) == 32, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -82,7 +82,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 31, "Unimplemented type in generate_op"
+    assert len(OpType) == 32, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -312,7 +312,7 @@ f"""
 pop rax
 call rax
 """
-    elif op.type == OpType.INDEX:
+    elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         return comment + \
 f"""
 pop r10
@@ -320,7 +320,7 @@ pop rbx
 mov rax, {op.operand}
 mul rbx
 add r10, rax
-mov rbx, [r10]
+mov rbx, {'[r10]' if op.type == OpType.INDEX else 'r10'}
 push rbx
 """
     elif op.type == OpType.CAST:

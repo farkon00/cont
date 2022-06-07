@@ -30,6 +30,7 @@ class OpType(Enum):
     MOVE_STRUCT = auto()
     CALL_LIKE = auto()
     INDEX = auto()
+    INDEX_PTR = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 
