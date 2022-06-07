@@ -26,6 +26,27 @@ include std.cn
 end
 ```
 
+## Memories
+
+```
+include std.cn
+
+memory a 16
+
+12 a !
+a @ print
+76 a 8 ptr+ !8
+a 8 ptr+ @ print
+
+proc local:
+  memory b 8
+  2123 b !8
+  b @ print
+end
+
+local
+```
+
 ## Structures
 Structures kinda support oop in cont. But dont expect some advenced oop features like interfaces 
 
