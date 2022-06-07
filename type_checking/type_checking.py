@@ -1,9 +1,10 @@
 from parsing.op import *
+from parsing.parsing import OPERATORS
 from state import *
 from .types import type_to_str
 from .types import *
 
-assert len(Operator) == 19, "Unimplemented operator in type_checking.py"
+assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
 assert len(OpType) == 32, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
@@ -179,7 +180,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     return None
 
 def type_check_operator(op: Op, stack: list) -> Op | None:
-    assert len(Operator) == 19, "Unimplemented operator in type_check_operator"
+    assert len(Operator) == 20, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
@@ -203,18 +204,20 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
         if len(stack) < 3:
             State.throw_error("stack is too short")
         stack[-3], stack[-2], stack[-1] = stack[-1], stack[-2], stack[-3]
-    elif op.operand == Operator.STORE:
+    elif op.operand in (Operator.STORE, Operator.STRONG_STORE):
         if len(stack) < 1:
             State.throw_error("stack is too short")
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         if ptr.typ is None:
             check_stack(stack, [Int()], arg=1)
-        elif isinstance(ptr.typ, Struct):
+        elif isinstance(ptr.typ, Struct) and op.operand == Operator.STORE:
             check_stack(stack, [Ptr(ptr.typ)], arg=1)
             return Op(OpType.MOVE_STRUCT, sizeof(ptr.typ), State.loc)
         else:
             check_stack(stack, [ptr.typ], arg=1)
+        if op.operand == Operator.STRONG_STORE:
+            return Op(OpType.OPERATOR, Operator.STORE, op.loc)
     elif op.operand == Operator.STORE8:
         check_stack(stack, [Int(), Ptr()])
     elif op.operand == Operator.LOAD:

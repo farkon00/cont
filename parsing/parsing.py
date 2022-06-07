@@ -24,6 +24,7 @@ OPERATORS = {
     "==" : Operator.EQ,
     "!=" : Operator.NE,
     "!" : Operator.STORE,
+    "!!" : Operator.STRONG_STORE,
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,

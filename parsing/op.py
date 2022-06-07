@@ -50,6 +50,7 @@ class Operator(Enum):
     GE = auto()
     NE = auto()
     STORE = auto()
+    STRONG_STORE = auto()
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
