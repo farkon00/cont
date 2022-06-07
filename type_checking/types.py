@@ -96,7 +96,7 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
             length = int(name[1:-1])
         else:
             State.throw_error(f"constant \"{name[1:-1]}\" was not found")
-        arr = Array(length, parse_type(next(State.tokens), error, auto_ptr, allow_unpack, end))
+        arr = Array(length, parse_type(next(State.tokens), error, True, False, end))
         if arr is None:
             State.throw_error("array type was not defined")
         return Ptr(arr) if auto_ptr else arr
@@ -104,7 +104,7 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         State.throw_error(f"unknown type \"{token[0]}\" in {error}")
 
 def sizeof(_type) -> int:
-    if isinstance(_type, Int) or isinstance(_type, Ptr) and isinstance(_type, Addr):
+    if isinstance(_type, Int) or isinstance(_type, Ptr) or isinstance(_type, Addr):
         return 8
     elif isinstance(_type, Struct):
         return sum([sizeof(field) for field in _type.fields_types])
@@ -113,7 +113,7 @@ def sizeof(_type) -> int:
     elif _type is None:
         State.throw_error("cant get size of any")
     else:
-        assert False, f"Unimplemented type in sizeof: {_type}"
+        assert False, f"Unimplemented type in sizeof: {type_to_str(_type)}"
     
     return 0 # Mypy, shut up!
 
