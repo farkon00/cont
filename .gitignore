@@ -1,11 +1,6 @@
 *.asm
 *.fasm
-code.txt
-code
 test
-stdin.txt
-stdout.txt
-stderr.txt
 tests/results/
 tests/temp/
 
