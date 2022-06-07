@@ -2,6 +2,15 @@
 
 __Cont__ is compiled concatenative programming language written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).  
 
+# Quick Start
+```
+$ python -V
+ Python >=3.10
+$ git clone https://github.com/farkon00/cont.git
+$ cd cont
+$ python cont.py <source_code>.cn -r
+```
+
 # Examples
 You can find more examples in tests folder.
 
