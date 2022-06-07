@@ -22,7 +22,7 @@ memory stderr 2048
 proc add_test int ptr:
   tests current_test @ ptr+ !str
   current_test 
-  sizeof str
+  sizeoftype str
   incby
 end
 

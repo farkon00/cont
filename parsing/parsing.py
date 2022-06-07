@@ -28,6 +28,7 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
+    "sizeof" : Operator.SIZEOF,
     "print" : Operator.PRINT,
 }
 END_TYPES = {
@@ -262,8 +263,8 @@ def lex_token(token: str) -> Op | None | list:
         State.constants[name[0]] = evaluate_block(State.loc)
         return None
 
-    elif token == "sizeof":
-        _type = parse_type(next(State.tokens), "sizeof", False)
+    elif token == "sizeoftype":
+        _type = parse_type(next(State.tokens), "size", False)
         return Op(OpType.PUSH_INT, sizeof(_type))
     
     elif token == "bind":

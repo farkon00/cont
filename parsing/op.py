@@ -54,6 +54,7 @@ class Operator(Enum):
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
+    SIZEOF = auto()
     PRINT = auto()
 
 class Op:

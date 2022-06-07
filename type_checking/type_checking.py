@@ -4,7 +4,7 @@ from state import *
 from .types import type_to_str
 from .types import *
 
-assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
+assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
 assert len(OpType) == 32, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
@@ -180,7 +180,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     return None
 
 def type_check_operator(op: Op, stack: list) -> Op | None:
-    assert len(Operator) == 20, "Unimplemented operator in type_check_operator"
+    assert len(Operator) == 21, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
@@ -225,6 +225,8 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
         check_stack(stack, [Ptr()])
         if ptr.typ is None:
             stack.append(Int())
+        elif ptr.typ == Array():
+            State.throw_error("cant unpack array to stack")
         elif isinstance(ptr.typ, Struct):
             if not ptr.typ.is_unpackable:
                 State.throw_error(f"cant unpack {type_to_str(ptr.typ)}")
@@ -235,6 +237,12 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
     elif op.operand == Operator.LOAD8:
         check_stack(stack, [Ptr()])
         stack.append(Int())
+    elif op.operand == Operator.SIZEOF:
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
+        _type = stack.pop()
+        stack.append(Int())
+        return Op(OpType.PUSH_INT, sizeof(_type))
     elif op.operand == Operator.PRINT:
         check_stack(stack, [Int()])
     else:
