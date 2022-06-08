@@ -113,6 +113,7 @@ class State:
     procs: dict[str, Proc] = {}
     structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
+    enums: dict[str, list[str]] = {}
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
@@ -148,7 +149,9 @@ class State:
 
     @staticmethod
     def check_name(token: tuple[str, str], error="procedure"):
-        if token[0] in State.procs or token[0] in State.memories or token[0] in State.constants or token[0] in State.structures:
+        if token[0] in State.procs or token[0] in State.memories or\
+           token[0] in State.constants or token[0] in State.structures or\
+           token[0] in State.enums:
             State.loc = token[1]
             State.throw_error(f"name for {error} \"{token[0]}\" is already taken")
         if token[0] in State.UNAVAILABLE_NAMES:

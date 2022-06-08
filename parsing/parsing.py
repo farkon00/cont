@@ -354,6 +354,22 @@ def lex_token(token: str) -> Op | None | list:
 
         return None
 
+    elif token == "enum":
+        name = next(State.tokens)
+        State.check_name(name, "enum")
+        values: list[str] = []
+        while True:
+            current_token = next(State.tokens)
+            if current_token[0] == "end":
+                break
+            if current_token[0] in values:
+                State.loc = current_token[1]
+                State.throw_error(f"enum value \"{current_token[0]}\" is already defined")
+            values.append(current_token[0])
+
+        State.enums[name[0]] = values
+        return None
+
     elif token == "include":
         name = next(State.tokens)
 
@@ -432,6 +448,12 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token.startswith("*") and token[1:] in State.procs:
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
+
+    elif token.split(".", 1)[0] in State.enums:
+        parts = token.split(".", 1)
+        if parts[1] not in State.enums[parts[0]]:
+            State.throw_error(f"enum value \"{parts[1]}\" is not defined")
+        return Op(OpType.PUSH_INT, State.enums[parts[0]].index(parts[1]))
 
     elif State.current_proc is not None:
         if token in State.current_proc.variables:
