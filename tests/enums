@@ -1,0 +1,17 @@
+include std.cn
+
+enum OpType
+  INT
+  PTR
+  IF
+  ELSE
+  WHILE
+end
+
+OpType.INT print
+OpType.WHILE print
+OpType.IF print
+:
+0
+4
+2
