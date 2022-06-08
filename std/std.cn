@@ -88,6 +88,9 @@ end
 proc open int int @str -> int:
   swap drop opensys
 end
+proc time -> int:
+  NULL timesys
+end
 
 proc clear_buf int ptr:
   bind len ptr:

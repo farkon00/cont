@@ -6,6 +6,7 @@ const SYSCALL_FORK 57 end
 const SYSCALL_EXECVE 59 end
 const SYSCALL_EXIT 60 end
 const SYSCALL_WAIT4 61 end
+const SYSCALL_TIME 201 end
 
 const STDIN 0 end
 const STDOUT 1 end
@@ -21,5 +22,7 @@ proc close int -> int: SYSCALL_CLOSE syscall1 end
 proc fork -> int: SYSCALL_FORK syscall0 end  
 proc execve ptr ptr ptr -> int: SYSCALL_EXECVE syscall3 end
 proc wait4 ptr int ptr int -> int: SYSCALL_WAIT4 syscall4 end
+
+proc timesys ptr -> int: SYSCALL_TIME syscall1 end
 
 proc exit int: SYSCALL_EXIT syscall1 drop end 
