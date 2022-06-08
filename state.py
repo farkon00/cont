@@ -57,7 +57,8 @@ class Proc:
 
 
 class Struct:
-    def __init__(self, name: str, fields: dict[str, object], fields_types: list[object], parent: Optional["Struct"]):
+    def __init__(self, name: str, fields: dict[str, object], fields_types: list[object],
+                 parent: Optional["Struct"], defaults: dict[int, int]):
         self.name: str = name
         self.fields: dict[str, object] = fields
         self.fields_types: list[object] = fields_types
@@ -65,6 +66,7 @@ class Struct:
         self.methods: dict[str, Proc] = {} if parent is None else parent.methods
         self.parent: "Struct" | None = parent
         self.children: list["Struct"] = []
+        self.defaults: dict[int, int] = defaults
 
     def add_method(self, method: Proc):
         self.methods[method.name] = method
