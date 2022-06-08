@@ -31,6 +31,7 @@ class OpType(Enum):
     CALL_LIKE = auto()
     INDEX = auto()
     INDEX_PTR = auto()
+    SIZEOF = auto()
     SYSCALL = auto()
     OPERATOR = auto()
 
@@ -54,7 +55,6 @@ class Operator(Enum):
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
-    SIZEOF = auto()
     PRINT = auto()
 
 class Op:

@@ -2,8 +2,8 @@ from parsing.op import *
 from type_checking.types import sizeof
 from state import *
 
-assert len(Operator) == 21, "Unimplemented operator in generating.py"
-assert len(OpType) == 32, "Unimplemented type in generating.py"
+assert len(Operator) == 20, "Unimplemented operator in generating.py"
+assert len(OpType) == 33, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -82,7 +82,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 32, "Unimplemented type in generate_op"
+    assert len(OpType) == 33, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -329,7 +329,7 @@ push rbx
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 21, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 20, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):

@@ -4,8 +4,8 @@ from state import *
 from .types import type_to_str
 from .types import *
 
-assert len(Operator) == 21, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 32, "Unimplemented type in type_checking.py"
+assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
+assert len(OpType) == 33, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -45,7 +45,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 32, "Unimplemented type in type_check_op"
+    assert len(OpType) == 33, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -171,6 +171,19 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         check_stack(stack, [Int(), Ptr(Array())])
         stack.append(arr.typ.typ if op.type == OpType.INDEX else Ptr(arr.typ.typ))
         return Op(op.type, sizeof(arr.typ.typ))
+    elif op.type == OpType.SIZEOF:
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
+        _type = stack.pop()
+        stack.append(Int())
+        for i in range(op.operand):
+            if not hasattr(_type, "typ"):
+                State.throw_error(f"{type_to_str(_type)} has no type")
+            if _type.typ is None:
+                State.throw_error(f"{type_to_str(_type)} has no type")
+            _type = _type.typ
+            
+        return Op(OpType.PUSH_INT, sizeof(_type))
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)
@@ -180,7 +193,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     return None
 
 def type_check_operator(op: Op, stack: list) -> Op | None:
-    assert len(Operator) == 21, "Unimplemented operator in type_check_operator"
+    assert len(Operator) == 20, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
@@ -237,12 +250,6 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
     elif op.operand == Operator.LOAD8:
         check_stack(stack, [Ptr()])
         stack.append(Int())
-    elif op.operand == Operator.SIZEOF:
-        if len(stack) < 1:
-            State.throw_error("stack is too short")
-        _type = stack.pop()
-        stack.append(Int())
-        return Op(OpType.PUSH_INT, sizeof(_type))
     elif op.operand == Operator.PRINT:
         check_stack(stack, [Int()])
     else:
