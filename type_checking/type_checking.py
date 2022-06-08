@@ -124,7 +124,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         args = struct.fields_types.copy()
         for i, j in enumerate(struct.defaults):
             del args[j-i]
-        check_stack(stack, args[::-1])
+        check_stack(stack, args)
         stack.append(Ptr(struct))
     elif op.type == OpType.PUSH_FIELD:
         if len(stack) < 1:

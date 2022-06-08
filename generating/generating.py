@@ -242,25 +242,26 @@ mov [rax], rbx
 """
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
+        size = sizeof(struct)
         buf = comment + \
 """
 mov rbx, struct_mem
 add rbx, [struct_mem_ptr]
 """
         offset = 0
-        for index, field in enumerate(struct.fields_types):
+        for index, field in list(enumerate(struct.fields_types))[::-1]:
+            offset += sizeof(field)
             if index not in struct.defaults:
                 buf += f"\npop rax\n"         
             else:
                 buf += f"\nmov rax, {struct.defaults[index]}\n"
             
-            buf += f"\nmov [rbx+{offset}], rax\n"
-            offset += sizeof(field)
+            buf += f"\nmov [rbx+{size-offset}], rax\n"
         buf += \
 f"""
 push rbx
 mov rax, [struct_mem_ptr]
-add rax, {offset}
+add rax, {size}
 
 xor rdx, rdx
 mov rbx, 65536
