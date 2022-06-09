@@ -1,5 +1,7 @@
 include std.cn
 
+"This isnt really working\nLoops arent supported\n" puts
+
 memory file 2048
 
 var tape [3000] int
