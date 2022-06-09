@@ -9,6 +9,11 @@ struct Vector3
   int z
 end
 
+struct (Vector2) Vector4
+  int z
+  int w
+end
+
 proc [Vector2] 3diffy -> Vector3:
   // I can use unpacking here, but i want to test getting fields
   bind self:
@@ -25,7 +30,10 @@ bind vec:
   vec .3diffy
   dup .x print
   dup .y print
-  dup .z print 
+  dup .z print
+  3 4 vec upcast(Vector4)
+  dup .z print
+  dup .w print 
 end
 :
 69
@@ -33,3 +41,5 @@ end
 69
 42
 0
+3
+4
