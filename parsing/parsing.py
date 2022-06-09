@@ -181,7 +181,7 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     for i in parts:
         res.append(Op(OpType.PUSH_FIELD, i, State.loc))
     
-    if auto_ptr:
+    if auto_ptr and res[-1].type == OpType.PUSH_FIELD:
         res[-1] = Op(OpType.PUSH_FIELD_PTR, res[-1].operand, State.loc)
     
     return res
