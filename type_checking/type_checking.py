@@ -5,7 +5,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 33, "Unimplemented type in type_checking.py"
+assert len(OpType) == 34, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -45,7 +45,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 33, "Unimplemented type in type_check_op"
+    assert len(OpType) == 34, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -68,6 +68,23 @@ def type_check_op(op: Op, stack: list) -> Op | None:
     elif op.type == OpType.CAST:
         check_stack(stack, [None])
         stack.append(op.operand)
+    elif op.type == OpType.UPCAST:
+        if len(stack) < 1:
+            State.throw_error("stack is too short")
+        struct = stack[-1]
+        check_stack(stack, [Ptr()])
+        if not isinstance(struct.typ, Struct):
+            State.throw_error("can't upcast non-struct")
+
+        struct = struct.typ
+        if op.operand != struct:
+            State.throw_error(f"can't upcast {type_to_str(struct)} to {type_to_str(op.operand)}")
+
+        check_stack(stack, op.operand.fields_types[len(struct.fields_types):])
+
+        stack.append(Ptr(op.operand))
+
+        return Op(OpType.UPCAST, (sizeof(op.operand), len(op.operand.fields_types) - len(struct.fields_types), sizeof(struct)), op.loc)
     elif op.type == OpType.IF:
         check_stack(stack, [Int()])
         State.route_stack.append(("if-end", stack.copy()))

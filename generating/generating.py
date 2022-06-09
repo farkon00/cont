@@ -3,7 +3,7 @@ from type_checking.types import sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 33, "Unimplemented type in generating.py"
+assert len(OpType) == 34, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -82,7 +82,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 33, "Unimplemented type in generate_op"
+    assert len(OpType) == 34, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -306,6 +306,34 @@ pop rax
 add rax, {op.operand}
 push rax
 """
+    elif op.type == OpType.UPCAST:
+        buf = comment + \
+"""
+pop rbx
+mov rax, [struct_mem_ptr]
+add rax, struct_mem
+"""
+        for i in range(op.operand[2] // 8):
+            buf += \
+f"""
+mov rcx, [rbx+{i*8}]
+mov [rax+{i*8}], rcx
+"""
+
+        for i in range(op.operand[1]):
+            buf += \
+f"""
+pop rcx
+mov [rax+{op.operand[0]-(i+1)*8}], rcx
+"""
+        buf += \
+f"""
+push rax
+mov rax, [struct_mem_ptr]
+add rax, {op.operand[0]}
+mov [struct_mem_ptr], rax
+"""
+        return buf
     elif op.type == OpType.CALL_LIKE:
         return comment + \
 f"""
