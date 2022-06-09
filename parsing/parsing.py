@@ -253,7 +253,11 @@ def lex_token(token: str) -> Op | None | list:
                 State.loc = next_token[1]
                 State.throw_error("variable can't be initialized with non-int value")
             value = evaluate_block(name[1], "variable value")
-            return [Op(OpType.PUSH_INT, value), Op(OpType.PUSH_VAR, name[0]), Op(OpType.OPERATOR, Operator.STORE)]
+            return [
+                Op(OpType.PUSH_INT, value), 
+                Op(OpType.PUSH_VAR if State.current_proc is None else OpType.PUSH_LOCAL_VAR, name[0]),
+                Op(OpType.OPERATOR, Operator.STORE)
+            ]
         else:
             State.tokens_queue.append(next_token)
 
