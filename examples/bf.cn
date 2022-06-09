@@ -1,0 +1,66 @@
+include std.cn
+
+memory file 2048
+
+var tape [3000] int
+var head int
+
+var inp int
+memory out 1
+
+var len int
+var loop_skip int
+var loop_stack [100] int
+var loop_ptr int
+
+O_RDONLY n"source.bf" opensys2
+bind fd:
+  2048 file
+  fd
+  read !len
+  fd close
+end
+
+0 len @
+while
+  dup file +ptr @8
+  dup 43 == if        // +
+    head @ tape *[] inc
+  else dup 45 == if   // -  
+    head @ tape *[] dec
+  else dup 60 == if   // <
+    head dec
+  else dup 62 == if   // >
+    head inc
+  else dup 46 == if   // .
+    head @ tape *[] @ out !8
+    1 out puts
+  else dup 44 == if   // ,
+    1 inp STDIN read drop
+    inp @8 head @ tape *[] !
+  else dup 91 == if                       // [
+    bind index char:
+      loop_skip @ not if
+        head @ tape []
+        if
+          index loop_ptr @ loop_stack *[] !
+          loop_ptr inc
+        else
+          loop_skip inc
+        end
+      end
+      index char
+    end
+  else dup 93 == if                       // ]
+    bind index char:
+      loop_skip @ if
+        loop_skip dec index
+      else
+        loop_ptr dec
+        loop_ptr @ loop_stack []
+      end
+      char
+    end
+  end end end end end end end end drop
+  1 + dup len @ <
+end 
