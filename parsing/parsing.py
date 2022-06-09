@@ -464,6 +464,21 @@ def lex_token(token: str) -> Op | None | list:
         ]
 
     elif token.startswith("!"):
+        push_op = None
+        if token[1:] in State.variables:
+            push_op = Op(OpType.PUSH_VAR, token[1:], f"{State.filename}:{State.loc}")
+        elif token[1:] in State.memories:
+            push_op = Op(OpType.PUSH_MEMORY, State.memories[token[1:]].offset, f"{State.filename}:{State.loc}")
+        if push_op is None and State.current_proc is not None:
+            if token[1:] in State.current_proc.variables:
+                push_op = Op(OpType.PUSH_LOCAL_VAR, token[1:], f"{State.filename}:{State.loc}")
+            elif token[1:] in State.current_proc.memories:
+                push_op = Op(OpType.PUSH_LOCAL_MEMORY, State.current_proc.memories[token[1:]].offset, f"{State.filename}:{State.loc}")
+        if push_op is not None:
+            return [
+                push_op,
+                Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
+            ]
         _type = parse_type((token[1:], State.loc), "store type")
         return Op(OpType.TYPED_STORE, _type)
 
