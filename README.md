@@ -1,6 +1,6 @@
 # Cont
 
-__Cont__ is compiled concatenative programming language written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).  
+__Cont__ is compiled statically-typed concatenative programming language, that has elements of OOP, written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).
 
 # Quick Start
 ```
@@ -12,7 +12,7 @@ $ python cont.py <source_code>.cn -r
 ```
 
 # Examples
-You can find more examples in tests folder.
+You can find more examples in `tests` or `examples` folders.
 
 ## Hello world
 ```
