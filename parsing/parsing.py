@@ -254,9 +254,9 @@ def lex_token(token: str) -> Op | None | list:
                 State.throw_error("variable can't be initialized with non-int value")
             value = evaluate_block(name[1], "variable value")
             return [
-                Op(OpType.PUSH_INT, value), 
-                Op(OpType.PUSH_VAR if State.current_proc is None else OpType.PUSH_LOCAL_VAR, name[0]),
-                Op(OpType.OPERATOR, Operator.STORE)
+                Op(OpType.PUSH_INT, value, f"{State.filename}:{State.loc}"), 
+                Op(OpType.PUSH_VAR if State.current_proc is None else OpType.PUSH_LOCAL_VAR, name[0], f"{State.filename}:{State.loc}"),
+                Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
             ]
         else:
             State.tokens_queue.append(next_token)
@@ -456,6 +456,12 @@ def lex_token(token: str) -> Op | None | list:
     elif token.startswith("@"):
         _type = parse_type((token[1:], State.loc), "load type")
         return Op(OpType.TYPED_LOAD, _type)
+
+    elif token.startswith("!."):
+        return [
+            Op(OpType.PUSH_FIELD_PTR, token[2:], f"{State.filename}:{State.loc}"),
+            Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
+        ]
 
     elif token.startswith("!"):
         _type = parse_type((token[1:], State.loc), "store type")
