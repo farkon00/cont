@@ -36,6 +36,24 @@ const STDIN 0 end
 const STDOUT 1 end
 const STDERR 2 end
 
+const O_RDONLY    0       end
+const O_WRONLY    1       end
+const O_RDWR      2       end
+const O_CREAT     512     end
+const O_EXCL      2048    end
+const O_TRUNC     1024    end
+const O_NOCTTY    32768   end
+const O_ASYNC     64      end
+const O_FSYNC     128     end
+const O_SYNC      O_FSYNC end
+const O_SHLOCK    16      end
+const O_EXLOCK    32      end
+const O_DIRECTORY 2097152 end
+const O_NOFOLLOW  256     end
+const O_CLOEXEC   4194304 end
+const O_DSYNC     65536   end
+const O_RSYNC     131072  end
+
 proc read int ptr int -> int: SYSCALL.READ syscall3 end
 proc write int ptr int -> int: SYSCALL.WRITE syscall3 end
 
