@@ -62,7 +62,8 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False, end: str | None = None):
+def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False, 
+               end: str | None = None, throw_exc: bool = True):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if end is not None:
@@ -87,7 +88,10 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
             return State.structures[name]
     elif name.startswith("@") and allow_unpack:
         if name[1:] not in State.structures:
-            State.throw_error(f"structure \"{name[1:]}\" was not found")
+            if throw_exc:
+                State.throw_error(f"structure \"{name[1:]}\" was not found")
+            else:
+                return None
         return State.structures[name[1:]].fields_types
     elif name.startswith("[") and name.endswith("]"):
         if name[1:-1] in State.constants:
@@ -95,13 +99,22 @@ def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpac
         elif name[1:-1].isnumeric():
             length = int(name[1:-1])
         else:
-            State.throw_error(f"constant \"{name[1:-1]}\" was not found")
+            if throw_exc:
+                State.throw_error(f"constant \"{name[1:-1]}\" was not found")
+            else:
+                return None
         arr = Array(length, parse_type(next(State.tokens), error, True, False, end))
         if arr is None:
-            State.throw_error("array type was not defined")
+            if throw_exc:
+                State.throw_error("array type was not defined")
+            else:
+                return None
         return Ptr(arr) if auto_ptr else arr
     else:
-        State.throw_error(f"unknown type \"{token[0]}\" in {error}")
+        if throw_exc:
+            State.throw_error(f"unknown type \"{token[0]}\" in {error}")
+        else:
+            return None
 
 def sizeof(_type) -> int:
     if isinstance(_type, Int) or isinstance(_type, Ptr) or isinstance(_type, Addr):

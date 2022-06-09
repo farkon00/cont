@@ -161,6 +161,31 @@ def parse_proc_head():
     State.block_stack.append(block)
     return op
 
+def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> list[Op]:
+    res = []
+    parts = token.split(".")
+    if allow_var:
+        if parts[0] in State.variables:
+            res.append(Op(OpType.PUSH_VAR, parts[0], State.loc))
+            parts = parts[1:]
+        elif parts[0] in State.memories:
+            res.append(Op(OpType.PUSH_MEMORY, parts[0], State.loc))
+            parts = parts[1:]
+        elif State.current_proc is not None:
+            if parts[0] in State.current_proc.variables:
+                res.append(Op(OpType.PUSH_LOCAL_VAR, parts[0], State.loc))
+                parts = parts[1:]
+            elif parts[0] in State.current_proc.memories:
+                res.append(Op(OpType.PUSH_LOCAL_MEM, parts[0], State.loc))
+                parts = parts[1:]
+    for i in parts:
+        res.append(Op(OpType.PUSH_FIELD, i, State.loc))
+    
+    if auto_ptr:
+        res[-1] = Op(OpType.PUSH_FIELD_PTR, res[-1].operand, State.loc)
+    
+    return res
+
 def lex_token(token: str) -> Op | None | list:
     assert len(OpType) == 34, "Unimplemented type in lex_token"
 
@@ -448,10 +473,10 @@ def lex_token(token: str) -> Op | None | list:
         return Op(OpType.UPCAST, parse_type((token[7:-1], State.loc), "upcast", False))
 
     elif token.startswith(".*"):
-        return Op(OpType.PUSH_FIELD_PTR, token[2:])
+        return parse_dot(token[2:], auto_ptr=True)
 
     elif token.startswith("."):
-        return Op(OpType.PUSH_FIELD, token[1:])
+        return parse_dot(token[1:])
 
     elif token.startswith("@"):
         _type = parse_type((token[1:], State.loc), "load type")
@@ -459,28 +484,19 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token.startswith("!."):
         return [
-            Op(OpType.PUSH_FIELD_PTR, token[2:], f"{State.filename}:{State.loc}"),
+            *parse_dot(token[2:], auto_ptr=True),
             Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
         ]
 
     elif token.startswith("!"):
-        push_op = None
-        if token[1:] in State.variables:
-            push_op = Op(OpType.PUSH_VAR, token[1:], f"{State.filename}:{State.loc}")
-        elif token[1:] in State.memories:
-            push_op = Op(OpType.PUSH_MEMORY, State.memories[token[1:]].offset, f"{State.filename}:{State.loc}")
-        if push_op is None and State.current_proc is not None:
-            if token[1:] in State.current_proc.variables:
-                push_op = Op(OpType.PUSH_LOCAL_VAR, token[1:], f"{State.filename}:{State.loc}")
-            elif token[1:] in State.current_proc.memories:
-                push_op = Op(OpType.PUSH_LOCAL_MEMORY, State.current_proc.memories[token[1:]].offset, f"{State.filename}:{State.loc}")
-        if push_op is not None:
+        _type = parse_type((token[1:], State.loc), "store type", throw_exc=False)
+        if _type is not None:
+            return Op(OpType.TYPED_STORE, _type)
+        else:
             return [
-                push_op,
+                *parse_dot(token[1:], allow_var=True, auto_ptr=True),
                 Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
             ]
-        _type = parse_type((token[1:], State.loc), "store type")
-        return Op(OpType.TYPED_STORE, _type)
 
     elif token.startswith("*") and token[1:] in State.procs:
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
