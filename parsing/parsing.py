@@ -247,7 +247,15 @@ def lex_token(token: str) -> Op | None | list:
             State.current_proc.variables[name[0]] = _type
         else:
             State.variables[name[0]] = _type
-        return None
+        next_token = next(State.tokens)
+        if next_token[0] == "=":
+            if _type != Int():
+                State.loc = next_token[1]
+                State.throw_error("variable can't be initialized with non-int value")
+            value = evaluate_block(name[1], "variable value")
+            return [Op(OpType.PUSH_INT, value), Op(OpType.PUSH_VAR, name[0]), Op(OpType.OPERATOR, Operator.STORE)]
+        else:
+            State.tokens_queue.append(next_token)
 
     elif token == "memo":
         name = next(State.tokens)
