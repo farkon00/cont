@@ -82,6 +82,9 @@ end
 
 proc nstr_to_str ptr -> @str: dup null_str_len swap end
 
+proc sbrk int -> ptr:
+  NULL brk +ptr brk
+end
 proc open2 int @str -> int:
   swap drop opensys2
 end

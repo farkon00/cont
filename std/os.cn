@@ -67,6 +67,6 @@ proc wait4 ptr int ptr int -> int: SYSCALL.WAIT4 syscall4 end
 
 proc timesys ptr -> int: SYSCALL.TIME syscall1 end
 
-proc brk ptr -> int: SYSCALL.BRK syscall1 end
+proc brk ptr -> ptr: SYSCALL.BRK syscall1 end
 
 proc exit int: SYSCALL.EXIT syscall1 drop end 
