@@ -1,6 +1,18 @@
+include std.cn
+
 unpack struct Vector2
   int x
   int y
+end
+
+struct (Vector2) AutoVector2
+  proc __init__:  
+    bind self:
+      69 self !.x
+      42 self !.y
+    end 
+    "Side effect\n" puts
+  end
 end
 
 struct Vector3
@@ -35,6 +47,8 @@ bind vec:
   dup .z print
   dup .w print 
 end
+
+AutoVector2 .y print
 :
 69
 42
@@ -43,3 +57,5 @@ end
 0
 3
 4
+Side effect
+42
