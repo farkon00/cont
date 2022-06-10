@@ -122,6 +122,7 @@ class State:
     is_string = False
     is_null = False
     is_unpack = False
+    owner = None
     string_buffer: str = ""
     string_data: list[bytes] = [] 
 

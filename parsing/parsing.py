@@ -92,12 +92,16 @@ def parse_proc_head():
     first_token: tuple[str, str] = next(State.tokens)
     in_types: list[object] = []
     out_types: list[object] = []
-    owner: Ptr | None = None
+    owner: Ptr | None = None if State.owner is None else Ptr(State.owner) 
 
     if State.current_proc is not None:
         sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
 
     if first_token[0].startswith("[") and first_token[0].endswith("]"):
+        if State.owner is not None:
+            State.loc = f"{State.filename}:{first_token[1]}"
+            State.throw_error("cannot implicitly specify method's structure inside structure")
+
         name = next(State.tokens)
         if first_token[0][1:-1] not in State.structures:
             State.loc = State.loc = f"{State.filename}:{first_token[1]}"
@@ -217,7 +221,9 @@ def parse_struct() -> Op | list[Op] | None:
                 State.structures[name[0]] = struct
 
             State.tokens_queue.append(current_token)
+            State.owner = struct
             ops.extend(parse_until_end())
+            State.owner = None
             continue
         if field_type == -1:
             if started_proc:
