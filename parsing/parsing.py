@@ -4,6 +4,7 @@ from typing import Iterable
 
 from compile_eval.compile_eval import evaluate_block
 from type_checking.types import Int, Ptr, parse_type, sizeof
+from generating.generating import generate_op_comment
 
 from .op import *
 from state import *
@@ -161,6 +162,91 @@ def parse_proc_head():
     State.block_stack.append(block)
     return op
 
+def parse_struct() -> Op | list[Op] | None:
+    first_token = next(State.tokens)
+    parent = None
+    if first_token[0].startswith("(") and first_token[0].endswith(")"):
+        if first_token[0][1:-1] not in State.structures:
+            State.throw_error(f"structure \"{first_token[0][1:-1]}\" is not defined")
+        parent = State.structures[first_token[0][1:-1]]
+        name = next(State.tokens)
+    else:
+        name = first_token
+    State.check_name(name, "structure")
+    
+    current_token = ("", "")
+    field_type = -1
+    fields = {} if parent is None else parent.fields.copy()
+    struct_types = [] if parent is None else parent.fields_types.copy()
+    defaults = {} if parent is None else parent.defaults.copy()
+
+    ops: list[Op] = []
+    started_proc: bool = False
+    while True:
+        try:
+            current_token = next(State.tokens)
+        except:
+            State.loc = f"{State.filename}:{name[1]}"
+            State.throw_error("structure definition was not closed")
+        if current_token[0] == "end":
+            break
+        if current_token[0] == "default":
+            if field_type != -1:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error("field name was not defined")
+            if started_proc:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error("field defenition in methods segment")
+
+            def_name = next(State.tokens)
+            def_value = evaluate_block(def_name[1], "default value")
+            fields[def_name[0]] = Int()
+            defaults[len(struct_types)] = def_value
+            struct_types.append(fields[def_name[0]])
+            continue
+        if current_token[0] == "proc":
+            if not started_proc:
+                started_proc = True
+                if field_type != -1:
+                    State.loc = f"{State.filename}:{current_token[1]}"
+                    State.throw_error("field name was not defined")
+
+                struct = Struct(name[0], fields, struct_types, parent, defaults)
+                if parent is not None:
+                    parent.children.append(struct)
+                State.structures[name[0]] = struct
+
+            State.tokens_queue.append(current_token)
+            ops.extend(parse_until_end())
+            continue
+        if field_type == -1:
+            if started_proc:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error("field defenition in methods segment")
+            field_type = parse_type(current_token, "structure definition")
+        else:
+            if current_token[0] in fields:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
+            State.check_name(current_token, "field")
+            fields[current_token[0]] = field_type
+            struct_types.append(field_type)
+            field_type = -1
+
+    if field_type != -1:
+        State.loc = f"{State.filename}:{current_token[1]}"
+        State.throw_error("field name was not defined")
+
+    if not started_proc:
+        struct = Struct(name[0], fields, struct_types, parent, defaults)
+        if parent is not None:
+            parent.children.append(struct)
+        State.structures[name[0]] = struct
+
+    State.is_unpack = False
+
+    return ops
+
 def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> list[Op]:
     res = []
     parts = token.split(".")
@@ -214,6 +300,7 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "end":
         if len(State.block_stack) <= 0:
+            State.loc = f"{State.filename}:{State.loc}"
             State.throw_error("block for end not found")
         block = State.block_stack.pop()
         if block.type == BlockType.BIND:
@@ -332,64 +419,7 @@ def lex_token(token: str) -> Op | None | list:
         State.is_unpack = True
 
     elif token == "struct":
-        first_token = next(State.tokens)
-        parent = None
-        if first_token[0].startswith("(") and first_token[0].endswith(")"):
-            if first_token[0][1:-1] not in State.structures:
-                State.throw_error(f"structure \"{first_token[0][1:-1]}\" is not defined")
-            parent = State.structures[first_token[0][1:-1]]
-            name = next(State.tokens)
-        else:
-            name = first_token
-        State.check_name(name, "structure")
-        
-        current_token = ("", "")
-        field_type = -1
-        fields = {} if parent is None else parent.fields.copy()
-        struct_types = [] if parent is None else parent.fields_types.copy()
-        defaults = {} if parent is None else parent.defaults.copy()
-        while True:
-            try:
-                current_token = next(State.tokens)
-            except:
-                State.loc = f"{State.filename}:{name[1]}"
-                State.throw_error("structure definition was not closed")
-            if current_token[0] == "end":
-                break
-            if current_token[0] == "default":
-                if field_type != -1:
-                    State.loc = f"{State.filename}:{current_token[1]}"
-                    State.throw_error("field name was not defined")
-
-                def_name = next(State.tokens)
-                def_value = evaluate_block(def_name[1], "default value")
-                fields[def_name[0]] = Int()
-                defaults[len(struct_types)] = def_value
-                struct_types.append(fields[def_name[0]])
-                continue
-            if field_type == -1:
-                field_type = parse_type(current_token, "structure definition")
-            else:
-                if current_token[0] in fields:
-                    State.loc = current_token[1]
-                    State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
-                State.check_name(current_token, "field")
-                fields[current_token[0]] = field_type
-                struct_types.append(field_type)
-                field_type = -1
-
-        if field_type != -1:
-            State.loc = current_token[1]
-            State.throw_error("field name was not defined")
-
-        struct = Struct(name[0], fields, struct_types, parent, defaults)
-        if parent is not None:
-            parent.children.append(struct)
-
-        State.is_unpack = False
-        State.structures[name[0]] = struct
-
-        return None
+        return parse_struct()
 
     elif token == "enum":
         name = next(State.tokens)
@@ -400,7 +430,7 @@ def lex_token(token: str) -> Op | None | list:
             if current_token[0] == "end":
                 break
             if current_token[0] in values:
-                State.loc = current_token[1]
+                State.loc = f"{State.filename}:{current_token[1]}"
                 State.throw_error(f"enum value \"{current_token[0]}\" is already defined")
             values.append(current_token[0])
 
@@ -534,6 +564,31 @@ def tokens(program: str):
             if State.tokens_queue:
                 yield State.tokens_queue.pop(0)
             yield (token, f"{i+1}:{j+1}")
+
+def parse_until_end() -> list[Op]:
+    ops = []
+    initial_loc = State.loc
+    initial_blocks = len(State.block_stack)
+    end = False
+
+    for token, loc in State.tokens:
+        if token == "end" and len(State.block_stack) - 1 == initial_blocks:
+            end = True
+        State.loc = loc
+        op = lex_token(token)
+        if isinstance(op, list):
+            ops.extend(op)
+            continue
+        if op is not None:
+            op.loc = f"{State.filename}:{loc}"
+            ops.append(op)
+        
+        if end:
+            break
+
+    State.loc = initial_loc
+
+    return ops
 
 def parse_to_ops(program: str) -> list:
     saver = StateSaver()
