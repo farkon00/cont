@@ -9,8 +9,8 @@ a 8 ptr+ @ print
 
 proc local:
   memory b 8
-  2123 b !8
-  b @ print
+  546 b !8
+  b @8 print
 end
 
 local
@@ -19,6 +19,6 @@ local
 :
 12
 76
-4200523
-4200523
-4200523
+34
+34
+34

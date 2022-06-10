@@ -244,9 +244,19 @@ mov [rax], rbx
         struct = State.structures[op.operand]
         size = sizeof(struct)
         buf = comment + \
-"""
-mov rbx, struct_mem
-add rbx, [struct_mem_ptr]
+f"""
+mov rdi, 0
+mov rax, 12
+syscall
+mov rbx, rax
+add rax, {size}
+mov rdi, rax
+mov rax, 12
+syscall
+mov rcx, [bind_stack_ptr]
+mov [bind_stack+rcx], rbx
+add rcx, 8
+mov [bind_stack_ptr], rcx
 """
         if "__init__" in struct.methods:
             buf += \
@@ -264,21 +274,14 @@ call addr_{struct.methods['__init__'].ip}
                     buf += f"\nmov rax, {struct.defaults[index]}\n"
 
                 buf += f"\nmov [rbx+{size-offset}], rax\n"
+
         buf += \
 f"""
-mov rbx, struct_mem
-add rbx, [struct_mem_ptr]
-push rbx
-mov rax, [struct_mem_ptr]
-add rax, {size}
-
-xor rdx, rdx
-mov rbx, 65536
-mov rax, rax
-div rbx
-mov rax, rdx
-
-mov [struct_mem_ptr], rax
+mov rcx, [bind_stack_ptr]
+sub rcx, 8
+mov rax, [bind_stack+rcx] 
+mov [bind_stack_ptr], rcx
+push rax
 """
 
         return buf
