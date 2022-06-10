@@ -4,7 +4,6 @@ from typing import Iterable
 
 from compile_eval.compile_eval import evaluate_block
 from type_checking.types import Int, Ptr, parse_type, sizeof
-from generating.generating import generate_op_comment
 
 from .op import *
 from state import *
@@ -153,6 +152,10 @@ def parse_proc_head():
         queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
         if queued_token[0]:
             State.tokens_queue.append(queued_token)
+
+    if name_value == "__init__" and out_types:
+        State.loc = f"{State.filename}:{name[1]}"
+        State.throw_error("constructor cannot have out types") 
 
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, owner)

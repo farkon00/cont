@@ -248,17 +248,26 @@ mov [rax], rbx
 mov rbx, struct_mem
 add rbx, [struct_mem_ptr]
 """
-        offset = 0
-        for index, field in list(enumerate(struct.fields_types))[::-1]:
-            offset += sizeof(field)
-            if index not in struct.defaults:
-                buf += f"\npop rax\n"         
-            else:
-                buf += f"\nmov rax, {struct.defaults[index]}\n"
-            
-            buf += f"\nmov [rbx+{size-offset}], rax\n"
+        if "__init__" in struct.methods:
+            buf += \
+f"""
+push rbx
+call addr_{struct.methods['__init__'].ip}
+"""
+        else:
+            offset = 0
+            for index, field in list(enumerate(struct.fields_types))[::-1]:
+                offset += sizeof(field)
+                if index not in struct.defaults:
+                    buf += f"\npop rax\n"         
+                else:
+                    buf += f"\nmov rax, {struct.defaults[index]}\n"
+
+                buf += f"\nmov [rbx+{size-offset}], rax\n"
         buf += \
 f"""
+mov rbx, struct_mem
+add rbx, [struct_mem_ptr]
 push rbx
 mov rax, [struct_mem_ptr]
 add rax, {size}

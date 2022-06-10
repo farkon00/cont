@@ -63,7 +63,7 @@ class Struct:
         self.fields: dict[str, object] = fields
         self.fields_types: list[object] = fields_types
         self.is_unpackable: bool = State.is_unpack
-        self.methods: dict[str, Proc] = {} if parent is None else parent.methods
+        self.methods: dict[str, Proc] = {} if parent is None else parent.methods.copy()
         self.parent: "Struct" | None = parent
         self.children: list["Struct"] = []
         self.defaults: dict[int, int] = defaults

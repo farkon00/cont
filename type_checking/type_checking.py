@@ -138,9 +138,12 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         check_stack(stack, [op.operand, Ptr(op.operand)])
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
-        args = struct.fields_types.copy()
-        for i, j in enumerate(struct.defaults):
-            del args[j-i]
+        if "__init__" in struct.methods:
+            args = struct.methods["__init__"].in_stack.copy()[1:]
+        else:
+            args = struct.fields_types.copy()
+            for i, j in enumerate(struct.defaults):
+                del args[j-i]
         check_stack(stack, args)
         stack.append(Ptr(struct))
     elif op.type == OpType.PUSH_FIELD:
