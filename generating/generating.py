@@ -60,9 +60,7 @@ segment readable writeable
 mem: rb {Memory.global_offset}
 call_stack_ptr: rb 8
 bind_stack_ptr: rb 8
-struct_mem_ptr: rb 8
 bind_stack: rb 8192
-struct_mem: rb 65536
 call_stack: rb 65536
 """
     for index, i in enumerate(State.string_data):
@@ -320,31 +318,31 @@ push rax
 """
     elif op.type == OpType.UPCAST:
         buf = comment + \
-"""
+f"""
 pop rbx
-mov rax, [struct_mem_ptr]
-add rax, struct_mem
+mov rdi, 0
+mov rax, 12
+syscall
+mov rdx, rax
+add rax, {op.operand[0]}
+mov rdi, rax
+mov rax, 12
+syscall
 """
         for i in range(op.operand[2] // 8):
             buf += \
 f"""
 mov rcx, [rbx+{i*8}]
-mov [rax+{i*8}], rcx
+mov [rdx+{i*8}], rcx
 """
 
         for i in range(op.operand[1]):
             buf += \
 f"""
 pop rcx
-mov [rax+{op.operand[0]-(i+1)*8}], rcx
+mov [rdx+{op.operand[0]-(i+1)*8}], rcx
 """
-        buf += \
-f"""
-push rax
-mov rax, [struct_mem_ptr]
-add rax, {op.operand[0]}
-mov [struct_mem_ptr], rax
-"""
+        buf += "\npush rdx\n"
         return buf
     elif op.type == OpType.CALL_LIKE:
         return comment + \
