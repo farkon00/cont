@@ -9,6 +9,7 @@ from type_checking.type_checking import type_check
 
 def main():
     # Argv handeling
+    dump = False
     run = False
     is64 = False
     program = None
@@ -28,6 +29,8 @@ def main():
                 print("    -i <path>     Moves stdin of program to <path>")
                 print("    -e <path>     Moves stderr of program to <path>")
                 exit(0)
+            elif i == "--dump":
+                dump = True
             else:
                 print(f"Unknown option: {i}")
                 exit(1)
@@ -75,6 +78,11 @@ def main():
     State.dir = os.path.dirname(__file__)
 
     ops = parse_to_ops(program)
+
+    if dump:
+        for op in ops:
+            print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
+        return 
 
     type_check(ops)
 
