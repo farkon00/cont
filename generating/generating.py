@@ -1,5 +1,5 @@
 from parsing.op import * 
-from type_checking.types import sizeof
+from type_checking.types import Array, sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
@@ -355,9 +355,9 @@ sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
         else:
             memory = f"\nmov r12, mem+{op.operand[0].offset}\n"
         if State.current_proc is None:
-            var = State.variables[op.operand[0].name]
+            var: Array = State.variables[op.operand[0].name] # type: ignore
         else:
-            var = State.current_proc.variables[op.operand[0].name]
+            var = State.current_proc.variables[op.operand[0].name] # type: ignore
         return comment + \
 f"""
 ;; loop

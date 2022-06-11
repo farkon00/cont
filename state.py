@@ -117,7 +117,7 @@ class State:
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
-    ops_by_ips: list[Op | None] = []
+    ops_by_ips: list[Op] = []
 
     is_string = False
     is_null = False

@@ -394,7 +394,7 @@ def lex_token(token: str) -> Op | None | list:
                 Memory.global_offset += sizeof(_type.typ.typ) * _type.len
             else:
                 State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
-            return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(None)), loc=State.loc) if _type.len > 0 else None 
+            return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(Op(OpType.AUTO_INIT))), loc=State.loc) if _type.len > 0 else None 
 
     elif token == "memo":
         name = next(State.tokens)
