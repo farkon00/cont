@@ -1,5 +1,4 @@
 from parsing.op import *
-from parsing.parsing import OPERATORS
 from state import *
 from .types import type_to_str
 from .types import *
