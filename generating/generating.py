@@ -86,7 +86,7 @@ def generate_op(op: Op):
     comment = generate_op_comment(op)
 
     if op.type == OpType.PUSH_INT:
-        return comment + f"push {op.operand}\n"
+        return comment + f"\nmov rax, {op.operand}\npush rax\n"
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_VAR:
