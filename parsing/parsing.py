@@ -266,6 +266,9 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
         elif parts[0] in State.memories:
             res.append(Op(OpType.PUSH_MEMORY, parts[0], State.loc))
             parts = parts[1:]
+        elif parts[0] in State.bind_stack:
+            res.append(Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc))
+            parts = parts[1:]
         elif State.current_proc is not None:
             if parts[0] in State.current_proc.variables:
                 res.append(Op(OpType.PUSH_LOCAL_VAR, parts[0], State.loc))

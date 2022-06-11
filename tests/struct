@@ -8,8 +8,8 @@ end
 struct (Vector2) AutoVector2
   proc __init__:  
     bind self:
-      69 self !.x
-      42 self !.y
+      69 !self.x
+      42 !self.y
     end 
     "Side effect\n" puts
   end
