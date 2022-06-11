@@ -9,8 +9,8 @@ end
 
 init var coords [coords_len] Vector2
 
-42 68 coords [] .*x !
-420 12 coords [] .*x !
+42 68 coords [] !x
+420 12 coords [] !x
 68 coords [] .x print
 12 coords [] .x print
 :
