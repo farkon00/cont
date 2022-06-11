@@ -390,7 +390,10 @@ def lex_token(token: str) -> Op | None | list:
             State.tokens_queue.append(next_token)
 
         if is_init:
-            Memory.global_offset += sizeof(_type.typ.typ) * _type.len
+            if State.current_proc is None:
+                Memory.global_offset += sizeof(_type.typ.typ) * _type.len
+            else:
+                State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
             return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(None)), loc=State.loc) if _type.len > 0 else None 
 
     elif token == "memo":

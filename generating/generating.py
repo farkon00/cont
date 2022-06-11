@@ -350,16 +350,20 @@ mov [rdx+{op.operand[0]-(i+1)*8}], rcx
 f"""
 mov r12, [call_stack_ptr]
 add r12, call_stack
-sub r12, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
 """
         else:
             memory = f"\nmov r12, mem+{op.operand[0].offset}\n"
+        if State.current_proc is None:
+            var = State.variables[op.operand[0].name]
+        else:
+            var = State.current_proc.variables[op.operand[0].name]
         return comment + \
 f"""
 ;; loop
 mov rdi, 0
 addr_{op.operand[1]}_1:
-cmp rdi, {State.variables[op.operand[0].name].len}
+cmp rdi, {var.len}
 je addr_{op.operand[1]}_2
 
 {memory}
@@ -371,9 +375,9 @@ mul rdi
 add r10, rax
 
 ;; put ptr to struct into r11
-add r12, {sizeof(State.variables[op.operand[0].name])}
+add r12, {sizeof(var)}
 mov r11, r12
-mov rax, {sizeof(State.variables[op.operand[0].name].typ.typ)}
+mov rax, {sizeof(var.typ.typ)}
 mul rdi
 add r11, rax
 
