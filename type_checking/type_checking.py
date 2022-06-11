@@ -52,7 +52,7 @@ def type_check(ops: list[Op]):
 
         index += 1
 
-def type_check_op(op: Op, stack: list) -> Op | None:
+def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     assert len(OpType) == 35, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
@@ -226,7 +226,7 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         assert False, f"unknown op type in type_check_op: {op.type.name}"
     return None
 
-def type_check_operator(op: Op, stack: list) -> Op | None:
+def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
     assert len(Operator) == 19, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
