@@ -3,7 +3,7 @@
 __Cont__ is compiled statically-typed concatenative programming language, that has elements of OOP, written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).
 
 # Quick Start
-```
+```console
 $ python -V
  Python >=3.10
 $ git clone https://github.com/farkon00/cont.git
