@@ -32,6 +32,7 @@ class OpType(Enum):
     CALL_LIKE = auto()
     INDEX = auto()
     INDEX_PTR = auto()
+    AUTO_INIT = auto()
     SIZEOF = auto()
     SYSCALL = auto()
     OPERATOR = auto()

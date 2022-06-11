@@ -3,7 +3,7 @@ from type_checking.types import sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 34, "Unimplemented type in generating.py"
+assert len(OpType) == 35, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -80,7 +80,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 34, "Unimplemented type in generate_op"
+    assert len(OpType) == 35, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -344,6 +344,47 @@ mov [rdx+{op.operand[0]-(i+1)*8}], rcx
 """
         buf += "\npush rdx\n"
         return buf
+    elif op.type == OpType.AUTO_INIT: 
+        if State.current_proc is not None:
+            memory = \
+f"""
+mov r12, [call_stack_ptr]
+add r12, call_stack
+sub r12, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+"""
+        else:
+            memory = f"\nmov r12, mem+{op.operand[0].offset}\n"
+        return comment + \
+f"""
+;; loop
+mov rdi, 0
+addr_{op.operand[1]}_1:
+cmp rdi, {State.variables[op.operand[0].name].len}
+je addr_{op.operand[1]}_2
+
+{memory}
+
+;; get ptr to array element into r10
+mov r10, r12
+mov rax, 8
+mul rdi
+add r10, rax
+
+;; put ptr to struct into r11
+add r12, {sizeof(State.variables[op.operand[0].name])}
+mov r11, r12
+mov rax, {sizeof(State.variables[op.operand[0].name].typ.typ)}
+mul rdi
+add r11, rax
+
+;; moves ptr into array
+mov [r10], r11 
+
+add rdi, 1
+
+jmp addr_{op.operand[1]}_1
+addr_{op.operand[1]}_2:
+"""
     elif op.type == OpType.CALL_LIKE:
         return comment + \
 f"""

@@ -3,7 +3,7 @@ import os
 from typing import Iterable
 
 from compile_eval.compile_eval import evaluate_block
-from type_checking.types import Int, Ptr, parse_type, sizeof
+from type_checking.types import *
 
 from .op import *
 from state import *
@@ -39,7 +39,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 34, "Unimplemented type in parsing.py"
+assert len(OpType) == 35, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -282,10 +282,13 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     return res
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 34, "Unimplemented type in lex_token"
+    assert len(OpType) == 35, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
+
+    if State.is_init and token != "var":
+        State.throw_error("init must be followed by var")
 
     string = lex_string(token)
     if string:
@@ -363,11 +366,15 @@ def lex_token(token: str) -> Op | None | list:
         name = next(State.tokens)
         _type = parse_type(next(State.tokens), "variable", False) 
         State.check_name(name, "variable")
-        Memory.new_memory(name[0], sizeof(_type))
+        mem = Memory.new_memory(name[0], sizeof(_type))
+        if State.is_init and _type != Array(typ=Ptr()):
+            State.throw_error(f"cannot auto init variable with type {type_to_str(_type)}")
         if State.current_proc is not None:
             State.current_proc.variables[name[0]] = _type
         else:
             State.variables[name[0]] = _type
+        is_init = State.is_init
+        State.is_init = False
         next_token = next(State.tokens)
         if next_token[0] == "=":
             if _type != Int():
@@ -381,6 +388,10 @@ def lex_token(token: str) -> Op | None | list:
             ]
         else:
             State.tokens_queue.append(next_token)
+
+        if is_init:
+            Memory.global_offset += sizeof(_type.typ.typ) * _type.len
+            return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(None)), loc=State.loc) if _type.len > 0 else None 
 
     elif token == "memo":
         name = next(State.tokens)
@@ -426,6 +437,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "unpack":
         State.is_unpack = True
+
+    elif token == "init":
+        State.is_init = True
 
     elif token == "struct":
         return parse_struct()

@@ -117,11 +117,12 @@ class State:
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
-    ops_by_ips: list[Op] = []
+    ops_by_ips: list[Op | None] = []
 
     is_string = False
     is_null = False
     is_unpack = False
+    is_init = False
     owner : Struct | None = None
     string_buffer: str = ""
     string_data: list[bytes] = [] 

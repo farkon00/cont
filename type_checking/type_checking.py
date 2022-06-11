@@ -5,7 +5,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 34, "Unimplemented type in type_checking.py"
+assert len(OpType) == 35, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -45,7 +45,7 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
 def type_check_op(op: Op, stack: list) -> Op | None:
-    assert len(OpType) == 34, "Unimplemented type in type_check_op"
+    assert len(OpType) == 35, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -212,7 +212,10 @@ def type_check_op(op: Op, stack: list) -> Op | None:
         stack.append(None)
     elif op.type == OpType.OPERATOR:
         return type_check_operator(op, stack)
-
+    elif op.type == OpType.AUTO_INIT:
+        pass # Auto init is generation thing
+    else:
+        assert False, f"unknown op type in type_check_op: {op.type.name}"
     return None
 
 def type_check_operator(op: Op, stack: list) -> Op | None:
