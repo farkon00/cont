@@ -179,3 +179,28 @@ proc streq @str @str -> int:
     end 
   end
 end
+
+proc exec_cmd
+  ptr // argv
+  ptr // null string - executable
+  :
+  var wstatus int
+  fork
+  bind argv exec pid:
+    pid 0 == if
+      0 (ptr)
+      argv
+      exec
+      execve drop
+    else pid 0 > if
+      0 (ptr)
+      0
+      wstatus
+      18446744073709551615 // -1
+      wait4 drop
+    else
+      "Fork failed\n" puts
+      1 exit
+    end end 
+  end
+end
