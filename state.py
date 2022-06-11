@@ -3,7 +3,7 @@ import sys
 from typing import Generator, Optional
 from enum import Enum, auto
 
-from parsing.op import Op
+from parsing.op import Op, Operator
 
 
 class BlockType(Enum):
@@ -141,6 +141,10 @@ class State:
         "+", "-", "*", "div", "dup", "drop", "swap", "rot",
         "<", ">", "<=", ">=", "==", "!=", "!", "!8", "@", 
         "@8"
+    ]
+
+    DUNDER_METHODS: list[str] = [
+        "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__",
     ]
 
     @staticmethod

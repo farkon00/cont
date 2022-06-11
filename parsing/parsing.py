@@ -156,6 +156,25 @@ def parse_proc_head():
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error("constructor cannot have out types") 
 
+    if name_value in State.DUNDER_METHODS and owner is not None and\
+       not (len(in_types) + 1 == 2 and len(out_types) == 1):
+        State.loc = f"{State.filename}:{name[1]}"
+        State.throw_error(f"{name_value} method required to have 1 argument and 1 out type")
+    if name_value == "__div__" and owner is not None and\
+       not (len(in_types) + 1 == 2 and len(out_types) == 2):
+        State.loc = f"{State.filename}:{name[1]}"
+        State.throw_error(f"{name_value} method required to have 1 argument and 2 out types", False)
+        sys.stdout.write("\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n")
+        exit()
+    if (name_value in State.DUNDER_METHODS or name_value == "__div__") and owner is not None:
+        if owner.typ is not in_types[0].typ:
+            State.loc = f"{State.filename}:{name[1]}"
+            State.throw_error(f"{name_value} must have owner structure as argument")
+        if len(in_types) > 1:
+            if owner.typ is not in_types[1].typ:
+                State.loc = f"{State.filename}:{name[1]}"
+                State.throw_error(f"{name_value} must have owner structure as argument")
+
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, owner)
     op = Op(OpType.DEFPROC, proc)

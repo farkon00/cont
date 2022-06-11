@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from parsing.op import *
 from state import *
 from .types import type_to_str
@@ -38,10 +40,17 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
 def type_check(ops: list[Op]):
     stack: list = [] 
     
-    for index, op in enumerate(ops):
+    index = 0
+    while index < len(ops):
+        op = ops[index]
         new_op = type_check_op(op, stack)
-        if new_op is not None:
+        if isinstance(new_op, Iterable):
+            ops[index:index+1] = new_op
+            index += len(new_op) - 1
+        elif new_op is not None:
             ops[index] = new_op
+
+        index += 1
 
 def type_check_op(op: Op, stack: list) -> Op | None:
     assert len(OpType) == 35, "Unimplemented type in type_check_op"
@@ -222,12 +231,41 @@ def type_check_operator(op: Op, stack: list) -> Op | None:
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
-        check_stack(stack, [Int(), Int()])
-        stack.append(Int())
+        type2 = stack.pop()
+        type1 = stack.pop()
+        if type1 == Int() and type2 == Int():
+            stack.append(Int())
+        elif type1 == Ptr() and type2 == Ptr():
+            if isinstance(type1.typ, Struct):
+                if type1.typ != type2.typ:
+                    State.throw_error(f"cant add different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
+                if f"__{op.operand.name.lower()}__" not in type1.typ.methods:
+                    State.throw_error(f"method __{op.operand.name.lower()}__ not found on {type_to_str(type1.typ)}")
+                stack.extend(type1.typ.methods[f"__{op.operand.name.lower()}__"].out_stack)
+                return [
+                    Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
+                    Op(OpType.CALL, type1.typ.methods[f"__{op.operand.name.lower()}__"], loc=op.loc)
+                ]
+        else:
+            State.throw_error(f"incompatible types for {op.operand.name.lower()}")
     elif op.operand == Operator.DIV:
-        check_stack(stack, [Int(), Int()])
-        stack.append(Int())
-        stack.append(Int())
+        type2 = stack.pop()
+        type1 = stack.pop()
+        if type1 == Int() and type2 == Int():
+            stack.extend([Int(), Int()])
+        elif type1 == Ptr() and type2 == Ptr():
+            if isinstance(type1.typ, Struct):
+                if type1.typ != type2.typ:
+                    State.throw_error(f"cant add different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
+                if f"__div__" not in type1.typ.methods:
+                    State.throw_error(f"method __div__ not found on {type_to_str(type1.typ)}")
+                stack.extend(type1.typ.methods[f"__div__"].out_stack)
+                return [
+                    Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
+                    Op(OpType.CALL, type1.typ.methods[f"__div__"], loc=op.loc)
+                ]
+        else:
+            State.throw_error(f"incompatible types for div")
     elif op.operand == Operator.DUP:
         if len(stack) < 1:
             State.throw_error("stack is too short")
