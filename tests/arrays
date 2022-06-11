@@ -7,18 +7,8 @@ struct Vector2
   int y
 end
 
-var coords [coords_len] Vector2
+init var coords [coords_len] Vector2
 
-proc init_coords:
-  0 coords_len while
-    dup coords *[]
-    0 0 Vector2 swap !!
-    1 +
-    dup coords_len <
-  end drop
-end
-
-init_coords
 42 68 coords [] .*x !
 420 12 coords [] .*x !
 68 coords [] .x print
