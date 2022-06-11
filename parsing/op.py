@@ -57,7 +57,6 @@ class Operator(Enum):
     STORE8 = auto()
     LOAD = auto()
     LOAD8 = auto() 
-    PRINT = auto()
 
 class Op:
     def __init__(self, type: OpType, operand=None, loc: str = "") -> None:

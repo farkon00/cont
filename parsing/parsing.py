@@ -28,7 +28,6 @@ OPERATORS = {
     "!8" : Operator.STORE8,
     "@" : Operator.LOAD,
     "@8" : Operator.LOAD8,
-    "print" : Operator.PRINT,
 }
 END_TYPES = {
     BlockType.IF : OpType.ENDIF,

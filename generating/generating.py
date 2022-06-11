@@ -2,7 +2,7 @@ from parsing.op import *
 from type_checking.types import Array, sizeof
 from state import *
 
-assert len(Operator) == 20, "Unimplemented operator in generating.py"
+assert len(Operator) == 19, "Unimplemented operator in generating.py"
 assert len(OpType) == 35, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
@@ -412,7 +412,7 @@ push rbx
         assert False, f"Generation isnt implemented for op type: {op.type.name}"
 
 def generate_operator(op: Op):
-    assert len(Operator) == 20, "Unimplemented operator in generate_operator"
+    assert len(Operator) == 19, "Unimplemented operator in generate_operator"
     assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
 
     if op.operand in (Operator.ADD, Operator.SUB):
@@ -499,12 +499,6 @@ pop rax
 xor rbx, rbx
 mov bl, [rax]
 push rbx
-"""
-    elif op.operand == Operator.PRINT:
-        return \
-"""
-pop rdi
-call print
 """
     else:
         assert False, f"Generation isnt implemented for operator: {op.operand.name}"
