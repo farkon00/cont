@@ -29,7 +29,7 @@ end
 proc [Vector2] 3diffy -> Vector3:
   // I can use unpacking here, but i want to test getting fields
   bind self:
-    self .x
+    self.x
     self .y
   end
   0 Vector3
