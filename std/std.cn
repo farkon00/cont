@@ -45,6 +45,40 @@ proc dec8by ptr int:
   end
 end
 
+proc @16 ptr -> int:
+  bind ptr:
+    ptr @8 256 *
+    ptr 1 ptr+ @8 +
+  end
+end
+ 
+proc !16 int ptr:
+  bind value ptr:
+    value 256 div swap
+    ptr !8
+    ptr 1 ptr+ !8
+  end
+end
+
+proc @32 ptr -> int:
+  bind ptr:
+    ptr        @8 16777216 *  
+    ptr 1 ptr+ @8 65536    *  +
+    ptr 2 ptr+ @8 256      *  +
+    ptr 3 ptr+ @8             +
+  end
+end
+ 
+proc !32 int ptr:
+  bind ptr:
+    256 div ptr 3 ptr+ !8   
+    256 div ptr 2 ptr+ !8
+    256 div ptr 1 ptr+ !8
+    256 div ptr        !8
+    drop
+  end
+end
+
 proc sbrk int -> ptr:
   NULL brk +ptr brk
 end
