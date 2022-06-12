@@ -190,6 +190,8 @@ def parse_proc_head():
     return op
 
 def parse_struct() -> Op | list[Op] | None:
+    is_unpack = State.is_unpack
+    State.is_unpack = False
     first_token = next(State.tokens)
     parent = None
     if first_token[0].startswith("(") and first_token[0].endswith(")"):
@@ -249,8 +251,9 @@ def parse_struct() -> Op | list[Op] | None:
                 if field_type != -1:
                     State.loc = f"{State.filename}:{current_token[1]}"
                     State.throw_error("field name was not defined")
-
+                State.is_unpack = is_unpack
                 struct = Struct(name[0], fields, struct_types, parent, defaults)
+                State.is_unpack = False
                 if parent is not None:
                     parent.children.append(struct)
                 State.structures[name[0]] = struct
@@ -281,12 +284,12 @@ def parse_struct() -> Op | list[Op] | None:
         State.throw_error("field name was not defined")
 
     if not started_proc:
+        State.is_unpack = is_unpack
         struct = Struct(name[0], fields, struct_types, parent, defaults)
+        State.is_unpack = False
         if parent is not None:
             parent.children.append(struct)
         State.structures[name[0]] = struct
-
-    State.is_unpack = False
 
     return ops
 
@@ -345,7 +348,6 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token == "end":
         if len(State.block_stack) <= 0:
-            State.loc = f"{State.filename}:{State.loc}"
             State.throw_error("block for end not found")
         block = State.block_stack.pop()
         if block.type == BlockType.BIND:
@@ -418,9 +420,9 @@ def lex_token(token: str) -> Op | None | list:
                 State.throw_error("variable can't be initialized with non-int value")
             value = evaluate_block(name[1], "variable value")
             return [
-                Op(OpType.PUSH_INT, value, f"{State.filename}:{State.loc}"), 
-                Op(OpType.PUSH_VAR if State.current_proc is None else OpType.PUSH_LOCAL_VAR, name[0], f"{State.filename}:{State.loc}"),
-                Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
+                Op(OpType.PUSH_INT, value, State.loc), 
+                Op(OpType.PUSH_VAR if State.current_proc is None else OpType.PUSH_LOCAL_VAR, name[0], State.loc),
+                Op(OpType.OPERATOR, Operator.STORE, State.loc)
             ]
         else:
             State.tokens_queue.append(next_token)
@@ -583,7 +585,7 @@ def lex_token(token: str) -> Op | None | list:
     elif token.startswith("!."):
         return [
             *parse_dot(token[2:], auto_ptr=True),
-            Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
+            Op(OpType.OPERATOR, Operator.STORE, State.loc)
         ]
 
     elif token.startswith("!"):
@@ -593,7 +595,7 @@ def lex_token(token: str) -> Op | None | list:
         else:
             return [
                 *parse_dot(token[1:], allow_var=True, auto_ptr=True),
-                Op(OpType.OPERATOR, Operator.STORE, f"{State.filename}:{State.loc}")
+                Op(OpType.OPERATOR, Operator.STORE, State.loc)
             ]
 
     elif token.startswith("*") and token[1:] in State.procs:
@@ -647,7 +649,7 @@ def parse_until_end() -> list[Op]:
     for token, loc in State.tokens:
         if token == "end" and len(State.block_stack) - 1 == initial_blocks:
             end = True
-        State.loc = loc
+        State.loc = f"{State.filename}:{loc}"
         op = lex_token(token)
         if isinstance(op, list):
             ops.extend(op)
@@ -669,7 +671,7 @@ def parse_to_ops(program: str) -> list:
     ops = []
 
     for token, loc in State.tokens:
-        State.loc = loc
+        State.loc = f"{State.filename}:{loc}"
         op = lex_token(token)
         if isinstance(op, list):
             ops.extend(op)
