@@ -56,6 +56,26 @@ end
 local
 ```
 
+# Arrays
+```
+include std.cn
+
+const coords_len 69 end
+
+struct Vector2
+  int x
+  int y
+end
+
+init var coords [coords_len] Vector2
+
+42 68 coords [] !x
+420 12 coords [] !x
+68 coords [] .x print
+12 coords [] .x print
+4 2 Vector2 23 coords *[] ! // Writes new Vector in 24th array element
+```
+
 ## Structures
 Structures kinda support oop in cont. But dont expect some advenced oop features like interfaces 
 
