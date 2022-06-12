@@ -198,6 +198,8 @@ def parse_struct() -> Op | list[Op] | None:
     else:
         name = first_token
     State.check_name(name, "structure")
+    if name[0].endswith(":"):
+        sys.stderr.write(f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesnt need :\n")
     
     current_token = ("", "")
     field_type = -1
