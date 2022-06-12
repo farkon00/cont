@@ -547,6 +547,12 @@ def lex_token(token: str) -> Op | None | list:
     elif token in State.bind_stack:
         return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
 
+    elif token in getattr(State.current_proc, "variables", {}):
+        return Op(OpType.PUSH_LOCAL_VAR, token)
+    
+    elif token in getattr(State.current_proc, "memories", {}):
+        return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
+
     elif token in State.variables:
         return Op(OpType.PUSH_VAR, token)
 
@@ -608,14 +614,6 @@ def lex_token(token: str) -> Op | None | list:
         if parts[1] not in State.structures[parts[0]].static_methods:
             State.throw_error(f"static method \"{parts[1]}\" was not found")
         return Op(OpType.CALL, State.structures[parts[0]].static_methods[parts[1]])
-
-    elif State.current_proc is not None:
-        if token in State.current_proc.variables:
-            return Op(OpType.PUSH_LOCAL_VAR, token)
-        elif token in State.current_proc.memories:
-            return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
-        else:
-            State.throw_error(f"unknown token: {token}")
 
     else:
         State.throw_error(f"unknown token: {token}")
