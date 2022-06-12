@@ -67,6 +67,7 @@ class Struct:
         self.parent: "Struct" | None = parent
         self.children: list["Struct"] = []
         self.defaults: dict[int, int] = defaults
+        self.static_methods: dict[str, Proc] = {}
 
     def add_method(self, method: Proc):
         self.methods[method.name] = method
@@ -123,6 +124,7 @@ class State:
     is_null = False
     is_unpack = False
     is_init = False
+    is_static = False
     owner : Struct | None = None
     string_buffer: str = ""
     string_data: list[bytes] = [] 

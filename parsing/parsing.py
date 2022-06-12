@@ -90,7 +90,7 @@ def parse_proc_head():
     first_token: tuple[str, str] = next(State.tokens)
     in_types: list[object] = []
     out_types: list[object] = []
-    owner: Ptr | None = None if State.owner is None else Ptr(State.owner) 
+    owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
 
     if State.current_proc is not None:
         sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
@@ -181,7 +181,9 @@ def parse_proc_head():
     ip = State.get_new_ip(op)
     block.start = ip
     proc.ip = ip
-    if owner is None:
+    if State.is_static:
+        State.owner.static_methods[name_value] = proc
+    elif owner is None:
         State.procs[name_value] = proc
     State.current_proc = proc
     State.block_stack.append(block)
@@ -209,6 +211,7 @@ def parse_struct() -> Op | list[Op] | None:
 
     ops: list[Op] = []
     started_proc: bool = False
+    static_started: bool = False
     while True:
         try:
             current_token = next(State.tokens)
@@ -217,6 +220,12 @@ def parse_struct() -> Op | list[Op] | None:
             State.throw_error("structure definition was not closed")
         if current_token[0] == "end":
             break
+        if current_token[0] == "static":
+            static_started = True
+            if field_type != -1:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error("field name was not defined")
+            continue
         if current_token[0] == "default":
             if field_type != -1:
                 State.loc = f"{State.filename}:{current_token[1]}"
@@ -224,6 +233,9 @@ def parse_struct() -> Op | list[Op] | None:
             if started_proc:
                 State.loc = f"{State.filename}:{current_token[1]}"
                 State.throw_error("field defenition in methods segment")
+            if static_started:
+                State.loc = f"{State.filename}:{current_token[1]}"
+                State.throw_error("field defenition in static segment")
 
             def_name = next(State.tokens)
             def_value = evaluate_block(def_name[1], "default value")
@@ -245,13 +257,15 @@ def parse_struct() -> Op | list[Op] | None:
 
             State.tokens_queue.append(current_token)
             State.owner = struct
+            State.is_static = static_started
             ops.extend(parse_until_end())
             State.owner = None
+            State.is_static = False
             continue
         if field_type == -1:
-            if started_proc:
+            if started_proc or static_started:
                 State.loc = f"{State.filename}:{current_token[1]}"
-                State.throw_error("field defenition in methods segment")
+                State.throw_error("field defenition in non-field segment")
             field_type = parse_type(current_token, "structure definition")
         else:
             if current_token[0] in fields:
@@ -588,6 +602,12 @@ def lex_token(token: str) -> Op | None | list:
         if parts[1] not in State.enums[parts[0]]:
             State.throw_error(f"enum value \"{parts[1]}\" is not defined")
         return Op(OpType.PUSH_INT, State.enums[parts[0]].index(parts[1]))
+
+    elif token.split(".", 1)[0] in State.structures:
+        parts = token.split(".", 1)
+        if parts[1] not in State.structures[parts[0]].static_methods:
+            State.throw_error(f"static method \"{parts[1]}\" was not found")
+        return Op(OpType.CALL, State.structures[parts[0]].static_methods[parts[1]])
 
     elif State.current_proc is not None:
         if token in State.current_proc.variables:
