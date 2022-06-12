@@ -21,7 +21,7 @@ include std.cn
 "Hello, world!\n" puts
 ```
 
-## Fibanacci numbers
+## Fibonacci Numbers
 ```
 0 1 150 
 1 while
@@ -77,7 +77,7 @@ init var coords [coords_len] Vector2
 ```
 
 ## Structures
-Structures kinda support oop in cont. But dont expect some advenced oop features like interfaces 
+Structures technically support OOP in cont. It doesn't have some really advanced features like interface, generics, but there is moves in that direction like dunder methods or static methods. 
 
 ```
 struct Vector2
