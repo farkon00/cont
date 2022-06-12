@@ -54,6 +54,9 @@ const O_CLOEXEC   4194304 end
 const O_DSYNC     65536   end
 const O_RSYNC     131072  end
 
+const AF_INET 2 end
+const SOCK_STREAM 1 end
+
 proc read int ptr int -> int: SYSCALL.READ syscall3 end
 proc write int ptr int -> int: SYSCALL.WRITE syscall3 end
 
@@ -64,6 +67,11 @@ proc close int -> int: SYSCALL.CLOSE syscall1 end
 proc fork -> int: SYSCALL.FORK syscall0 end  
 proc execve ptr ptr ptr -> int: SYSCALL.EXECVE syscall3 end
 proc wait4 ptr int ptr int -> int: SYSCALL.WAIT4 syscall4 end
+
+proc socket int int int -> int: SYSCALL.SOCKET syscall3 end
+proc bind_sock int ptr int -> int: SYSCALL.BIND syscall3 end
+proc listen int int -> int: SYSCALL.LISTEN syscall2 end
+proc accept int ptr int -> int: SYSCALL.BIND syscall3 end
 
 proc timesys ptr -> int: SYSCALL.TIME syscall1 end
 
