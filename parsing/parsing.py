@@ -295,9 +295,11 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     parts = token.split(".")
     if allow_var:
         if token in getattr(State.current_proc, "variables", {}):
-            return Op(OpType.PUSH_LOCAL_VAR, token)
-        elif token in getattr(State.current_proc, "memories", {}):
-            return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
+            res.append(Op(OpType.PUSH_LOCAL_VAR, token))
+            parts = parts[1:]
+        elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
+            res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
+            parts = parts[1:]
         elif parts[0] in State.variables:
             res.append(Op(OpType.PUSH_VAR, parts[0], State.loc))
             parts = parts[1:]
@@ -544,7 +546,7 @@ def lex_token(token: str) -> Op | None | list:
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
     
-    elif token in getattr(State.current_proc, "memories", {}):
+    elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
         return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
 
     elif token in State.variables:
