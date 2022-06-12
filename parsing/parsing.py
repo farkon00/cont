@@ -378,7 +378,7 @@ def lex_token(token: str) -> Op | None | list:
         size = next(State.tokens)
         if not size[0].isnumeric() and size[0] not in State.constants:
             State.loc = size[1]
-            State.throw_error("memory size is not a number") 
+            State.throw_error(f"constant \"{size[0]}\" was not found") 
         State.check_name(name, "memory")
         if size[0].isnumeric():
             Memory.new_memory(name[0], int(size[0]))
