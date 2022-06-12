@@ -231,6 +231,8 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,
                       Operator.EQ, Operator.LE, Operator.GE, Operator.NE):
+        if len(stack) < 2:
+            State.throw_error("stack is too short")
         type2 = stack.pop()
         type1 = stack.pop()
         if type1 == Int() and type2 == Int():
@@ -249,6 +251,8 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
         else:
             State.throw_error(f"incompatible types for {op.operand.name.lower()}")
     elif op.operand == Operator.DIV:
+        if len(stack) < 2:
+            State.throw_error("stack is too short")
         type2 = stack.pop()
         type1 = stack.pop()
         if type1 == Int() and type2 == Int():
