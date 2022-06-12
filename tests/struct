@@ -3,6 +3,14 @@ include std.cn
 unpack struct Vector2
   int x
   int y
+  static 
+  proc from_array [2] int -> Vector2:
+    bind arr:
+      0 arr []
+      1 arr []
+      Vector2
+    end
+  end
 end
 
 struct (Vector2) AutoVector2
@@ -49,6 +57,13 @@ bind vec:
 end
 
 AutoVector2 .y print
+
+var arr [2] int
+45 0 arr *[] !
+123 1 arr *[] !
+arr Vector2.from_array
+dup .x print
+.y print
 :
 69
 42
@@ -59,3 +74,5 @@ AutoVector2 .y print
 4
 Side effect
 42
+45
+123
