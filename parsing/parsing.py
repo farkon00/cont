@@ -376,11 +376,14 @@ def lex_token(token: str) -> Op | None | list:
     elif token == "memory":
         name = next(State.tokens)
         size = next(State.tokens)
-        if not size[0].isnumeric():
+        if not size[0].isnumeric() and size[0] not in State.constants:
             State.loc = size[1]
             State.throw_error("memory size is not a number") 
         State.check_name(name, "memory")
-        Memory.new_memory(name[0], int(size[0]))
+        if size[0].isnumeric():
+            Memory.new_memory(name[0], int(size[0]))
+        else:
+            Memory.new_memory(name[0], State.constants[size[0]])
         return None
 
     elif token == "var":
