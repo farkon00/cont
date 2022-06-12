@@ -597,6 +597,10 @@ def lex_token(token: str) -> Op | None | list:
     elif token.startswith("*") and token[1:] in State.procs:
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
+    elif token.split(".", 1)[0][1:] in State.bind_stack or\
+         token.split(".", 1)[0][1:] in State.variables and token.split(".", 1)[0].startswith("*"):
+        return parse_dot(token[1:], True, True)
+
     elif token.split(".", 1)[0] in State.bind_stack or token.split(".", 1)[0] in State.variables:
         return parse_dot(token, True)
 
