@@ -25,8 +25,12 @@ def evaluate_token(token: str, stack: list):
     elif token == "<=": stack.append(int(stack.pop(-2) <= stack.pop()))
     elif token == "==": stack.append(int(stack.pop(-2) == stack.pop()))
     elif token == "!=": stack.append(int(stack.pop(-2) != stack.pop()))
-    elif token in State.memories: stack.append(State.memories[token])
     elif token in State.constants: stack.append(State.constants[token])
+    elif token.split(".", 1)[0] in State.enums:
+        parts = token.split(".", 1)
+        if parts[1] not in State.enums[parts[0]]:
+            State.throw_error(f"enum value \"{parts[1]}\" is not defined")
+        stack.append(State.enums[parts[0]].index(parts[1]))
     else:
         State.throw_error(f"unknown or unavailiable while compile time evaluation token {token}")
 
