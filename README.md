@@ -2,6 +2,11 @@
 
 __Cont__ is compiled statically-typed concatenative programming language, that has elements of OOP, written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).
 
+## Where name came from
+From word concatinative. 
+How i came up with that specific word?
+I just mixed beggining of this word and tried to came up with something sounding good.
+
 # Quick Start
 ```console
 $ python -V
