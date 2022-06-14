@@ -17,6 +17,7 @@ OPERATORS = {
     "drop" : Operator.DROP,
     "swap" : Operator.SWAP,
     "rot" : Operator.ROT,
+    "over" : Operator.OVER,
     "<" : Operator.LT,
     ">" : Operator.GT,
     "<=" : Operator.LE,

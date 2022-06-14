@@ -46,6 +46,7 @@ class Operator(Enum):
     DROP = auto()
     SWAP = auto()
     ROT = auto()
+    OVER = auto()
     LT = auto()
     GT = auto()
     EQ = auto()

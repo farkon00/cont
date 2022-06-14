@@ -19,6 +19,7 @@ def evaluate_token(token: str, stack: list):
     elif token == "drop": stack.pop()
     elif token == "swap": stack[-2], stack[-1] = stack[-1], stack[-2]
     elif token == "rot": stack[-3], stack[-2], stack[-1] = stack[-1], stack[-2], stack[-3]
+    elif token == "over": stack.append(stack[-2])
     elif token == ">": stack.append(int(stack.pop(-2) > stack.pop()))
     elif token == "<": stack.append(int(stack.pop(-2) < stack.pop()))
     elif token == ">=": stack.append(int(stack.pop(-2) >= stack.pop()))
