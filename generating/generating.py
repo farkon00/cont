@@ -3,7 +3,7 @@ from type_checking.types import Array, sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 35, "Unimplemented type in generating.py"
+assert len(OpType) == 36, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -47,7 +47,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 35, "Unimplemented type in generate_op"
+    assert len(OpType) == 36, "Unimplemented type in generate_op"
     
     State.loc = op.loc
     comment = generate_op_comment(op)
@@ -373,6 +373,8 @@ add r10, rax
 mov rbx, {'[r10]' if op.type == OpType.INDEX else 'r10'}
 push rbx
 """
+    elif op.type == OpType.ASM:
+        return op.operand + "\n"
     elif op.type == OpType.CAST:
         return "" # Casts are type checking thing
     else:

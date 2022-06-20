@@ -40,7 +40,7 @@ def evaluate_block(orig_loc: str, error: str = "memo"):
     while True:
         try:
             token = next(State.tokens)
-        except GeneratorExit:
+        except StopIteration:
             break
         State.loc = token[1]
         if token[0] == "end":

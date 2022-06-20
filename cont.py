@@ -45,19 +45,19 @@ def main():
             elif i == "-o":
                 try:
                     sys.stdout = open(next(args), "w")
-                except GeneratorExit:
+                except StopIteration:
                     print("Error: No file specified for -o")
                     exit(1)
             elif i == "-i":
                 try:
                     sys.stdin = open(next(args), "r")
-                except GeneratorExit:
+                except StopIteration:
                     print("Error: No file specified for -i")
                     exit(1)
             elif i == "-e":
                 try:
                     sys.stderr = open(next(args), "w")
-                except GeneratorExit:
+                except StopIteration:
                     print("Error: No file specified for -e")
                     exit(1)
             else:

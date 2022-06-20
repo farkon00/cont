@@ -35,6 +35,7 @@ class OpType(Enum):
     AUTO_INIT = auto()
     SIZEOF = auto()
     SYSCALL = auto()
+    ASM = auto()
     OPERATOR = auto()
 
 class Operator(Enum):

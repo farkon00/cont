@@ -39,7 +39,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 35, "Unimplemented type in parsing.py"
+assert len(OpType) == 36, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def lex_string(string: str) -> Op | None:
@@ -128,7 +128,7 @@ def parse_proc_head():
     while ":" not in proc_token[0] and has_contaract:
         try:
             proc_token = next(State.tokens)
-        except GeneratorExit:
+        except StopIteration:
             State.loc = f"{State.filename}:{name[1]}"
             State.throw_error("proc contract was not closed")
         proc_token_value = proc_token[0].split(":")[0].strip()
@@ -328,7 +328,7 @@ def is_oct(token: str) -> bool:
     return all(i.lower() in "01234567" for i in token)
 
 def lex_token(token: str) -> Op | None | list:
-    assert len(OpType) == 35, "Unimplemented type in lex_token"
+    assert len(OpType) == 36, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -522,6 +522,21 @@ def lex_token(token: str) -> Op | None | list:
 
         State.enums[name[0]] = values
         return None
+
+    elif token == "asm":
+        asm = ""
+        while True:
+            try:
+                current_asm_token = next(State.tokens)
+            except StopIteration:
+                return Op(OpType.ASM, asm)
+            if current_asm_token[1].split(":")[-2] == State.loc.split(":")[-2]:
+                asm += current_asm_token[0] + " "
+            else:
+                State.tokens_queue.append(current_asm_token)
+                break
+
+        return Op(OpType.ASM, asm)
 
     elif token == "include":
         name = next(State.tokens)
