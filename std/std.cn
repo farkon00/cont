@@ -109,7 +109,38 @@ end
 proc puts @str: STDOUT write drop end 
 proc input ptr -> @str: dup 1024 swap STDIN read swap end
 
-proc int_to_str int -> @str:
+proc cpy_buf int ptr ptr:
+  bind size buf des:
+    0
+    size 0 >
+    while
+      bind index: 
+        buf index ptr+ @8
+        des index ptr+ !8
+        index 1 +
+      end
+      dup size < 
+    end
+    drop
+  end
+end
+
+proc clear_buf int ptr:
+  bind len ptr:
+    0
+    len 0 >
+    while
+      bind index: 
+        0 ptr index ptr+ !8
+        index 1 +
+      end
+      dup len < 
+    end
+    drop
+  end
+end
+
+proc u_to_str int -> @str:
   var index int
   20 index !
   22 sbrk 
@@ -129,6 +160,22 @@ proc int_to_str int -> @str:
     10 res 21 ptr+ !8 // write new line at the end
     21 index @ -
     res index @ 1 + ptr+
+  end
+end
+
+proc int_to_str int -> @str:
+  22 sbrk
+  bind value res:
+    value 0 < if
+      45 res !8
+      0 value - u_to_str 
+      bind len ptr:
+        len ptr res 1 ptr+ cpy_buf
+        len 1 + res
+      end
+    else
+      value u_to_str
+    end
   end
 end
 
@@ -155,37 +202,6 @@ proc open int int @str -> int:
 end
 proc time -> int:
   NULL timesys
-end
-
-proc clear_buf int ptr:
-  bind len ptr:
-    0
-    len 0 >
-    while
-      bind index: 
-        0 ptr index ptr+ !8
-        index 1 +
-      end
-      dup len < 
-    end
-    drop
-  end
-end
-
-proc cpy_buf int ptr ptr:
-  bind size buf des:
-    0
-    size 0 >
-    while
-      bind index: 
-        buf index ptr+ @8
-        des index ptr+ !8
-        index 1 +
-      end
-      dup size < 
-    end
-    drop
-  end
 end 
 
 proc streq @str @str -> int:
