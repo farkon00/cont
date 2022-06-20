@@ -158,7 +158,7 @@ proc u_to_str int -> @str:
       index dec
       dup 0 !=
     end drop
-    21 index @ -
+    20 index @ -
     res index @ 1 + ptr+
   end
 end
