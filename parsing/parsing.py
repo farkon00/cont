@@ -341,6 +341,9 @@ def lex_token(token: str) -> Op | None | list:
 
     elif token.isnumeric():
         return Op(OpType.PUSH_INT, int(token) % 2**64)
+    
+    elif token.startswith("-") and token[1:].isnumeric():
+        return Op(OpType.PUSH_INT, 0x10000000000000000-int(token[1:]))
 
     elif token == "if":
         block = Block(BlockType.IF, -1)
