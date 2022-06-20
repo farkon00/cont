@@ -108,6 +108,7 @@ end
 
 proc puts @str: STDOUT write drop end 
 proc input ptr -> @str: dup 1024 swap STDIN read swap end
+proc println @str: puts "\n" puts end
 
 proc cpy_buf int ptr ptr:
   bind size buf des:
@@ -157,7 +158,6 @@ proc u_to_str int -> @str:
       index dec
       dup 0 !=
     end drop
-    10 res 21 ptr+ !8 // write new line at the end
     21 index @ -
     res index @ 1 + ptr+
   end
@@ -180,7 +180,7 @@ proc int_to_str int -> @str:
 end
 
 proc print int:
-  int_to_str puts
+  int_to_str println
 end
 
 proc null_str_len ptr -> int:
