@@ -13,12 +13,20 @@ def main():
 
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument("program", help="The program to compile and optionally run")
-    args_parser.add_argument("-r", "--run", action="store_true", default=False, dest="run", help="Run program after compilation")
-    args_parser.add_argument("-x64", action="store_true", default=False, dest="is64", help="Run fasm.x64")
-    args_parser.add_argument("--dump", action="store_true", default=False, dest="dump", help="Dump opeartions without compilation")
-    args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None, help="File to output stdout of complier and program")
-    args_parser.add_argument("-i", "--input", dest="input", default=None, help="Stdin for program")
-    args_parser.add_argument("-e", "--error", dest="error", default=None, help="Stderr for program")
+    args_parser.add_argument("-o", "--out", default=None, dest="out", 
+        help="The output executable file and name for .asm file")
+    args_parser.add_argument("-r", "--run", action="store_true", default=False, dest="run", 
+        help="Run program after compilation")
+    args_parser.add_argument("-x64", action="store_true", default=False, dest="is64", 
+        help="Run fasm.x64")
+    args_parser.add_argument("--dump", action="store_true", default=False, dest="dump", 
+        help="Dump opeartions without compilation")
+    args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None, 
+        help="File to output stdout of complier and program")
+    args_parser.add_argument("-i", "--input", dest="input", default=None, 
+        help="Stdin for program")
+    args_parser.add_argument("-e", "--error", dest="error", default=None, 
+        help="Stderr for program")
     args = args_parser.parse_args(sys.argv[1:])
 
     dump = args.dump
@@ -46,16 +54,18 @@ def main():
 
     type_check(ops)
 
-    with open(f"{file_name}.asm", "w") as f:
+    out = file_name if args.out is None else args.out
+
+    with open(f"{out}.asm", "w") as f:
         f.write(generate_fasm(ops))
 
     if is64:
-        subprocess.run(["fasm.x64", f"{file_name}.asm"], stdin=sys.stdin, stderr=sys.stderr)
+        subprocess.run(["fasm.x64", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
     else:
-        subprocess.run(["fasm", f"{file_name}.asm"], stdin=sys.stdin, stderr=sys.stderr)
+        subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
 
     if run:
-        subprocess.run([f"./{file_name}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
+        subprocess.run([f"./{out}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
 
 if __name__ == "__main__":
     main()
