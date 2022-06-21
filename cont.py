@@ -8,30 +8,17 @@ from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
 from type_checking.type_checking import type_check
 
-def usage():
-    buf = "Usage: cont.py <file> [options]"
-    buf += "Options:"
-    buf += "    --help        Show this help message"
-    buf += "    -r            Automaticaly run the program"
-    buf += "    -r64          Automaticaly run the program and use fasm.x64"
-    buf += "    -x64          Use fasm.x64 for compiling fasm"
-    buf += "    -o <path>     Moves stdout of program to <path>"
-    buf += "    -i <path>     Moves stdin of program to <path>"
-    buf += "    -e <path>     Moves stderr of program to <path>"
-    
-    return buf
-
 def main():
     # Argv handeling
 
-    args_parser = argparse.ArgumentParser(usage=usage())
-    args_parser.add_argument("program")
-    args_parser.add_argument("-r", "--run", action="store_true", default=False, dest="run")
-    args_parser.add_argument("-x64", action="store_true", default=False, dest="is64")
-    args_parser.add_argument("--dump", action="store_true", default=False, dest="dump")
-    args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None)
-    args_parser.add_argument("-i", "--input", dest="input", default=None)
-    args_parser.add_argument("-e", "--error", dest="error", default=None)
+    args_parser = argparse.ArgumentParser()
+    args_parser.add_argument("program", help="The program to compile and optionally run")
+    args_parser.add_argument("-r", "--run", action="store_true", default=False, dest="run", help="Run program after compilation")
+    args_parser.add_argument("-x64", action="store_true", default=False, dest="is64", help="Run fasm.x64")
+    args_parser.add_argument("--dump", action="store_true", default=False, dest="dump", help="Dump opeartions without compilation")
+    args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None, help="File to output stdout of complier and program")
+    args_parser.add_argument("-i", "--input", dest="input", default=None, help="Stdin for program")
+    args_parser.add_argument("-e", "--error", dest="error", default=None, help="Stderr for program")
     args = args_parser.parse_args(sys.argv[1:])
 
     dump = args.dump
