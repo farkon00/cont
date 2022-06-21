@@ -1,78 +1,51 @@
 import subprocess
 import sys
 import os
+import argparse
 
 from state import State
 from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
 from type_checking.type_checking import type_check
 
+def usage():
+    buf = "Usage: cont.py <file> [options]"
+    buf += "Options:"
+    buf += "    --help        Show this help message"
+    buf += "    -r            Automaticaly run the program"
+    buf += "    -r64          Automaticaly run the program and use fasm.x64"
+    buf += "    -x64          Use fasm.x64 for compiling fasm"
+    buf += "    -o <path>     Moves stdout of program to <path>"
+    buf += "    -i <path>     Moves stdin of program to <path>"
+    buf += "    -e <path>     Moves stderr of program to <path>"
+    
+    return buf
+
 def main():
     # Argv handeling
-    dump = False
-    run = False
-    is64 = False
-    program = None
 
-    args = (i for i in sys.argv[1:])
+    args_parser = argparse.ArgumentParser(usage=usage())
+    args_parser.add_argument("program")
+    args_parser.add_argument("-r", "--run", action="store_true", default=False, dest="run")
+    args_parser.add_argument("-x64", action="store_true", default=False, dest="is64")
+    args_parser.add_argument("--dump", action="store_true", default=False, dest="dump")
+    args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None)
+    args_parser.add_argument("-i", "--input", dest="input", default=None)
+    args_parser.add_argument("-e", "--error", dest="error", default=None)
+    args = args_parser.parse_args(sys.argv[1:])
 
-    for i in args:
-        if i.startswith("--"):
-            if i == "--help":
-                print("Usage: cont.py <file> [options]")
-                print("Options:")
-                print("    --help        Show this help message")
-                print("    -r            Automaticaly run the program")
-                print("    -r64          Automaticaly run the program and use fasm.x64")
-                print("    -x64          Use fasm.x64 for compiling fasm")
-                print("    -o <path>     Moves stdout of program to <path>")
-                print("    -i <path>     Moves stdin of program to <path>")
-                print("    -e <path>     Moves stderr of program to <path>")
-                exit(0)
-            elif i == "--dump":
-                dump = True
-            else:
-                print(f"Unknown option: {i}")
-                exit(1)
-        elif i.startswith("-"):
-            if i == "-r":
-                run = True
-            elif i == "-r64":
-                run = True
-                is64 = True
-            elif i == "-x64":
-                is64 = True
-            elif i == "-o":
-                try:
-                    sys.stdout = open(next(args), "w")
-                except StopIteration:
-                    print("Error: No file specified for -o")
-                    exit(1)
-            elif i == "-i":
-                try:
-                    sys.stdin = open(next(args), "r")
-                except StopIteration:
-                    print("Error: No file specified for -i")
-                    exit(1)
-            elif i == "-e":
-                try:
-                    sys.stderr = open(next(args), "w")
-                except StopIteration:
-                    print("Error: No file specified for -e")
-                    exit(1)
-            else:
-                print(f"Unknown option: {i}")
-                exit(1)
-        else:
-            if program is not None:
-                print(f"More than one file names were provided")
-                exit(1)
-            with open(i, "r") as f:
-                file_name = os.path.splitext(i)[0]
-                program = f.read()
-    if program is None:
-        print("No program name was provided")
-        exit(1)
+    dump = args.dump
+    run = args.run
+    is64 = args.is64
+
+    file_name = os.path.splitext(args.program)[0]
+
+    with open(args.program, "r") as f:
+        program = f.read() 
+
+    sys.stdout = open(args.stdout, "w") if args.stdout else sys.stdout
+    sys.stderr = open(args.error, "w") if args.error else sys.stderr
+    sys.stdin = open(args.input, "r") if args.input else sys.stdin
 
     State.filename = file_name
     State.dir = os.path.dirname(__file__)

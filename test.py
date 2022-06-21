@@ -32,7 +32,7 @@ def test(test_name):
         exp_stderr = ""
 
     subprocess.run(["python", "cont.py", "tests/temp/code.cn", "-i", "tests/temp/stdin", "-e",
-                    f"tests/results/{test_name}_stderr", "-o", f"tests/results/{test_name}_stdout", "-r"])
+                    f"tests/results/{test_name}_stderr", "--stdout", f"tests/results/{test_name}_stdout", "-r"])
 
     with open(f"tests/results/{test_name}_stdout", "r") as f:
         stdout = f.read()
