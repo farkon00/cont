@@ -710,7 +710,7 @@ def tokens(program: str):
             yield (token, f"{i+1}:{j+1}")
 
 def parse_until_end() -> list[Op]:
-    ops = []
+    ops: list[Op] = []
     initial_loc = State.loc
     initial_blocks = len(State.block_stack)
     end = False
@@ -737,7 +737,7 @@ def parse_until_end() -> list[Op]:
 def parse_to_ops(program: str) -> list:
     saver = StateSaver()
     State.tokens = tokens(program)
-    ops = []
+    ops: list[Op] = []
 
     for token, loc in State.tokens:
         State.loc = f"{State.filename}:{loc}"
