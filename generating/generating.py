@@ -49,6 +49,9 @@ def generate_op_comment(op : Op):
 def generate_op(op: Op):
     assert len(OpType) == 36, "Unimplemented type in generate_op"
     
+    if not op.compiled:
+        return ""
+
     State.loc = op.loc
     comment = generate_op_comment(op)
 

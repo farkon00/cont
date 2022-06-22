@@ -49,7 +49,8 @@ def main():
 
     if dump:
         for op in ops:
-            print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
+            if op.compiled:
+                print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
         return 
 
     type_check(ops)

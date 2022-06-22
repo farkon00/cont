@@ -364,9 +364,11 @@ def lex_token(token: str) -> Op | None | list:
         return Op(OpType.PUSH_INT, int(token[2:], 8))
 
     elif token == "if":
-        block = Block(BlockType.IF, -1)
+        op = Op(OpType.IF, -1)
+        block = Block(BlockType.IF, State.get_new_ip(op))
+        op.operand = block
         State.block_stack.append(block)
-        return Op(OpType.IF, block)
+        return op
 
     elif token == "end":
         if len(State.block_stack) <= 0:
@@ -407,7 +409,18 @@ def lex_token(token: str) -> Op | None | list:
         op = Op(OpType.WHILE, block)
         block.start = State.get_new_ip(op)
         State.block_stack.append(block)
-        return op 
+        return op
+
+    elif token == "do":
+        if len(State.block_stack) <= 0:
+            State.throw_error("block for do not found")
+        if State.block_stack[-1].type != BlockType.IF:
+            State.throw_error("do without if")
+        if not State.ops_by_ips[State.block_stack[-1].start].compiled:
+            State.throw_error("do without if")
+            
+        State.ops_by_ips[State.block_stack[-1].start].compiled = False
+        return Op(OpType.IF, State.block_stack[-1])
 
     elif token == "memory":
         name = next(State.tokens)

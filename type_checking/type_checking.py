@@ -57,6 +57,9 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
 
     State.loc = op.loc
 
+    if not op.compiled:
+        return None
+
     if op.type == OpType.PUSH_INT:
         stack.append(Int())
     elif op.type in (OpType.PUSH_MEMORY, OpType.PUSH_LOCAL_MEM):

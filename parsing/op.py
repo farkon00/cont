@@ -65,3 +65,4 @@ class Op:
         self.type: OpType = type
         self.operand = operand 
         self.loc: str = loc
+        self.compiled: bool = True
