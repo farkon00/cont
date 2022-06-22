@@ -327,7 +327,7 @@ def is_bin(token: str) -> bool:
 def is_oct(token: str) -> bool:
     return all(i.lower() in "01234567" for i in token)
 
-def lex_token(token: str) -> Op | None | list:
+def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     assert len(OpType) == 36, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
@@ -381,6 +381,13 @@ def lex_token(token: str) -> Op | None | list:
         elif block.type == BlockType.PROC:
             State.current_proc = None
             op = Op(OpType.ENDPROC, block)
+        elif block.type == BlockType.WHILE:
+            cond = State.do_stack.pop()
+            for i in cond:
+                i.loc = State.loc
+            op = Op(OpType.ENDWHILE, block, State.loc)
+            op.operand.end = State.get_new_ip(op)
+            return [*cond, op]
         else:
             op = Op(END_TYPES[block.type], block)
 
@@ -409,18 +416,30 @@ def lex_token(token: str) -> Op | None | list:
         op = Op(OpType.WHILE, block)
         block.start = State.get_new_ip(op)
         State.block_stack.append(block)
+        State.do_stack.append([])
         return op
 
     elif token == "do":
         if len(State.block_stack) <= 0:
             State.throw_error("block for do not found")
-        if State.block_stack[-1].type != BlockType.IF:
-            State.throw_error("do without if")
-        if not State.ops_by_ips[State.block_stack[-1].start].compiled:
-            State.throw_error("do without if")
-            
-        State.ops_by_ips[State.block_stack[-1].start].compiled = False
-        return Op(OpType.IF, State.block_stack[-1])
+        if State.block_stack[-1].type == BlockType.IF:
+            if not State.ops_by_ips[State.block_stack[-1].start].compiled:
+                State.throw_error("do without if")
+
+            State.ops_by_ips[State.block_stack[-1].start].compiled = False
+            return Op(OpType.IF, State.block_stack[-1])
+        elif State.block_stack[-1].type == BlockType.WHILE:
+            orig_while = State.ops_by_ips[State.block_stack[-1].start]
+            orig_while.compiled = False
+            for i in reversed(ops):
+                if i is orig_while:
+                    break
+                State.do_stack[-1].append(i.copy())    
+            op = Op(OpType.WHILE, orig_while.operand)
+            State.ops_by_ips[State.block_stack[-1].start] = op
+            return op
+        else:
+            State.throw_error("do without if or while")
 
     elif token == "memory":
         name = next(State.tokens)
@@ -700,7 +719,7 @@ def parse_until_end() -> list[Op]:
         if token == "end" and len(State.block_stack) - 1 == initial_blocks:
             end = True
         State.loc = f"{State.filename}:{loc}"
-        op = lex_token(token)
+        op = lex_token(token, ops)
         if isinstance(op, list):
             ops.extend(op)
             continue
@@ -722,7 +741,7 @@ def parse_to_ops(program: str) -> list:
 
     for token, loc in State.tokens:
         State.loc = f"{State.filename}:{loc}"
-        op = lex_token(token)
+        op = lex_token(token, ops)
         if isinstance(op, list):
             ops.extend(op)
             continue

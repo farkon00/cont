@@ -66,3 +66,8 @@ class Op:
         self.operand = operand 
         self.loc: str = loc
         self.compiled: bool = True
+
+    def copy(self):
+        op = Op(self.type, self.operand, self.loc)
+        op.compiled = self.compiled
+        return op
