@@ -42,13 +42,13 @@ class Memory:
 
 
 class Proc:
-    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, binded: int, owner=None):
+    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, is_named: bool, owner=None):
         self.name: str = name
         self.ip: int = ip
         self.in_stack: list[object] = in_stack + ([owner] if owner is not None else []) 
         self.out_stack: list[object] = out_stack
         self.block: Block = block
-        self.binded = binded
+        self.is_named = is_named
 
         self.memories: dict[str, Memory] = {}
         self.memory_size : int = 0

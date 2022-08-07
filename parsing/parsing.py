@@ -196,7 +196,7 @@ def parse_proc_head():
                 State.throw_error(f"{name_value} must have owner structure as argument")
 
     block = Block(BlockType.PROC, -1)
-    proc = Proc(name_value, -1, in_types, out_types, block, len(names), owner)
+    proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, owner)
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -411,10 +411,10 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             proc = State.current_proc
             State.current_proc = None
             op = Op(OpType.ENDPROC, block)
-            if proc.binded > 0:
-                State.bind_stack = State.bind_stack[:-proc.binded]
+            if proc.is_named:
+                State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
                 block.end = State.get_new_ip(op)
-                return [Op(OpType.UNBIND, proc.binded), op]
+                return [Op(OpType.UNBIND, len(proc.in_stack)), op]
         elif block.type == BlockType.WHILE:
             cond = State.do_stack.pop()
             for i in cond:
