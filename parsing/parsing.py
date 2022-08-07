@@ -87,10 +87,22 @@ def lex_string(string: str) -> Op | None:
 
     return None
 
+def next_proc_contract_token(name: tuple[str, str]):
+    try:
+        proc_token = next(State.tokens)
+    except StopIteration:
+        State.loc = f"{State.filename}:{name[1]}"
+        State.throw_error("proc contract was not closed")
+    proc_token_value = proc_token[0].split(":")[0].strip()
+    State.loc = proc_token[1]
+
+    return proc_token, proc_token_value
+
 def parse_proc_head():
     first_token: tuple[str, str] = next(State.tokens)
     in_types: list[object] = []
     out_types: list[object] = []
+    names: list[str] = []
     owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
 
     if State.current_proc is not None:
@@ -126,27 +138,27 @@ def parse_proc_head():
     proc_token = ("", "")
     types = in_types
     while ":" not in proc_token[0] and has_contaract:
-        try:
-            proc_token = next(State.tokens)
-        except StopIteration:
-            State.loc = f"{State.filename}:{name[1]}"
-            State.throw_error("proc contract was not closed")
-        proc_token_value = proc_token[0].split(":")[0].strip()
+        proc_token, proc_token_value = next_proc_contract_token(name)
         if not proc_token_value:
             break
         elif proc_token_value == "->":
             if types is out_types:
-                State.loc = proc_token[1]
                 State.throw_error("few -> separators was found in proc contract")
             types = out_types
         else:
             res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True, end=":")
             if isinstance(res, Iterable):
+                if State.is_named: State.throw_error("Can't unpack a type in a named procedure contract")
                 types.extend(res)
             elif res is None: # If ended in array type
                 break
             else:
                 types.append(res)
+                if State.is_named and types is in_types:
+                    proc_token, proc_token_value = next_proc_contract_token(name)
+                    if not proc_token_value: State.throw_error("name for argument was not specified")
+                    names.append(proc_token_value)
+                    
 
     if has_contaract and ":" in proc_token:
         queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
@@ -158,11 +170,11 @@ def parse_proc_head():
         State.throw_error("constructor cannot have out types") 
 
     if name_value in State.DUNDER_METHODS and owner is not None and\
-       not (len(in_types) + 1 == 2 and len(out_types) == 1):
+       not (len(in_types) == 1 and len(out_types) == 1):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(f"{name_value} method required to have 1 argument and 1 out type")
     if name_value == "__div__" and owner is not None and\
-       not (len(in_types) + 1 == 2 and len(out_types) == 2):
+       not (len(in_types) == 1 and len(out_types) == 2):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(f"{name_value} method required to have 1 argument and 2 out types", False)
         sys.stdout.write("\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n")
@@ -177,7 +189,7 @@ def parse_proc_head():
                 State.throw_error(f"{name_value} must have owner structure as argument")
 
     block = Block(BlockType.PROC, -1)
-    proc = Proc(name_value, -1, in_types, out_types, block, owner)
+    proc = Proc(name_value, -1, in_types, out_types, block, len(names), owner)
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -186,8 +198,14 @@ def parse_proc_head():
         State.owner.static_methods[name_value] = proc
     elif owner is None:
         State.procs[name_value] = proc
+    if State.is_named and owner is not None:
+        names.insert(0, "self")
     State.current_proc = proc
     State.block_stack.append(block)
+    if State.is_named:
+        State.is_named = False
+        State.bind_stack.extend(names)
+        return [op, Op(OpType.BIND, len(names))]
     return op
 
 def parse_struct() -> Op | list[Op] | None:
@@ -336,6 +354,9 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     if State.is_init and token != "var":
         State.throw_error("init must be followed by var")
 
+    if State.is_named and token != "proc":
+        State.throw_error("init must be followed by proc")
+
     string = lex_string(token)
     if string:
         return string
@@ -379,8 +400,13 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             op = Op(OpType.UNBIND, unbinded)
             State.bind_stack = State.bind_stack[:-unbinded]
         elif block.type == BlockType.PROC:
+            proc = State.current_proc
             State.current_proc = None
             op = Op(OpType.ENDPROC, block)
+            if proc.binded > 0:
+                State.bind_stack = State.bind_stack[:-proc.binded]
+                block.end = State.get_new_ip(op)
+                return [Op(OpType.UNBIND, proc.binded), op]
         elif block.type == BlockType.WHILE:
             cond = State.do_stack.pop()
             for i in cond:
@@ -530,11 +556,13 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     elif token == "proc":
         return parse_proc_head()
 
+    # prefix tokens
     elif token == "unpack":
         State.is_unpack = True
-
     elif token == "init":
         State.is_init = True
+    elif token == "named":
+        State.is_named = True
 
     elif token == "struct":
         return parse_struct()
@@ -743,6 +771,9 @@ def parse_to_ops(program: str) -> list:
         State.loc = f"{State.filename}:{loc}"
         op = lex_token(token, ops)
         if isinstance(op, list):
+            for locating_op in op:
+                if locating_op.loc == "":
+                    locating_op.loc = f"{State.filename}:{loc}"
             ops.extend(op)
             continue
         if op is not None:

@@ -42,12 +42,14 @@ class Memory:
 
 
 class Proc:
-    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, owner=None):
+    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, binded: int, owner=None):
         self.name: str = name
         self.ip: int = ip
         self.in_stack: list[object] = in_stack + ([owner] if owner is not None else []) 
         self.out_stack: list[object] = out_stack
         self.block: Block = block
+        self.binded = binded
+
         self.memories: dict[str, Memory] = {}
         self.memory_size : int = 0
         self.variables : dict[str, object] = {}
@@ -122,13 +124,16 @@ class State:
     ops_by_ips: list[Op] = []
 
     is_string = False
+    string_buffer: str = ""
+    string_data: list[bytes] = [] 
+
     is_null = False
     is_unpack = False
     is_init = False
     is_static = False
+    is_named = False
+
     owner : Struct | None = None
-    string_buffer: str = ""
-    string_data: list[bytes] = [] 
 
     loc: str = ""
     filename: str = ""
