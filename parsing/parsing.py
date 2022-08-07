@@ -87,7 +87,7 @@ def lex_string(string: str) -> Op | None:
 
     return None
 
-def next_proc_contract_token(name: tuple[str, str]):
+def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], str]:
     try:
         proc_token = next(State.tokens)
     except StopIteration:
@@ -146,9 +146,16 @@ def parse_proc_head():
                 State.throw_error("few -> separators was found in proc contract")
             types = out_types
         else:
+            if proc_token_value.startswith("@") and State.is_named and types is in_types:
+                if proc_token_value[1:] not in State.structures:
+                    State.throw_error(f"structure {proc_token_value[1:]} was not found")
+                struct = State.structures[proc_token_value[1:]]
+                names.extend(struct.fields.keys())
+                types.extend(struct.fields_types)
+                continue
+                    
             res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True, end=":")
             if isinstance(res, Iterable):
-                if State.is_named: State.throw_error("Can't unpack a type in a named procedure contract")
                 types.extend(res)
             elif res is None: # If ended in array type
                 break
