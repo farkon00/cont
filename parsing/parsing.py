@@ -562,6 +562,9 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         
     elif token == "proc":
         return parse_proc_head()
+    elif token == "nproc":
+        State.is_named = True
+        return parse_proc_head()
 
     # prefix tokens
     elif token == "unpack":
