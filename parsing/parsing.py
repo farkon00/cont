@@ -407,6 +407,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             op = Op(OpType.UNBIND, unbinded)
             State.bind_stack = State.bind_stack[:-unbinded]
         elif block.type == BlockType.PROC:
+            assert State.current_proc is not None
             proc = State.current_proc
             State.current_proc = None
             op = Op(OpType.ENDPROC, block)
