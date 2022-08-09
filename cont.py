@@ -21,6 +21,8 @@ def main():
         help="Run fasm.x64")
     args_parser.add_argument("--dump", action="store_true", default=False, dest="dump", 
         help="Dump opeartions without compilation")
+    args_parser.add_argument("--dump-tokens", action="store_true", default=False, dest="dump_tokens", 
+        help="Dump tokens without parsing or compilating")
     args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None, 
         help="File to output stdout of complier and program")
     args_parser.add_argument("-i", "--input", dest="input", default=None, 
@@ -45,7 +47,7 @@ def main():
     State.filename = file_name
     State.dir = os.path.dirname(__file__)
 
-    ops = parse_to_ops(program)
+    ops = parse_to_ops(program, args.dump_tokens)
 
     if dump:
         for op in ops:
