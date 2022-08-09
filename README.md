@@ -94,11 +94,10 @@ struct (Vector2) Vector3
   int z
 end
 
-proc [Vector2] 3diffy -> Vector3:
-  bind self:
-    self .x self .y 0
-    Vector3
-  end
+// If you use named procedure owner of the method will be binded to self
+nproc [Vector2] 3diffy -> Vector3:
+  self.x self.y 0
+  Vector3
 end
 
 42 69 Vector2 .3diffy
