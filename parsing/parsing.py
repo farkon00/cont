@@ -111,7 +111,7 @@ def parse_proc_head():
     if first_token[0].startswith("[") and first_token[0].endswith("]"):
         if State.owner is not None:
             State.loc = f"{State.filename}:{first_token[1]}"
-            State.throw_error("cannot implicitly specify method's structure inside structure")
+            State.throw_error("cannot explicitly specify method's structure inside structure")
 
         name = next(State.tokens)
         if first_token[0][1:-1] not in State.structures:
@@ -243,7 +243,7 @@ def parse_struct() -> Op | list[Op] | None:
     while True:
         try:
             current_token = next(State.tokens)
-        except:
+        except StopIteration:
             State.loc = f"{State.filename}:{name[1]}"
             State.throw_error("structure definition was not closed")
         if current_token[0] == "end":
@@ -271,7 +271,7 @@ def parse_struct() -> Op | list[Op] | None:
             defaults[len(struct_types)] = def_value
             struct_types.append(fields[def_name[0]])
             continue
-        if current_token[0] == "proc":
+        if current_token[0] in ("proc", "nproc"):
             if not started_proc:
                 started_proc = True
                 if field_type != -1:
@@ -759,13 +759,13 @@ def parse_until_end() -> list[Op]:
             end = True
         State.loc = f"{State.filename}:{loc}"
         op = lex_token(token, ops)
+        
         if isinstance(op, list):
             ops.extend(op)
-            continue
-        if op is not None:
+        elif op is not None:
             op.loc = f"{State.filename}:{loc}"
             ops.append(op)
-        
+
         if end:
             break
 
