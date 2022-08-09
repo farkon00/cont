@@ -118,14 +118,11 @@ class State:
     structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
     enums: dict[str, list[str]] = {}
+    string_data: list[bytes] = [] 
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []
     ops_by_ips: list[Op] = []
-
-    is_string = False
-    string_buffer: str = ""
-    string_data: list[bytes] = [] 
 
     is_null = False
     is_unpack = False

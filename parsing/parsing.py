@@ -42,51 +42,6 @@ assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
 assert len(OpType) == 36, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
-def lex_string(string: str) -> Op | None:
-    start_string = False
-    end_string = False
-
-    if string.startswith("\""):
-        start_string = True
-    if string.endswith("\""):
-        end_string = True
-    if string.startswith("n\""):
-        start_string = True
-        State.is_null = True
-        string = string[1:]
-
-    if start_string:
-        string = string[1:]
-        if State.is_string:
-            State.throw_error("string litteral was opened without closing previous one")
-        State.is_string = True
-        State.string_buffer = ""
-
-    if end_string:  
-        string = string[:-1]
-        if not State.is_string:
-            State.throw_error("string litteral was closed without opening")
-
-        res = State.string_buffer + " " + string
-        if start_string:
-            res = res[1:]
-        res = bytes(res, "raw_unicode_escape").decode("unicode_escape")
-        State.string_data.append(bytes(res, "utf-8"))
-        optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
-        if State.is_null:
-            State.string_data[-1] += bytes("\0", "utf-8")
-
-        State.is_string = False
-        State.is_null = False
-        return Op(optype, len(State.string_data) - 1, State.loc)
-
-    if State.is_string:
-        State.string_buffer += " " + string
-        if start_string:
-            State.string_buffer = State.string_buffer[1:] 
-
-    return None
-
 def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], str]:
     try:
         proc_token = next(State.tokens)
