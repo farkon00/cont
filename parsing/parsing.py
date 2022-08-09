@@ -133,7 +133,8 @@ def parse_proc_head():
     except IndexError:
         pass
 
-    State.check_name((name_value, name[1]), "procedure")
+    if owner is None:
+        State.check_name((name_value, name[1]), "procedure")
 
     proc_token = ("", "")
     types = in_types
