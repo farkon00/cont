@@ -43,7 +43,7 @@ def evaluate_block(orig_loc: str, error: str = "memo"):
         except StopIteration:
             break
         State.loc = token[1]
-        if token[0] == "end":
+        if token[0] in ("end", ";"):
             if len(stack) != 1:
                 State.throw_error(f"{error} block ended with {len(stack)} elements on the stack")
             return stack[0]
