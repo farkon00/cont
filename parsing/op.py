@@ -6,6 +6,8 @@ class OpType(Enum):
     PUSH_LOCAL_MEM = auto()
     PUSH_VAR = auto()
     PUSH_LOCAL_VAR = auto()
+    PUSH_VAR_PTR = auto()
+    PUSH_LOCAL_VAR_PTR = auto()
     PUSH_STR = auto()
     PUSH_NULL_STR = auto()
     PUSH_PROC = auto()

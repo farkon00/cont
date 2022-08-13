@@ -3,7 +3,7 @@ from type_checking.types import Array, sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 36, "Unimplemented type in generating.py"
+assert len(OpType) == 38, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -47,7 +47,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 36, "Unimplemented type in generate_op"
+    assert len(OpType) == 38, "Unimplemented type in generate_op"
     
     if not op.compiled:
         return ""
@@ -61,6 +61,8 @@ def generate_op(op: Op):
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_VAR:
         return comment + f"push mem+{State.memories[op.operand].offset}\n"
+    elif op.type == OpType.PUSH_VAR_PTR:
+        return comment + f"push mem+{State.memories[op.operand].offset}\n"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         assert State.current_proc is not None, "Bug in parsing of local and global memories"
         return comment + \
@@ -71,6 +73,15 @@ sub rbx, {State.current_proc.memory_size + op.operand + 8}\n
 push rbx
 """
     elif op.type == OpType.PUSH_LOCAL_VAR:
+        assert State.current_proc is not None, "Bug in parsing of local and global memories"
+        return comment + \
+f"""
+mov rbx, [call_stack_ptr]
+add rbx, call_stack
+sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+push rbx
+"""
+    elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         assert State.current_proc is not None, "Bug in parsing of local and global memories"
         return comment + \
 f"""

@@ -6,7 +6,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 36, "Unimplemented type in type_checking.py"
+assert len(OpType) == 38, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -53,7 +53,7 @@ def type_check(ops: list[Op]):
         index += 1
 
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
-    assert len(OpType) == 36, "Unimplemented type in type_check_op"
+    assert len(OpType) == 38, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -66,7 +66,12 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         stack.append(Ptr())
     elif op.type == OpType.PUSH_VAR:
         stack.append(Ptr(State.variables[op.operand]))
+    elif op.type == OpType.PUSH_VAR_PTR:
+        stack.append(Ptr(State.variables[op.operand]))
     elif op.type == OpType.PUSH_LOCAL_VAR:
+        assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
+        stack.append(Ptr(State.current_proc.variables[op.operand]))
+    elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
         stack.append(Ptr(State.current_proc.variables[op.operand]))
     elif op.type == OpType.PUSH_STR:

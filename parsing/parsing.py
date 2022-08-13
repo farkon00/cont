@@ -39,7 +39,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 36, "Unimplemented type in parsing.py"
+assert len(OpType) == 38, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], str]:
@@ -309,7 +309,7 @@ def is_oct(token: str) -> bool:
     return all(i.lower() in "01234567" for i in token)
 
 def lex_token(token: str, ops: list[Op]) -> Op | None | list:
-    assert len(OpType) == 36, "Unimplemented type in lex_token"
+    assert len(OpType) == 38, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -613,12 +613,18 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
 
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
+
+    elif token.startswith("*") and token in getattr(State.current_proc, "variables", {}):
+        return Op(OpType.PUSH_LOCAL_VAR_PTR, token[1:])
     
     elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
         return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
 
     elif token in State.variables:
         return Op(OpType.PUSH_VAR, token)
+
+    elif token.startswith("*") and token[1:] in State.variables:
+        return Op(OpType.PUSH_VAR_PTR, token[1:])
 
     elif token in State.memories:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
