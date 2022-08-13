@@ -118,7 +118,9 @@ class State:
     structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
     enums: dict[str, list[str]] = {}
+
     string_data: list[bytes] = [] 
+    locs_to_include: list[str] = []
 
     tokens: Generator = (i for i in ()) # type: ignore
     tokens_queue: list[tuple[str, str]] = []

@@ -13,6 +13,37 @@ def generate_fasm(ops: list):
 format ELF64 executable 3
 segment readable executable
 entry _start
+check_array_bounds:
+    ;; rax - index
+    ;; rbx - size of an array
+    ;; r15 - loc pointer
+    ;; r12 - loc size
+
+    ;; if rax >= rbx
+    cmp rax, rbx
+    jl array_bound_if
+
+    ;; write out of range text to stdout
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, index_out_of_range_text
+    mov rdx, 22
+    syscall
+
+    ;; write loc to stdout
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, r15
+    mov rdx, r12
+    syscall
+
+    ;; exit
+    mov rax, 60
+    mov rdi, 1
+    syscall
+
+    array_bound_if:
+    ret
 _start:
 """
 
@@ -29,9 +60,11 @@ call_stack_ptr: rb 8
 bind_stack_ptr: rb 8
 bind_stack: rb 8192
 call_stack: rb 65536
+index_out_of_range_text: db "Index out of range in "
 """
+    for index, i in enumerate(State.locs_to_include):
+        buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
     for index, i in enumerate(State.string_data):
-        # Second expression is converting string to its bytes representation
         buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
 
     return buf
@@ -380,13 +413,20 @@ call rax
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         return comment + \
 f"""
-pop r10
+pop r11
 pop rbx
-mov rax, {op.operand}
+mov r10, rbx
+mov rax, {op.operand[0]}
 mul rbx
-add r10, rax
-mov rbx, {'[r10]' if op.type == OpType.INDEX else 'r10'}
+add r11, rax
+mov rbx, {'[r11]' if op.type == OpType.INDEX else 'r11'}
 push rbx
+
+mov rax, r10
+mov rbx, {op.operand[1]}
+mov r15, loc_{op.operand[2]}
+mov r12, {len(State.locs_to_include[op.operand[2]]) + 1}
+call check_array_bounds
 """
     elif op.type == OpType.ASM:
         return op.operand + "\n"
