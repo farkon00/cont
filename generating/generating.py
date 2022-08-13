@@ -60,7 +60,7 @@ def generate_op(op: Op):
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_VAR:
-        return comment + f"push [mem+{State.memories[op.operand].offset}]\n"
+        return comment + f"mov rax, [mem+{State.memories[op.operand].offset}]\npush rax\n"
     elif op.type == OpType.PUSH_VAR_PTR:
         return comment + f"push mem+{State.memories[op.operand].offset}\n"
     elif op.type == OpType.PUSH_LOCAL_MEM:
@@ -79,7 +79,8 @@ f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
 sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
-push [rbx]
+mov rax, [rbx]
+push rax
 """
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         assert State.current_proc is not None, "Bug in parsing of local and global memories"

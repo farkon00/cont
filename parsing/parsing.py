@@ -614,7 +614,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
 
-    elif token.startswith("*") and token in getattr(State.current_proc, "variables", {}):
+    elif token.startswith("*") and token[1:] in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR_PTR, token[1:])
     
     elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
