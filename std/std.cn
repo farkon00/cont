@@ -121,23 +121,23 @@ end
 
 proc u_to_str int -> @str:
   var index int
-  20 index !
+  20 !index
   22 sbrk 
   bind res:
     dup 0 == if
-      48 res index @ ptr+ !8
-      index dec
+      48 res index ptr+ !8
+      *index dec
     end 
     dup 0 !=
     while
       10 div 
       48 + // Get character from mod
-      index @ res +ptr !8
-      index dec
+      index res +ptr !8
+      *index dec
       dup 0 !=
     end drop
-    20 index @ -
-    res index @ 1 + ptr+
+    20 index -
+    res index 1 + ptr+
   end
 end
 
@@ -220,8 +220,8 @@ nproc exec_cmd ptr argv ptr exec:
     else pid 0 > if
       0 (ptr)
       0
-      wstatus
-      18446744073709551615 // -1
+      *wstatus
+      -1
       wait4 drop
     else
       "Fork failed\n" puts
