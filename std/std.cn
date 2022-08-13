@@ -24,49 +24,35 @@ proc dec8 ptr:
   dup @8 1 - swap !8 
 end
 
-proc incby ptr int:
-  bind ptr by:
-    ptr @int by + ptr !
-  end
+nproc incby ptr ptr int by:
+  ptr @int by + ptr !
 end
-proc decby ptr int:
-  bind ptr by:
-    ptr @int by - ptr !
-  end
+nproc decby ptr ptr int by:
+  ptr @int by - ptr !
 end
-proc inc8by ptr int:
-  bind ptr by:
-    ptr @8 by + ptr !8
-  end
+nproc inc8by ptr ptr int by:
+  ptr @8 by + ptr !8
 end
-proc dec8by ptr int:
-  bind ptr by:
-    ptr @8 by - ptr !8
-  end
+nproc dec8by ptr ptr int by:
+  ptr @8 by - ptr !8
 end
 
-proc @16 ptr -> int:
-  bind ptr:
-    ptr @8 256 *
-    ptr 1 ptr+ @8 +
-  end
+nproc @16 ptr ptr -> int:
+  ptr @8 256 *
+  ptr 1 ptr+ @8 +
 end
  
-proc !16 int ptr:
-  bind value ptr:
-    value 256 div swap
-    ptr !8
-    ptr 1 ptr+ !8
-  end
+nproc !16 int value ptr ptr:
+  value 256 div swap
+  ptr !8
+  ptr 1 ptr+ !8
 end
 
-proc @32 ptr -> int:
-  bind ptr:
-    ptr        @8 16777216 *  
-    ptr 1 ptr+ @8 65536    *  +
-    ptr 2 ptr+ @8 256      *  +
-    ptr 3 ptr+ @8             +
-  end
+nproc @32 ptr ptr -> int:
+  ptr        @8 16777216 *  
+  ptr 1 ptr+ @8 65536    *  +
+  ptr 2 ptr+ @8 256      *  +
+  ptr 3 ptr+ @8             +
 end
  
 proc !32 int ptr:
@@ -95,50 +81,42 @@ unpack struct str
   ptr data
 end
 
-proc 2duppi ptr int -> ptr int ptr int:
-  bind a b:
-    a b a b
-  end
+nproc 2duppi ptr a int b -> ptr int ptr int:
+  a b a b
 end
-proc 2dupip int ptr -> int ptr int ptr:
-  bind a b:
-    a b a b
-  end
+nproc 2dupip int a ptr b -> int ptr int ptr:
+  a b a b
 end
 
 proc puts @str: STDOUT write drop end 
 proc input ptr -> @str: dup 1024 swap STDIN read swap end
 proc println @str: puts "\n" puts end
 
-proc cpy_buf int ptr ptr:
-  bind size buf des:
-    0
-    size 0 >
-    while
-      bind index: 
-        buf index ptr+ @8
-        des index ptr+ !8
-        index 1 +
-      end
-      dup size < 
+nproc cpy_buf int size ptr buf ptr des:
+  0
+  size 0 >
+  while
+    bind index: 
+      buf index ptr+ @8
+      des index ptr+ !8
+      index 1 +
     end
-    drop
+    dup size < 
   end
+  drop
 end
 
-proc clear_buf int ptr:
-  bind len ptr:
-    0
-    len 0 >
-    while
-      bind index: 
-        0 ptr index ptr+ !8
-        index 1 +
-      end
-      dup len < 
+nproc clear_buf int len ptr ptr:
+  0
+  len 0 >
+  while
+    bind index: 
+      0 ptr index ptr+ !8
+      index 1 +
     end
-    drop
+    dup len < 
   end
+  drop
 end
 
 proc u_to_str int -> @str:
@@ -163,9 +141,9 @@ proc u_to_str int -> @str:
   end
 end
 
-proc int_to_str int -> @str:
+nproc int_to_str int value -> @str:
   22 sbrk
-  bind value res:
+  bind res:
     value 0 < if
       45 res !8
       0 value - u_to_str 
@@ -230,13 +208,10 @@ proc streq @str @str -> int:
   end
 end
 
-proc exec_cmd
-  ptr // argv
-  ptr // null string - executable
-  :
+nproc exec_cmd ptr argv ptr exec:
   var wstatus int
   fork
-  bind argv exec pid:
+  bind  pid:
     pid 0 == if
       0 (ptr)
       argv
