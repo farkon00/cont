@@ -65,14 +65,27 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     elif op.type in (OpType.PUSH_MEMORY, OpType.PUSH_LOCAL_MEM):
         stack.append(Ptr())
     elif op.type == OpType.PUSH_VAR:
-        stack.append(State.variables[op.operand])
+        if must_ptr(State.variables[op.operand]):
+            stack.append(Ptr(State.variables[op.operand]))
+            return Op(OpType.PUSH_VAR_PTR, op.operand, loc=op.loc)
+        else:
+            stack.append(State.variables[op.operand])
     elif op.type == OpType.PUSH_VAR_PTR:
+        if must_ptr(State.variables[op.operand]):
+            State.throw_error("variable is automatically a pointer, cannot push a pointer excplicitly")
         stack.append(Ptr(State.variables[op.operand]))
     elif op.type == OpType.PUSH_LOCAL_VAR:
         assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
-        stack.append(State.current_proc.variables[op.operand])
+        if must_ptr(State.current_proc.variables[op.operand]):
+            stack.append(Ptr(State.current_proc.variables[op.operand]))
+            return Op(OpType.PUSH_LOCAL_VAR_PTR, op.operand, loc=op.loc)
+        else:
+            stack.append(State.current_proc.variables[op.operand])
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
+        if must_ptr(State.current_proc.variables[op.operand]): 
+            State.throw_error("variable is automatically a pointer, cannot push a pointer excplicitly")
+
         stack.append(Ptr(State.current_proc.variables[op.operand]))
     elif op.type == OpType.PUSH_STR:
         stack.append(Int())

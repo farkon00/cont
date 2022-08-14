@@ -130,6 +130,10 @@ def sizeof(_type) -> int:
     
     return 0 # Mypy, shut up!
 
+def must_ptr(_type) -> bool:
+    return isinstance(_type, Struct) or isinstance(_type, Array)
+
+
 def check_contravariant(got: Struct, exp: Struct) -> bool:
     """
     Not recomended to use raw, use check_varient instead
