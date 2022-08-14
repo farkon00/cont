@@ -280,13 +280,14 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     parts = token.split(".")
     if allow_var:
         if token in getattr(State.current_proc, "variables", {}):
-            res.append(Op(OpType.PUSH_LOCAL_VAR_PTR, token))
+            assert State.current_proc is not None
+            res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, token))
             parts = parts[1:]
         elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
             res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
             parts = parts[1:]
         elif parts[0] in State.variables:
-            res.append(Op(OpType.PUSH_VAR_PTR, parts[0], State.loc))
+            res.append(Op(OpType.PUSH_VAR if must_ptr(State.variables[parts[0]]) else OpType.PUSH_VAR_PTR, parts[0], State.loc))
             parts = parts[1:]
         elif parts[0] in State.bind_stack:
             res.append(Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc))

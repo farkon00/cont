@@ -67,7 +67,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     elif op.type == OpType.PUSH_VAR:
         if must_ptr(State.variables[op.operand]):
             stack.append(Ptr(State.variables[op.operand]))
-            return Op(OpType.PUSH_VAR_PTR, op.operand, loc=op.loc)
+            return Op(OpType.PUSH_VAR_PTR, op.operand)
         else:
             stack.append(State.variables[op.operand])
     elif op.type == OpType.PUSH_VAR_PTR:
@@ -78,7 +78,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
         if must_ptr(State.current_proc.variables[op.operand]):
             stack.append(Ptr(State.current_proc.variables[op.operand]))
-            return Op(OpType.PUSH_LOCAL_VAR_PTR, op.operand, loc=op.loc)
+            return Op(OpType.PUSH_LOCAL_VAR_PTR, op.operand)
         else:
             stack.append(State.current_proc.variables[op.operand])
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
