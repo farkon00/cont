@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import sys
-from typing import Generator, Optional
+from typing import Generator, Optional, Any
 from enum import Enum, auto
 from config import Config # type: ignore
 
@@ -107,7 +107,7 @@ class StateSaver:
         State.loc = self.loc
 
 class State:
-    config: Config = None
+    config: Any = None
 
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
