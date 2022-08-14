@@ -224,7 +224,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         stack.append(arr.typ.typ if op.type == OpType.INDEX else Ptr(arr.typ.typ))
         if State.config.re_IOR:
             State.locs_to_include.append(op.loc)
-        return Op(op.type, (sizeof(arr.typ.typ), arr.typ.len, len(State.locs_to_include) - 1), loc=op.loc)
+        return Op(op.type, (sizeof(arr.typ.typ), arr.typ.len), loc=op.loc, loc_id=len(State.locs_to_include) - 1)
     elif op.type == OpType.SIZEOF:
         if len(stack) < 1:
             State.throw_error("stack is too short")
@@ -314,6 +314,8 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
     elif op.operand in (Operator.STORE, Operator.STRONG_STORE):
         if len(stack) < 1:
             State.throw_error("stack is too short")
+        State.locs_to_include.append(op.loc)
+        op.loc_id = len(State.locs_to_include) - 1
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         if ptr.typ is None:
@@ -326,10 +328,14 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
         if op.operand == Operator.STRONG_STORE:
             return Op(OpType.OPERATOR, Operator.STORE, op.loc)
     elif op.operand == Operator.STORE8:
+        State.locs_to_include.append(op.loc)
+        op.loc_id = len(State.locs_to_include) - 1
         check_stack(stack, [Int(), Ptr()])
     elif op.operand == Operator.LOAD:
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
+        State.locs_to_include.append(op.loc)
+        op.loc_id = len(State.locs_to_include) - 1
         if ptr.typ is None:
             stack.append(Int())
         elif ptr.typ == Array():
@@ -342,6 +348,8 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
         else:
             stack.append(ptr.typ)
     elif op.operand == Operator.LOAD8:
+        State.locs_to_include.append(op.loc)
+        op.loc_id = len(State.locs_to_include) - 1
         check_stack(stack, [Ptr()])
         stack.append(Int())
     else:

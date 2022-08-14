@@ -44,6 +44,37 @@ check_array_bounds:
 
     array_bound_if:
     ret
+
+check_null_ptr:
+    ;; rax - ptr
+    ;; r15 - loc pointer
+    ;; r12 - loc size
+
+    ;; if ptr is null
+    cmp rax, 0
+    jne null_ptr_if
+
+    ;; write null pointer dereference text to stdout
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, null_ptr_deref_text
+    mov rdx, 28
+    syscall
+
+    ;; write loc to stdout
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, r15
+    mov rdx, r12
+    syscall
+
+    ;; exit
+    mov rax, 60
+    mov rdi, 1
+    syscall
+
+    null_ptr_if:
+    ret
 _start:
 """
 
@@ -61,6 +92,7 @@ bind_stack_ptr: rb 8
 bind_stack: rb 8192
 call_stack: rb 65536
 index_out_of_range_text: db "Index out of range in "
+null_ptr_deref_text: db "Null pointer dereference in "
 """
     for index, i in enumerate(State.locs_to_include):
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
@@ -427,8 +459,8 @@ push rbx
             f"""
             mov rax, r10
             mov rbx, {op.operand[1]}
-            mov r15, loc_{op.operand[2]}
-            mov r12, {len(State.locs_to_include[op.operand[2]]) + 1}
+            mov r15, loc_{op.loc_id}
+            mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
             call check_array_bounds
             """
         return comment + code
@@ -503,29 +535,52 @@ push rcx
 """
     elif op.operand == Operator.STORE:
         return \
-"""
+f"""
 pop rax
 pop rbx
+{f'''
+mov r15, loc_{op.loc_id}
+mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
+call check_null_ptr
+''' if State.config.re_NPD else ''}
+
 mov [rax], rbx
 """
     elif op.operand == Operator.LOAD:
         return \
-"""
+f"""
 pop rax
+{f'''
+mov r15, loc_{op.loc_id}
+mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
+call check_null_ptr
+''' if State.config.re_NPD else ''}
+
 mov rbx, [rax]
 push rbx 
 """
     elif op.operand == Operator.STORE8:
         return \
-"""
+f"""
 pop rax
 pop rbx
+{f'''
+mov r15, loc_{op.loc_id}
+mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
+call check_null_ptr
+''' if State.config.re_NPD else ''}
 mov [rax], bl
 """
     elif op.operand == Operator.LOAD8:
         return \
-"""
+f"""
 pop rax
+{f'''
+mov r15, loc_{op.loc_id}
+mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
+call check_null_ptr
+''' if State.config.re_NPD else ''}
+
 xor rbx, rbx
 mov bl, [rax]
 push rbx

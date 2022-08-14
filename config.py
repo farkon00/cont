@@ -30,6 +30,7 @@ class Config:
 
     CONFIG_BOOL_OPTIONS: dict[str, bool] = {
         "re_IOR" : True,
+        "re_NPD" : True,
     }
 
     def __init__(self, argv):

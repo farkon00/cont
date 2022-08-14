@@ -63,10 +63,11 @@ class Operator(Enum):
     LOAD8 = auto() 
 
 class Op:
-    def __init__(self, type: OpType, operand=None, loc: str = "") -> None:
+    def __init__(self, type: OpType, operand=None, loc: str = "", loc_id=-1) -> None:
         self.type: OpType = type
         self.operand = operand 
         self.loc: str = loc
+        self.loc_id: int = loc_id
         self.compiled: bool = True
 
     def copy(self):

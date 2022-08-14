@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import sys
 from typing import Generator, Optional, Any
 from enum import Enum, auto
-from config import Config # type: ignore
 
 from parsing.op import Op
 
