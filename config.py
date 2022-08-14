@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 class Config:
     DESCRIPTIONS: dict[str, str] = {
@@ -42,6 +43,8 @@ class Config:
 
     def load_config(self, config_file):
         if config_file is None:
+            if "cont_build.json" in os.listdir():
+                return self.load_config("cont_build.json")
             return {}
 
         with open(config_file, "r") as f:

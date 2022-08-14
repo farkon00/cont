@@ -3,6 +3,7 @@
 test
 tests/results/
 tests/temp/
+cont_build.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
