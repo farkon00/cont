@@ -10,6 +10,7 @@ from type_checking.type_checking import type_check
 
 def main():
     config = Config(sys.argv)
+    State.config = config
 
     file_name = os.path.splitext(config.program)[0]
 

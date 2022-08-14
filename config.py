@@ -28,6 +28,10 @@ class Config:
         "error" : ["-e", "--error"],
     }
 
+    CONFIG_BOOL_OPTIONS: dict[str, bool] = {
+        "re_IOR" : True,
+    }
+
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
         self.config = self.load_config(self.args.config)
@@ -63,6 +67,9 @@ class Config:
         for name in self.REGULAR_OPTIONS:
             setattr(self.__class__, name, property(fget=lambda self, name=name : \
                 self.config.get(name, getattr(self.args, name))))
+
+        for name, default in self.CONFIG_BOOL_OPTIONS.items():
+            setattr(self.__class__, name, property(fget=lambda self, name=name : self.config.get(name, default)))
 
     @property
     def program(self): return self.args.program

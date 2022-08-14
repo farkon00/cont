@@ -222,7 +222,8 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         arr = stack[-1]
         check_stack(stack, [Int(), Ptr(Array())])
         stack.append(arr.typ.typ if op.type == OpType.INDEX else Ptr(arr.typ.typ))
-        State.locs_to_include.append(op.loc)
+        if State.config.re_IOR:
+            State.locs_to_include.append(op.loc)
         return Op(op.type, (sizeof(arr.typ.typ), arr.typ.len, len(State.locs_to_include) - 1), loc=op.loc)
     elif op.type == OpType.SIZEOF:
         if len(stack) < 1:

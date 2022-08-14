@@ -2,8 +2,9 @@ from dataclasses import dataclass
 import sys
 from typing import Generator, Optional
 from enum import Enum, auto
+from config import Config # type: ignore
 
-from parsing.op import Op, Operator
+from parsing.op import Op
 
 
 class BlockType(Enum):
@@ -106,6 +107,8 @@ class StateSaver:
         State.loc = self.loc
 
 class State:
+    config: Config = None
+
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
     bind_stack: list[str | type] = []

@@ -411,7 +411,7 @@ pop rax
 call rax
 """
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
-        return comment + \
+        code = \
 f"""
 pop r11
 pop rbx
@@ -421,13 +421,17 @@ mul rbx
 add r11, rax
 mov rbx, {'[r11]' if op.type == OpType.INDEX else 'r11'}
 push rbx
-
-mov rax, r10
-mov rbx, {op.operand[1]}
-mov r15, loc_{op.operand[2]}
-mov r12, {len(State.locs_to_include[op.operand[2]]) + 1}
-call check_array_bounds
 """
+        if State.config.re_IOR: # Checking index out of range
+                code += \
+            f"""
+            mov rax, r10
+            mov rbx, {op.operand[1]}
+            mov r15, loc_{op.operand[2]}
+            mov r12, {len(State.locs_to_include[op.operand[2]]) + 1}
+            call check_array_bounds
+            """
+        return comment + code
     elif op.type == OpType.ASM:
         return op.operand + "\n"
     elif op.type == OpType.CAST:
