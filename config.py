@@ -1,4 +1,5 @@
 import argparse
+import json
 
 class Config:
     DESCRIPTIONS: dict[str, str] = {
@@ -6,7 +7,8 @@ class Config:
         "run" : "Run program after compilation",
         "dump" : "Dump operations without compilation",
         "dump_tokens" : "Dump tokens without parsing or compilating",
-        "o" : "The output executable file and name for .asm file",
+        "out" : "The output executable file and name for .asm file",
+        "config" : "Config file",
         "stdout" : "File to output stdout of complier and program",
         "input" : "Stdin for program",
         "error" : "Stderr for program",
@@ -20,13 +22,15 @@ class Config:
 
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
+        self.config = self.load_config(self.args.config)
 
     def setup_args_parser(self):
         args_parser = argparse.ArgumentParser()
-        
+
         args_parser.add_argument("program", help=self.DESCRIPTIONS["program"])
 
-        args_parser.add_argument("-o", "--out", default=None, dest="out", help=self.DESCRIPTIONS["o"])
+        args_parser.add_argument("-o", "--out", default=None, dest="out", help=self.DESCRIPTIONS["out"])
+        args_parser.add_argument("-c", "--config", default=None, dest="config", help=self.DESCRIPTIONS["config"])
         args_parser.add_argument("-stdo", "--stdout", dest="stdout", default=None, help=self.DESCRIPTIONS["stdout"])
         args_parser.add_argument("-i", "--input", dest="input", default=None, help=self.DESCRIPTIONS["input"])
         args_parser.add_argument("-e", "--error", dest="error", default=None, help=self.DESCRIPTIONS["error"])
@@ -36,11 +40,15 @@ class Config:
 
         return args_parser
 
+    def load_config(self, config_file):
+        if config_file is None:
+            return {}
+
+        with open(config_file, "r") as f:
+            return json.load(f)
+
     @property
     def program(self): return self.args.program
-    
-    @property
-    def out(self): return self.args.out
 
     @property
     def run(self): return self.args.run
@@ -52,10 +60,13 @@ class Config:
     def dump_tokens(self): return self.args.dump_tokens
 
     @property
-    def stdout(self): return self.args.stdout
+    def out(self): return self.config.get("out", self.args.out)
 
     @property
-    def input(self): return self.args.input
+    def stdout(self): return self.config.get("stdout", self.args.stdout)
 
     @property
-    def error(self): return self.args.error
+    def input(self): return self.config.get("input", self.args.input)
+
+    @property
+    def error(self): return self.config.get("error", self.args.error)
