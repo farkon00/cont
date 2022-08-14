@@ -24,6 +24,7 @@ class Config:
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
         self.config = self.load_config(self.args.config)
+        self.define_properties()
 
     def setup_args_parser(self):
         args_parser = argparse.ArgumentParser()
@@ -50,17 +51,12 @@ class Config:
         with open(config_file, "r") as f:
             return json.load(f)
 
+    def define_properties(self):
+        for i in self.BOOL_OPTIONS:
+            setattr(self.__class__, i, property(fget=lambda self, i=i : getattr(self.args, i)))
+
     @property
     def program(self): return self.args.program
-
-    @property
-    def run(self): return self.args.run
-
-    @property
-    def dump(self): return self.args.dump
-
-    @property
-    def dump_tokens(self): return self.args.dump_tokens
 
     @property
     def out(self): return self.config.get("out", self.args.out)
