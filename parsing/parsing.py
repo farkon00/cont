@@ -171,7 +171,7 @@ def parse_proc_head():
         return [op, Op(OpType.BIND, len(names))]
     return op
 
-def parse_struct_begining() -> tuple[Struct, tuple[str, str]]:
+def parse_struct_begining() -> tuple[Optional[Struct], tuple[str, str]]:
     first_token = next(State.tokens)
     parent = None
     if first_token[0].startswith("(") and first_token[0].endswith(")"):
@@ -187,7 +187,7 @@ def parse_struct_begining() -> tuple[Struct, tuple[str, str]]:
 
     return parent, name
 
-def parse_struct_default(field_type: bool, started_proc: bool, static_started: bool, loc: str) -> tuple[str, int]:
+def parse_struct_default(field_type: Any, started_proc: bool, static_started: bool, loc: str) -> tuple[str, int]:
     if field_type != -1:
         State.loc = f"{State.filename}:{loc}"
         State.throw_error("field name was not defined")
@@ -228,7 +228,7 @@ def parse_struct() -> Op | list[Op] | None:
     parent, name = parse_struct_begining()
 
     current_token = ("", "")
-    field_type = -1
+    field_type: Any = -1
     fields = {} if parent is None else parent.fields.copy()
     struct_types = [] if parent is None else parent.fields_types.copy()
     defaults = {} if parent is None else parent.defaults.copy()
