@@ -89,8 +89,8 @@ segment readable writeable
 mem: rb {Memory.global_offset}
 call_stack_ptr: rb 8
 bind_stack_ptr: rb 8
-bind_stack: rb 8192
-call_stack: rb 65536
+bind_stack: rb {State.config.size_bind_stack}
+call_stack: rb {State.config.size_call_stack}
 index_out_of_range_text: db "Index out of range in "
 null_ptr_deref_text: db "Null pointer dereference in "
 """

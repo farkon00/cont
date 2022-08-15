@@ -33,6 +33,11 @@ class Config:
         "re_NPD" : True,
     }
 
+    CONFIG_INT_OPTIONS: dict[str, int] = {
+        "size_call_stack" : 65536,
+        "size_bind_stack" : 8192,
+    }
+
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
         self.config = self.load_config(self.args.config)
@@ -69,8 +74,8 @@ class Config:
             setattr(self.__class__, name, property(fget=lambda self, name=name : \
                 self.config.get(name, getattr(self.args, name))))
 
-        for name, default in self.CONFIG_BOOL_OPTIONS.items():
-            setattr(self.__class__, name, property(fget=lambda self, name=name : self.config.get(name, default)))
+        for name, default in {**self.CONFIG_BOOL_OPTIONS, **self.CONFIG_INT_OPTIONS}.items():
+            setattr(self.__class__, name, property(fget=lambda self, name=name, default=default : self.config.get(name, default)))
 
     @property
     def program(self): return self.args.program
