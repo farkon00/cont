@@ -128,7 +128,6 @@ class State:
     tokens_queue: list[tuple[str, str]] = []
     ops_by_ips: list[Op] = []
 
-    is_null = False
     is_unpack = False
     is_init = False
     is_static = False

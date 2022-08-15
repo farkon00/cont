@@ -356,11 +356,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     elif token.startswith("0o") and is_oct(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 8))
 
-    elif token.startswith("\"") and token.endswith("\""):
-        string = bytes(token[1:-1], "raw_unicode_escape").decode("unicode_escape")
+    elif (token.startswith("\"") or token.startswith("n\"")) and token.endswith("\""):
+        string = bytes(token[1 + token.startswith("n\""):-1], "raw_unicode_escape").decode("unicode_escape")
         State.string_data.append(bytes(string, "utf-8"))
-        optype = OpType.PUSH_NULL_STR if State.is_null else OpType.PUSH_STR
-        if State.is_null:
+        optype = OpType.PUSH_NULL_STR if token.startswith("n\"") else OpType.PUSH_STR
+        if token.startswith("n\""):
             State.string_data[-1] += bytes("\0", "utf-8")
         return Op(optype, len(State.string_data)-1)
 
@@ -728,14 +728,14 @@ def tokens(program: str):
         for j, char in enumerate(line):
             if State.tokens_queue:
                 yield State.tokens_queue.pop(0)
-            if (char == " " or char == "\t") and not is_string:
+            if (char.isspace()) and not is_string:
                 if token != "":
                     yield (token, f"{i+1}:{j+1}")
                     token = ""
             elif char == "\"" and not is_escaped:
                 is_string = not is_string
                 token += char
-                if len(token) > 1:
+                if not is_string:
                     yield (token, f"{i+1}:{j+1}")
                     token = ""
             elif char == "\\" and is_string and not is_escaped:
