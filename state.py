@@ -129,6 +129,7 @@ class State:
     enums: dict[str, list[str]] = {}
 
     used_procs: set[Proc] = set()
+    included_files: list[str] = []
 
     string_data: list[bytes] = [] 
     locs_to_include: list[str] = []

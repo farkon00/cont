@@ -596,6 +596,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             State.loc = name[1]
             State.throw_error(f"include file \"{name[0]}\" not found")
 
+        if os.path.abspath(path) in State.included_files:
+            return []
+
+        State.included_files.append(os.path.abspath(path))
+
         orig_file = State.filename
         State.filename = os.path.basename(os.path.splitext(path)[0])
 
