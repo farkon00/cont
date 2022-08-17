@@ -32,9 +32,9 @@ def main():
                 print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
         return 
 
-    State.compute_used_procs()
-
     type_check(ops)
+
+    State.compute_used_procs()
 
     out = file_name if config.out is None else config.out
 

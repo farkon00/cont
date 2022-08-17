@@ -169,6 +169,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         struct = State.structures[op.operand]
         if "__init__" in struct.methods:
             args = struct.methods["__init__"].in_stack.copy()[1:]
+            State.add_proc_use(struct.methods["__init__"])
         else:
             args = struct.fields_types.copy()
             for i, j in enumerate(struct.defaults):
@@ -194,6 +195,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
             return Op(OpType.PUSH_FIELD, offset, op.loc)
         else:
             method = ptr.typ.methods[op.operand]
+            State.add_proc_use(method)
             check_stack(stack, method.in_stack.copy()[:-1])
             stack.extend(method.out_stack)
             return Op(OpType.CALL, method, op.loc)
@@ -266,10 +268,12 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
                     State.throw_error(f"cant add different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
                 if f"__{op.operand.name.lower()}__" not in type1.typ.methods:
                     State.throw_error(f"method __{op.operand.name.lower()}__ not found on {type_to_str(type1.typ)}")
-                stack.extend(type1.typ.methods[f"__{op.operand.name.lower()}__"].out_stack)
+                method = type1.typ.methods[f"__{op.operand.name.lower()}__"]
+                stack.extend(method.out_stack)
+                State.add_proc_use(method)
                 return [
                     Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
-                    Op(OpType.CALL, type1.typ.methods[f"__{op.operand.name.lower()}__"], loc=op.loc)
+                    Op(OpType.CALL, method, loc=op.loc)
                 ]
         else:
             State.throw_error(f"incompatible types for {op.operand.name.lower()}")
@@ -286,10 +290,12 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
                     State.throw_error(f"cant add different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
                 if f"__div__" not in type1.typ.methods:
                     State.throw_error(f"method __div__ not found on {type_to_str(type1.typ)}")
-                stack.extend(type1.typ.methods[f"__div__"].out_stack)
+                method = type1.typ.methods[f"__div__"]
+                stack.extend(method.out_stack)
+                State.add_proc_use(method)
                 return [
                     Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
-                    Op(OpType.CALL, type1.typ.methods[f"__div__"], loc=op.loc)
+                    Op(OpType.CALL, method, loc=op.loc)
                 ]
         else:
             State.throw_error(f"incompatible types for div")

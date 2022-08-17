@@ -193,6 +193,13 @@ class State:
             exit(1)
 
     @staticmethod
+    def add_proc_use(proc):
+        if State.current_proc is None:
+            State.used_procs.add(proc)
+        else:
+            State.current_proc.used_procs.add(proc)
+
+    @staticmethod
     def compute_used_procs():
         orig = State.used_procs.copy()
         State.used_procs = set()
