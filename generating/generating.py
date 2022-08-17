@@ -79,7 +79,7 @@ _start:
 """
 
     for i in ops:
-        if State.current_proc is not None:
+        if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
                 if i.type == OpType.ENDPROC:
                     State.current_proc = None
@@ -209,7 +209,7 @@ addr_{op.operand.end}:
 """
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
-        if op.operand not in State.used_procs:
+        if op.operand not in State.used_procs and State.config.o_UPR:
             return ""
         return comment + \
 f"""

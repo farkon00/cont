@@ -31,6 +31,7 @@ class Config:
     CONFIG_BOOL_OPTIONS: dict[str, bool] = {
         "re_IOR" : True,
         "re_NPD" : True,
+        "o_UPR" : True,
     }
 
     CONFIG_INT_OPTIONS: dict[str, int] = {
