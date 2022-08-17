@@ -61,7 +61,7 @@ def parse_proc_head():
     owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
 
     if State.current_proc is not None:
-        sys.stderr.write(f"\033[1;33mWarning {State.loc}\033[0m: nested procedures arent supported, use at your own risk\n")
+        State.throw_error("nested procedures aren't allowed")
 
     if first_token[0].startswith("[") and first_token[0].endswith("]"):
         if State.owner is not None:
