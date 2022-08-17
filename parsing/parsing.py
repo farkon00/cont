@@ -314,6 +314,12 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     
     return res
 
+def add_proc_use(proc):
+    if State.current_proc is None:
+        State.used_procs.add(proc)
+    else:
+        State.current_proc.used_procs.add(proc)
+
 def is_hex(token: str) -> bool:
     return all(i.lower() in "abcdef1234567890" for i in token)
 
@@ -648,6 +654,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return Op(OpType.PACK, token)
 
     elif token in State.procs:
+        add_proc_use(State.procs[token])
         return Op(OpType.CALL, State.procs[token])
 
     elif token in State.constants:
@@ -686,6 +693,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             ]
 
     elif token.startswith("*") and token[1:] in State.procs:
+        add_proc_use(State.procs[token[1:]].ip)
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
     elif token.split(".", 1)[0][1:] in State.bind_stack or\
@@ -705,6 +713,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         parts = token.split(".", 1)
         if parts[1] not in State.structures[parts[0]].static_methods:
             State.throw_error(f"static method \"{parts[1]}\" was not found")
+        add_proc_use(State.structures[parts[0]].static_methods[parts[1]])
         return Op(OpType.CALL, State.structures[parts[0]].static_methods[parts[1]])
 
     else:

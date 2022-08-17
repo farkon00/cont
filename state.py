@@ -1,5 +1,6 @@
-from dataclasses import dataclass
 import sys
+
+from dataclasses import dataclass
 from typing import Generator, Optional, Any
 from enum import Enum, auto
 
@@ -43,6 +44,7 @@ class Memory:
 
 class Proc:
     def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, is_named: bool, owner=None):
+
         self.name: str = name
         self.ip: int = ip
         self.in_stack: list[object] = in_stack + ([owner] if owner is not None else []) 
@@ -53,9 +55,14 @@ class Proc:
         self.memories: dict[str, Memory] = {}
         self.memory_size : int = 0
         self.variables : dict[str, object] = {}
+
+        self.used_procs: set[Proc] = set()
         
         if owner is not None:
             owner.typ.add_method(self)
+
+    def __hash__(self) -> int:
+        return id(self)
 
 
 class Struct:
@@ -121,6 +128,8 @@ class State:
     constants: dict[str, int] = {}
     enums: dict[str, list[str]] = {}
 
+    used_procs: set[Proc] = set()
+
     string_data: list[bytes] = [] 
     locs_to_include: list[str] = []
 
@@ -133,7 +142,7 @@ class State:
     is_static = False
     is_named = False
 
-    owner : Struct | None = None
+    owner: Struct | None = None
 
     loc: str = ""
     filename: str = ""
@@ -182,3 +191,19 @@ class State:
         sys.stderr.write(f"\033[1;31mError {State.loc}:\033[0m {error}\n")
         if do_exit:
             exit(1)
+
+    @staticmethod
+    def compute_used_procs():
+        orig = State.used_procs.copy()
+        State.used_procs = set()
+        for i in orig:
+            State.used_procs.add(i)
+            State._compute_used_procs(i)
+
+    @staticmethod
+    def _compute_used_procs(proc: Proc):
+        for i in proc.used_procs:
+            if i in State.used_procs:
+                continue
+            State.used_procs.add(i)
+            State._compute_used_procs(i)

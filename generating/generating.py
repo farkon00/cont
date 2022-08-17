@@ -79,6 +79,11 @@ _start:
 """
 
     for i in ops:
+        if State.current_proc is not None:
+            if State.current_proc not in State.used_procs:
+                if i.type == OpType.ENDPROC:
+                    State.current_proc = None
+                continue
         buf += generate_op(i)
 
     buf += f"""
@@ -204,6 +209,8 @@ addr_{op.operand.end}:
 """
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
+        if op.operand not in State.used_procs:
+            return ""
         return comment + \
 f"""
 jmp addr_{op.operand.block.end}
@@ -216,7 +223,7 @@ add rbx, 8
 mov [call_stack_ptr], rbx
 """
     elif op.type == OpType.ENDPROC:
-        assert State.current_proc is not None, "Bug in parsing of local and global memories"
+        assert State.current_proc is not None, "Bug in parsing of procedures"
         asm = comment + \
 f"""
 mov rbx, [call_stack_ptr]

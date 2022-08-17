@@ -1,6 +1,6 @@
-import subprocess
 import sys
 import os
+import subprocess
 
 from state import State
 from config import Config
@@ -31,6 +31,8 @@ def main():
             if op.compiled:
                 print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
         return 
+
+    State.compute_used_procs()
 
     type_check(ops)
 
