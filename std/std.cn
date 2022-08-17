@@ -69,7 +69,7 @@ proc sbrk int -> ptr:
   NULL brk +ptr brk
 end
 
-proc boolify int -> int: 0 > end
+proc boolify int -> int: 0 != end
 
 proc and int int -> int: boolify swap boolify + 1 >  end
 proc or int int -> int:  boolify swap boolify + 0 >  end
@@ -91,6 +91,12 @@ end
 proc puts @str: STDOUT write drop end 
 proc input ptr -> @str: dup 1024 swap STDIN read swap end
 proc println @str: puts "\n" puts end
+
+nproc assert int cond @str:
+  if cond not do
+    len data puts
+  end
+end
 
 nproc cpy_buf int size ptr buf ptr des:
   0
