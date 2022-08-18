@@ -474,19 +474,22 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             State.variables[name[0]] = _type
         is_init = State.is_init
         State.is_init = False
-        next_token = next(State.tokens)
-        if next_token[0] == "=":
-            if _type != Int():
-                State.loc = next_token[1]
-                State.throw_error("variable can't be initialized with non-int value")
-            value = evaluate_block(name[1], "variable value")
-            return [
-                Op(OpType.PUSH_INT, value, State.loc), 
-                Op(OpType.PUSH_VAR_PTR if State.current_proc is None else OpType.PUSH_LOCAL_VAR_PTR, name[0], State.loc),
-                Op(OpType.OPERATOR, Operator.STORE, State.loc)
-            ]
-        else:
-            State.tokens_queue.append(next_token)
+        try:
+            next_token = next(State.tokens)
+            if next_token[0] == "=":
+                if _type != Int():
+                    State.loc = next_token[1]
+                    State.throw_error("variable can't be initialized with non-int value")
+                value = evaluate_block(name[1], "variable value")
+                return [
+                    Op(OpType.PUSH_INT, value, State.loc), 
+                    Op(OpType.PUSH_VAR_PTR if State.current_proc is None else OpType.PUSH_LOCAL_VAR_PTR, name[0], State.loc),
+                    Op(OpType.OPERATOR, Operator.STORE, State.loc)
+                ]
+            else:
+                State.tokens_queue.append(next_token)
+        except StopIteration:
+            pass
 
         if is_init:
             if State.current_proc is None:
