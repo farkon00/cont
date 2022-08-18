@@ -43,7 +43,7 @@ assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
 assert len(OpType) == 40, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
-def safe_next_token(exception: str = "") -> Optional[tuple[str, str]]:
+def safe_next_token(exception: str = "") -> tuple[str, str]:
     try:
         token = next(State.tokens)
         State.loc = token[1]
@@ -51,7 +51,7 @@ def safe_next_token(exception: str = "") -> Optional[tuple[str, str]]:
         if exception:
             State.throw_error(exception)
         else:
-            return None
+            State.throw_error("Unexpected end of file")
 
     return token
 
