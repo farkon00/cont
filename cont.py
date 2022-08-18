@@ -30,9 +30,15 @@ def main():
         for op in ops:
             if op.compiled:
                 print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
-        return 
+        return
 
     type_check(ops)
+
+    if config.dump_tc:
+        for op in ops:
+            if op.compiled:
+                print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
+        return
 
     State.compute_used_procs()
 

@@ -8,6 +8,7 @@ class Config:
         "run" : "Run program after compilation",
         "dump" : "Dump operations without compilation",
         "dump_tokens" : "Dump tokens without parsing or compilating",
+        "dump_tc" : "Dump operations after type checking",
         "out" : "The output executable file and name for .asm file",
         "config" : "Config file",
         "stdout" : "File to output stdout of complier and program",
@@ -18,7 +19,8 @@ class Config:
     BOOL_OPTIONS: dict[str, tuple[list[str], bool]] = {
         "run" : (["-r", "-run"], False),
         "dump" : (["-d", "-dump"], False),
-        "dump_tokens" : (["-dt", "-dump-tokens"], False),
+        "dump_tokens" : (["-dt", "-dump_tokens"], False),
+        "dump_tc" : (["-dtc", "-dump_tc"], False),
     }
 
     REGULAR_OPTIONS: dict[str, list[str]] = {
