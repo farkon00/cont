@@ -416,6 +416,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             return [*cond, op]
         elif block.type == BlockType.FOR:
             State.bind_stack.pop()
+            State.bind_stack.pop()
             op = Op(OpType.ENDFOR, State.ops_by_ips[block.start].operand, State.loc)
             ip = State.get_new_ip(op)
             block.end = ip
@@ -465,7 +466,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         op = Op(OpType.FOR, (block, type_, itr_ops))
         block.start = State.get_new_ip(op)
         State.block_stack.append(block)
-        State.bind_stack.append(bind)
+        State.bind_stack.extend(("*" + bind, bind))
         return op
 
     elif token == "do":

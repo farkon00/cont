@@ -62,7 +62,7 @@ def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
     if type_.len == 0:
         return []
     State.route_stack.append(("for", stack.copy()))
-    State.bind_stack.append(type_.typ)
+    State.bind_stack.extend((Ptr(type_), type_.typ))
     if State.config.re_IOR:
         State.locs_to_include.append(op.loc)
     op.operand[0].type = BlockType.WHILE
@@ -73,14 +73,13 @@ def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
         *op.operand[2],
         Op(OpType.INDEX, (sizeof(type_.typ), type_.len), loc_id=len(State.locs_to_include) - 1, loc=op.loc),
-        Op(OpType.BIND, 1, loc=op.loc)
+        Op(OpType.BIND, 2, loc=op.loc)
     ]
 
 def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
-    type_ = iter_stack[0]
     check_stack(iter_stack, [Ptr()])
     State.route_stack.append(("for", stack.copy()))
-    State.bind_stack.append(Int())
+    State.bind_stack.extend((Ptr(), Int()))
     op.operand[0].type = BlockType.WHILE
 
     if State.config.re_NPD:
@@ -94,7 +93,7 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.PUSH_INT, 0, loc=op.loc),
         Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
         Op(OpType.WHILE, op.operand[0], loc=op.loc),
-        Op(OpType.BIND, 1, loc=op.loc)
+        Op(OpType.BIND, 2, loc=op.loc)
     ]
 
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
@@ -192,18 +191,20 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
             assert False, "Unreachable"
     elif op.type == OpType.ENDFOR:
         State.bind_stack.pop()
+        State.bind_stack.pop()
         if op.operand[1] == "in":
             if op.operand[2].len == 0:
                 return []
             pre_for_stack = State.route_stack.pop()[1]
             check_route_stack(stack, pre_for_stack, "in different routes of for")
             return [
-                Op(OpType.UNBIND, 1, loc=op.loc),
+                Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
                 Op(OpType.PUSH_INT, op.operand[2].len, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.LT, loc=op.loc),
+                Op(OpType.UNBIND, 2, loc=op.loc),
                 Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DROP, loc=op.loc)
             ]
@@ -215,7 +216,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
                 State.locs_to_include.append(op.loc)
 
             return [
-                Op(OpType.UNBIND, 1, loc=op.loc),
+                Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
@@ -223,6 +224,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
                 Op(OpType.PUSH_INT, 0, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
+                Op(OpType.UNBIND, 2, loc=op.loc),
                 Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
             ]
     elif op.type == OpType.BIND:
