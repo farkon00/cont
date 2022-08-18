@@ -29,8 +29,8 @@ def main():
     if config.dump:
         for op in ops:
             if op.compiled:
-                print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
-        return
+                print(f"Op(OpType.{op.type.name}, {op.operand if op.type.name != 'OPERATOR' else 'Operator.' + op.operand.name}),")
+        return 
 
     type_check(ops)
 

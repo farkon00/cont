@@ -76,6 +76,27 @@ def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 1, loc=op.loc)
     ]
 
+def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
+    type_ = iter_stack[0]
+    check_stack(iter_stack, [Ptr()])
+    State.route_stack.append(("for", stack.copy()))
+    State.bind_stack.append(Int())
+    op.operand[0].type = BlockType.WHILE
+
+    if State.config.re_NPD:
+        State.locs_to_include.append(op.loc)
+
+    return [
+        *op.operand[2],
+        Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+        Op(OpType.OPERATOR, Operator.LOAD8, loc=op.loc, loc_id=len(State.locs_to_include) - 1),
+        Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+        Op(OpType.PUSH_INT, 0, loc=op.loc),
+        Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
+        Op(OpType.WHILE, op.operand[0], loc=op.loc),
+        Op(OpType.BIND, 1, loc=op.loc)
+    ]
+
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
@@ -165,6 +186,8 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
             State.throw_error("iterable expression should return one value")
         if op.operand[1] == "in":
             return process_for_in(op, stack, iter_stack)
+        elif op.operand[1] == "until":
+            return process_for_until(op, stack, iter_stack)
         else:
             assert False, "Unreachable"
     elif op.type == OpType.ENDFOR:
@@ -183,6 +206,24 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
                 Op(OpType.OPERATOR, Operator.LT, loc=op.loc),
                 Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DROP, loc=op.loc)
+            ]
+        elif op.operand[1] == "until":
+            pre_for_stack = State.route_stack.pop()[1]
+            check_route_stack(stack, pre_for_stack, "in different routes of for")
+
+            if State.config.re_NPD:
+                State.locs_to_include.append(op.loc)
+
+            return [
+                Op(OpType.UNBIND, 1, loc=op.loc),
+                Op(OpType.PUSH_INT, 1, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.LOAD8, loc=op.loc, loc_id=len(State.locs_to_include) - 1),
+                Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+                Op(OpType.PUSH_INT, 0, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
+                Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
             ]
     elif op.type == OpType.BIND:
         if len(stack) < op.operand:

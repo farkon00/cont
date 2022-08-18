@@ -310,12 +310,21 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
             assert State.current_proc is not None
             res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, token))
             parts = parts[1:]
+        elif token in getattr(State.current_proc, "memories", {}):
+            assert State.current_proc is not None
+            res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
+            parts = parts[1:]
         elif parts[0] in State.variables:
             res.append(Op(OpType.PUSH_VAR if must_ptr(State.variables[parts[0]]) else OpType.PUSH_VAR_PTR, parts[0], State.loc))
+            parts = parts[1:]
+        elif parts[0] in State.memories:
+            res.append(Op(OpType.PUSH_MEMORY, State.memories[parts[0]].offset))
             parts = parts[1:]
         elif parts[0] in State.bind_stack:
             res.append(Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc))
             parts = parts[1:]
+        else:
+            State.throw_error(f"name \"{parts[0]}\" is not defined")
     for i in parts:
         res.append(Op(OpType.PUSH_FIELD, i, State.loc))
     
@@ -446,8 +455,8 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         type_        = safe_next_token("separator for for loop was not found")[0]
         itr, itr_loc = safe_next_token("iterator for for loop was not found")
 
-        if type_ not in ("in",):
-            State.throw_error(f'unexpected token: expected "in", got "{type_}"')
+        if type_ not in ("in", "until"):
+            State.throw_error(f'unexpected token: expected "in" or "until", got "{type_}"')
 
         itr_ops = parse_dot(itr, allow_var=True)
         for itr_op in itr_ops:
