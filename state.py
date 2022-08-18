@@ -118,7 +118,7 @@ class State:
 
     block_stack: list[Block] = []
     route_stack: list[tuple[str, list[type]]] = []
-    bind_stack: list[str | type] = []
+    bind_stack: list = []
     do_stack: list[list[Op]] = []
     bind_stack_size: int = 0
 
