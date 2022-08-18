@@ -54,6 +54,28 @@ def type_check(ops: list[Op]):
     
     return stack
 
+def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
+    type_ = iter_stack[0]
+    check_stack(iter_stack, [Ptr(Array())])
+    type_ = type_.typ
+    State.ops_by_ips[op.operand[0].end].operand = (*op.operand[:2], type_)
+    if type_.len == 0:
+        return []
+    State.route_stack.append(("for", stack.copy()))
+    State.bind_stack.append(type_.typ)
+    if State.config.re_IOR:
+        State.locs_to_include.append(op.loc)
+    op.operand[0].type = BlockType.WHILE
+    return [
+        Op(OpType.PUSH_INT, 0, loc=op.loc),
+        Op(OpType.PUSH_INT, 1, loc=op.loc),
+        Op(OpType.WHILE, op.operand[0], loc=op.loc),
+        Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+        *op.operand[2],
+        Op(OpType.INDEX, (sizeof(type_.typ), type_.len), loc_id=len(State.locs_to_include) - 1, loc=op.loc),
+        Op(OpType.BIND, 1, loc=op.loc)
+    ]
+
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
@@ -141,26 +163,10 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         iter_stack = type_check(op.operand[2])
         if len(iter_stack) != 1:
             State.throw_error("iterable expression should return one value")
-        type_ = iter_stack[0].typ
-        check_stack(iter_stack, [Ptr(Array())])
-        State.ops_by_ips[op.operand[0].end].operand = (*op.operand[:2], type_)
-        if type_.len == 0:
-            return []
-        State.route_stack.append(("for", stack.copy()))
-        State.bind_stack.append(type_.typ)
         if op.operand[1] == "in":
-            if State.config.re_IOR:
-                State.locs_to_include.append(op.loc)
-            op.operand[0].type = BlockType.WHILE
-            return [
-                Op(OpType.PUSH_INT, 0, loc=op.loc),
-                Op(OpType.PUSH_INT, 1, loc=op.loc),
-                Op(OpType.WHILE, op.operand[0], loc=op.loc),
-                Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
-                *op.operand[2],
-                Op(OpType.INDEX, (sizeof(type_.typ), type_.len), loc_id=len(State.locs_to_include) - 1, loc=op.loc),
-                Op(OpType.BIND, 1, loc=op.loc)
-            ]
+            return process_for_in(op, stack, iter_stack)
+        else:
+            assert False, "Unreachable"
     elif op.type == OpType.ENDFOR:
         State.bind_stack.pop()
         if op.operand[1] == "in":

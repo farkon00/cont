@@ -446,6 +446,9 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         type_        = safe_next_token("separator for for loop was not found")[0]
         itr, itr_loc = safe_next_token("iterator for for loop was not found")
 
+        if type_ not in ("in",):
+            State.throw_error(f'unexpected token: expected "in", got "{type_}"')
+
         itr_ops = parse_dot(itr, allow_var=True)
         for itr_op in itr_ops:
             itr_op.loc = f"{State.filename}:{itr_loc}"
