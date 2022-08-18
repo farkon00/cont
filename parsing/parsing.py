@@ -408,7 +408,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
                 block.end = State.get_new_ip(op)
                 return [Op(OpType.UNBIND, len(proc.in_stack)), op]
         elif block.type == BlockType.WHILE:
-            cond = State.do_stack.pop()
+            cond = State.do_stack.pop()[::-1]
             for i in cond:
                 i.loc = State.loc
             op = Op(OpType.ENDWHILE, block, State.loc)
