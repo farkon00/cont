@@ -17,6 +17,8 @@ class OpType(Enum):
     ENDIF = auto()
     WHILE = auto()
     ENDWHILE = auto()
+    FOR = auto()
+    ENDFOR = auto()
     DEFPROC = auto()
     ENDPROC = auto()
     BIND = auto()

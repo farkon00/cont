@@ -6,8 +6,8 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 38, "Unimplemented type in type_checking.py"
-assert len(BlockType) == 5, "Unimplemented block type in type_checking.py"
+assert len(OpType) == 40, "Unimplemented type in type_checking.py"
+assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
     if len(stack) < len(expected):
@@ -51,9 +51,11 @@ def type_check(ops: list[Op]):
             ops[index] = new_op
 
         index += 1
+    
+    return stack
 
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
-    assert len(OpType) == 38, "Unimplemented type in type_check_op"
+    assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -67,7 +69,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     elif op.type == OpType.PUSH_VAR:
         if must_ptr(State.variables[op.operand]):
             stack.append(Ptr(State.variables[op.operand]))
-            return Op(OpType.PUSH_VAR_PTR, op.operand)
+            return Op(OpType.PUSH_VAR_PTR, op.operand, loc=op.loc)
         else:
             stack.append(State.variables[op.operand])
     elif op.type == OpType.PUSH_VAR_PTR:
@@ -78,7 +80,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         assert State.current_proc is not None, "Probably bug in parsing with local and global variables"
         if must_ptr(State.current_proc.variables[op.operand]):
             stack.append(Ptr(State.current_proc.variables[op.operand]))
-            return Op(OpType.PUSH_LOCAL_VAR_PTR, op.operand)
+            return Op(OpType.PUSH_LOCAL_VAR_PTR, op.operand, loc=op.loc)
         else:
             stack.append(State.current_proc.variables[op.operand])
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
@@ -135,6 +137,47 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         check_stack(stack, [Int()])
         pre_while_stack = State.route_stack.pop()[1]
         check_route_stack(stack, pre_while_stack, "in different routes of while")
+    elif op.type == OpType.FOR:
+        iter_stack = type_check(op.operand[2])
+        if len(iter_stack) != 1:
+            State.throw_error("iterable expression should return one value")
+        type_ = iter_stack[0].typ
+        check_stack(iter_stack, [Ptr(Array())])
+        State.ops_by_ips[op.operand[0].end].operand = (*op.operand[:2], type_)
+        if type_.len == 0:
+            return []
+        State.route_stack.append(("for", stack.copy()))
+        State.bind_stack.append(type_.typ)
+        if op.operand[1] == "in":
+            if State.config.re_IOR:
+                State.locs_to_include.append(op.loc)
+            op.operand[0].type = BlockType.WHILE
+            return [
+                Op(OpType.PUSH_INT, 0, loc=op.loc),
+                Op(OpType.PUSH_INT, 1, loc=op.loc),
+                Op(OpType.WHILE, op.operand[0], loc=op.loc),
+                Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+                *op.operand[2],
+                Op(OpType.INDEX, (sizeof(type_.typ), type_.len), loc_id=len(State.locs_to_include) - 1, loc=op.loc),
+                Op(OpType.BIND, 1, loc=op.loc)
+            ]
+    elif op.type == OpType.ENDFOR:
+        State.bind_stack.pop()
+        if op.operand[1] == "in":
+            if op.operand[2].len == 0:
+                return []
+            pre_for_stack = State.route_stack.pop()[1]
+            check_route_stack(stack, pre_for_stack, "in different routes of for")
+            return [
+                Op(OpType.UNBIND, 1, loc=op.loc),
+                Op(OpType.PUSH_INT, 1, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
+                Op(OpType.PUSH_INT, op.operand[2].len, loc=op.loc),
+                Op(OpType.OPERATOR, Operator.LT, loc=op.loc),
+                Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
+                Op(OpType.OPERATOR, Operator.DROP, loc=op.loc)
+            ]
     elif op.type == OpType.BIND:
         if len(stack) < op.operand:
             State.throw_error("stack is too short for bind")

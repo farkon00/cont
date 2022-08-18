@@ -11,6 +11,7 @@ class BlockType(Enum):
     IF = auto()
     ELSE = auto()
     WHILE = auto()
+    FOR = auto()
     PROC = auto()
     BIND = auto()
 

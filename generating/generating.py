@@ -3,7 +3,7 @@ from type_checking.types import Array, sizeof
 from state import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 38, "Unimplemented type in generating.py"
+assert len(OpType) == 40, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -117,7 +117,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 38, "Unimplemented type in generate_op"
+    assert len(OpType) == 40, "Unimplemented type in generate_op"
     
     if not op.compiled:
         return ""

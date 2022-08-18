@@ -34,13 +34,26 @@ END_TYPES = {
     BlockType.IF : OpType.ENDIF,
     BlockType.ELSE : OpType.ENDIF,
     BlockType.WHILE : OpType.ENDWHILE,
+    BlockType.FOR : OpType.ENDFOR,
     BlockType.PROC : OpType.ENDPROC,
     BlockType.BIND : OpType.UNBIND,
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 38, "Unimplemented type in parsing.py"
+assert len(OpType) == 40, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
+
+def safe_next_token(exception: str = "") -> Optional[tuple[str, str]]:
+    try:
+        token = next(State.tokens)
+        State.loc = token[1]
+    except StopIteration:
+        if exception:
+            State.throw_error(exception)
+        else:
+            return None
+
+    return token
 
 def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], str]:
     try:
@@ -297,9 +310,6 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
             assert State.current_proc is not None
             res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, token))
             parts = parts[1:]
-        elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
-            res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
-            parts = parts[1:]
         elif parts[0] in State.variables:
             res.append(Op(OpType.PUSH_VAR if must_ptr(State.variables[parts[0]]) else OpType.PUSH_VAR_PTR, parts[0], State.loc))
             parts = parts[1:]
@@ -324,7 +334,7 @@ def is_oct(token: str) -> bool:
     return all(i.lower() in "01234567" for i in token)
 
 def lex_token(token: str, ops: list[Op]) -> Op | None | list:
-    assert len(OpType) == 38, "Unimplemented type in lex_token"
+    assert len(OpType) == 40, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -395,6 +405,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             op = Op(OpType.ENDWHILE, block, State.loc)
             op.operand.end = State.get_new_ip(op)
             return [*cond, op]
+        elif block.type == BlockType.FOR:
+            State.bind_stack.pop()
+            op = Op(OpType.ENDFOR, State.ops_by_ips[block.start].operand, State.loc)
+            ip = State.get_new_ip(op)
+            block.end = ip
         else:
             op = Op(END_TYPES[block.type], block)
 
@@ -424,6 +439,21 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         block.start = State.get_new_ip(op)
         State.block_stack.append(block)
         State.do_stack.append([])
+        return op
+
+    elif token == "for":
+        bind         = safe_next_token("bind name for for loop was not found")[0]
+        type_        = safe_next_token("separator for for loop was not found")[0]
+        itr, itr_loc = safe_next_token("iterator for for loop was not found")
+
+        itr_ops = parse_dot(itr, allow_var=True)
+        for itr_op in itr_ops:
+            itr_op.loc = f"{State.filename}:{itr_loc}"
+        block = Block(BlockType.FOR, -1)
+        op = Op(OpType.FOR, (block, type_, itr_ops))
+        block.start = State.get_new_ip(op)
+        State.block_stack.append(block)
+        State.bind_stack.append(bind)
         return op
 
     elif token == "do":
