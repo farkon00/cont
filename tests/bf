@@ -1,0 +1,65 @@
+include std.cn
+
+memory file 2049
+
+var tape [3000] int
+var head int
+
+var inp int
+memory out 1
+
+var len int
+var loop_skip int
+var loop_stack [100] ptr
+var loop_ptr int
+
+proc jmp_to ptr:
+  // Thats just a hack
+  asm "pop rax"
+  asm "mov rbx, bind_stack-16"
+  asm "mov rcx, [bind_stack_ptr]"
+  asm "mov [rbx+rcx], rax"
+  shadowp
+end
+
+"++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." file cpy_buf
+
+for i until file
+  if loop_skip do
+    if i '[' == do
+      *loop_skip inc
+    else if i ']' == do
+      *loop_skip dec
+    end end 
+  else
+    if i '+' == do
+      head tape *[] inc
+    else if i '-' == do
+      head tape *[] dec
+    else if i '>' == do
+      *head inc
+    else if i '<' == do
+      *head dec
+    else if i '.' == do
+      1 head tape *[] puts
+    else if i ',' == do
+      1 *inp STDOUT read drop
+      inp head tape *[] !
+    else if i '[' == do
+      if head tape [] do
+        *i loop_ptr loop_stack *[] !
+        *loop_ptr inc
+      else
+        *loop_skip inc
+      end
+    else if i ']' == do
+      if head tape [] do
+        loop_ptr 1 - loop_stack [] jmp_to
+      else
+        *loop_ptr dec
+      end
+    end end end end end end end end
+  end
+end
+:
+Hello World!
