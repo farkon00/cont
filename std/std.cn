@@ -37,32 +37,42 @@ nproc dec8by ptr ptr int by:
   ptr @8 by - ptr !8
 end
 
-nproc @16 ptr ptr -> int:
-  ptr @8 256 *
-  ptr 1 ptr+ @8 +
+proc @16 ptr -> int:
+  asm xor rax, rax
+  asm pop rbx
+  asm mov ax, [rbx]
+  asm push rax
+  (int) // Change ptr on type stack to int(ptr isn't on actual stack)
 end
  
-nproc !16 int value ptr ptr:
-  value 256 div swap
-  ptr !8
-  ptr 1 ptr+ !8
+proc !16 int ptr:
+  asm pop rbx
+  asm pop rcx
+  asm mov [rbx], cx
+  
+  // Make type checking up to date with stack
+  asm push 0
+  asm push 0
+  drop drop
 end
 
-nproc @32 ptr ptr -> int:
-  ptr        @8 16777216 *  
-  ptr 1 ptr+ @8 65536    *  +
-  ptr 2 ptr+ @8 256      *  +
-  ptr 3 ptr+ @8             +
+proc @32 ptr -> int:
+  asm xor rax, rax
+  asm pop rbx
+  asm mov eax, [rbx]
+  asm push rax
+  (int) // Change ptr on type stack to int(ptr isn't on actual stack)
 end
  
 proc !32 int ptr:
-  bind ptr:
-    256 div ptr 3 ptr+ !8   
-    256 div ptr 2 ptr+ !8
-    256 div ptr 1 ptr+ !8
-    256 div ptr        !8
-    drop
-  end
+  asm pop rbx
+  asm pop rcx
+  asm mov [rbx], ecx
+  
+  // Make type checking up to date with stack
+  asm push 0
+  asm push 0
+  drop drop
 end
 
 proc sbrk int -> ptr:

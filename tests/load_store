@@ -1,0 +1,22 @@
+include std.cn
+
+var i int
+
+69 *i 7 ptr+ !8
+*i @8 print
+*i 7 ptr+ @8 print
+i print
+1 *i !16
+i print
+*i @16 print
+69 *i 2 ptr+ !32
+*i @32 print
+i print
+:
+0
+69
+4971973988617027584
+4971973988617027585
+1
+4521985
+4971973988621549569
