@@ -62,7 +62,7 @@ def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
     if type_.len == 0:
         return []
     State.route_stack.append(("for", stack.copy()))
-    State.bind_stack.extend((Ptr(type_), type_.typ))
+    State.bind_stack.extend((Ptr(type_.typ), type_.typ))
     if State.config.re_IOR:
         State.locs_to_include.append(op.loc)
     op.operand[0].type = BlockType.WHILE
