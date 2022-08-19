@@ -91,11 +91,6 @@ mov rax, 60
 mov rdi, 0
 syscall
 segment readable writeable
-mem: rb {Memory.global_offset}
-call_stack_ptr: rb 8
-bind_stack_ptr: rb 8
-bind_stack: rb {State.config.size_bind_stack}
-call_stack: rb {State.config.size_call_stack}
 index_out_of_range_text: db "Index out of range in "
 null_ptr_deref_text: db "Null pointer dereference in "
 """
@@ -103,6 +98,14 @@ null_ptr_deref_text: db "Null pointer dereference in "
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
     for index, i in enumerate(State.string_data):
         buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
+
+    buf += f"""
+mem: rb {Memory.global_offset}
+call_stack_ptr: rb 8
+bind_stack_ptr: rb 8
+bind_stack: rb {State.config.size_bind_stack}
+call_stack: rb {State.config.size_call_stack}
+"""
 
     return buf
 
