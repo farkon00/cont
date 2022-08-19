@@ -1,4 +1,5 @@
 include os.cn
+include stack.cn
 
 proc / int int -> int: div drop end
 proc % int int -> int: div swap drop end
@@ -38,41 +39,37 @@ nproc dec8by ptr ptr int by:
 end
 
 proc @16 ptr -> int:
+  shadowp
   asm xor rax, rax
   asm pop rbx
   asm mov ax, [rbx]
   asm push rax
-  (int) // Change ptr on type stack to int(ptr isn't on actual stack)
+  unshadowi
 end
  
 proc !16 int ptr:
+  shadowp
+  shadowi
   asm pop rbx
   asm pop rcx
   asm mov [rbx], cx
-  
-  // Make type checking up to date with stack
-  asm push 0
-  asm push 0
-  drop drop
 end
 
 proc @32 ptr -> int:
+  shadowp
   asm xor rax, rax
   asm pop rbx
   asm mov eax, [rbx]
   asm push rax
-  (int) // Change ptr on type stack to int(ptr isn't on actual stack)
+  unshadowi
 end
  
 proc !32 int ptr:
+  shadowp
+  shadowi
   asm pop rbx
   asm pop rcx
   asm mov [rbx], ecx
-  
-  // Make type checking up to date with stack
-  asm push 0
-  asm push 0
-  drop drop
 end
 
 proc sbrk int -> ptr:
@@ -89,13 +86,6 @@ proc xor int int -> int: boolify swap boolify + 1 == end
 unpack struct str
   int len
   ptr data
-end
-
-nproc 2duppi ptr a int b -> ptr int ptr int:
-  a b a b
-end
-nproc 2dupip int a ptr b -> int ptr int ptr:
-  a b a b
 end
 
 proc puts @str: STDOUT write drop end 
