@@ -614,19 +614,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return None
 
     elif token == "asm":
-        asm = ""
-        while True:
-            try:
-                current_asm_token = next(State.tokens)
-            except StopIteration:
-                return Op(OpType.ASM, asm)
-            if current_asm_token[1].split(":")[-2] == State.loc.split(":")[-2]:
-                asm += current_asm_token[0] + " "
-            else:
-                State.tokens_queue.append(current_asm_token)
-                break
-
-        return Op(OpType.ASM, asm)
+        asm = safe_next_token()[0]
+        if not asm.startswith("\"") or not asm.endswith("\""):
+            State.throw_error("asm must be followed by a string")
+        
+        return Op(OpType.ASM, asm[1:-1])
 
     elif token == "include":
         name = next(State.tokens)

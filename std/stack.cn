@@ -6,22 +6,22 @@ nproc 2dupip int a ptr b -> int ptr int ptr:
 end
 
 proc shadowi int:
-  asm push 0
+  asm "push 0"
   drop
 end 
 
 proc shadowp ptr:
-  asm push 0
+  asm "push 0"
   drop
 end 
 
 proc unshadowi -> int:
   0
-  asm pop rax
+  asm "pop rax"
 end
 
 proc unshadowp -> ptr:
   0
-  asm pop rax
+  asm "pop rax"
   (ptr)
 end

@@ -40,36 +40,36 @@ end
 
 proc @16 ptr -> int:
   shadowp
-  asm xor rax, rax
-  asm pop rbx
-  asm mov ax, [rbx]
-  asm push rax
+  asm "xor rax, rax"
+  asm "pop rbx"
+  asm "mov ax, [rbx]"
+  asm "push rax"
   unshadowi
 end
  
 proc !16 int ptr:
   shadowp
   shadowi
-  asm pop rbx
-  asm pop rcx
-  asm mov [rbx], cx
+  asm "pop rbx"
+  asm "pop rcx"
+  asm "mov [rbx], cx"
 end
 
 proc @32 ptr -> int:
   shadowp
-  asm xor rax, rax
-  asm pop rbx
-  asm mov eax, [rbx]
-  asm push rax
+  asm "xor rax, rax"
+  asm "pop rbx"
+  asm "mov eax, [rbx]"
+  asm "push rax"
   unshadowi
 end
  
 proc !32 int ptr:
   shadowp
   shadowi
-  asm pop rbx
-  asm pop rcx
-  asm mov [rbx], ecx
+  asm "pop rbx"
+  asm "pop rcx"
+  asm "mov [rbx], ecx"
 end
 
 proc sbrk int -> ptr:
