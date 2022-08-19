@@ -333,6 +333,170 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     
     return res
 
+def parse_var():
+    name = safe_next_token("Expected variable name")
+    _type = parse_type(safe_next_token("Expected variable type"), "variable", False) 
+    State.check_name(name, "variable")
+    mem = Memory.new_memory(name[0], sizeof(_type))
+    if State.is_init and _type != Array(typ=Ptr()):
+        State.throw_error(f"cannot auto init variable with type {type_to_str(_type)}")
+    if State.current_proc is not None:
+        State.current_proc.variables[name[0]] = _type
+    else:
+        State.variables[name[0]] = _type
+    is_init = State.is_init
+    State.is_init = False
+    try:
+        next_token = next(State.tokens)
+        if next_token[0] == "=":
+            if _type != Int():
+                State.loc = next_token[1]
+                State.throw_error("variable can't be initialized with non-int value")
+            value = evaluate_block(name[1], "variable value")
+            return [
+                Op(OpType.PUSH_INT, value, State.loc), 
+                Op(OpType.PUSH_VAR_PTR if State.current_proc is None else OpType.PUSH_LOCAL_VAR_PTR, name[0], State.loc),
+                Op(OpType.OPERATOR, Operator.STORE, State.loc)
+            ]
+        else:
+            State.tokens_queue.append(next_token)
+    except StopIteration:
+        pass
+
+    if is_init:
+        if State.current_proc is None:
+            Memory.global_offset += sizeof(_type.typ.typ) * _type.len
+        else:
+            State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
+        return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(Op(OpType.AUTO_INIT))), loc=State.loc) if _type.len > 0 else None 
+
+def parse_end():
+    if len(State.block_stack) <= 0:
+        State.throw_error("block for end not found")
+    block = State.block_stack.pop()
+    if block.type == BlockType.BIND:
+        unbinded = State.ops_by_ips[block.start].operand
+        op = Op(OpType.UNBIND, unbinded)
+        State.bind_stack = State.bind_stack[:-unbinded]
+    elif block.type == BlockType.PROC:
+        assert State.current_proc is not None
+        proc = State.current_proc
+        State.current_proc = None
+        op = Op(OpType.ENDPROC, block)
+        if proc.is_named:
+            State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
+            block.end = State.get_new_ip(op)
+            return [Op(OpType.UNBIND, len(proc.in_stack)), op]
+    elif block.type == BlockType.WHILE:
+        cond = State.do_stack.pop()[::-1]
+        for i in cond:
+            i.loc = State.loc
+        op = Op(OpType.ENDWHILE, block, State.loc)
+        op.operand.end = State.get_new_ip(op)
+        return [*cond, op]
+    elif block.type == BlockType.FOR:
+        State.bind_stack.pop()
+        State.bind_stack.pop()
+        op = Op(OpType.ENDFOR, State.ops_by_ips[block.start].operand, State.loc)
+        ip = State.get_new_ip(op)
+        block.end = ip
+    else:
+        op = Op(END_TYPES[block.type], block)
+
+    block.end = State.get_new_ip(op)
+    return op
+
+def parse_for():
+    bind         = safe_next_token("bind name for for loop was not found")[0]
+    type_        = safe_next_token("separator for for loop was not found")[0]
+    itr, itr_loc = safe_next_token("iterator for for loop was not found")
+
+    if type_ not in ("in", "until"):
+        State.throw_error(f'unexpected token: expected "in" or "until", got "{type_}"')
+
+    itr_ops = parse_dot(itr, allow_var=True)
+    for itr_op in itr_ops:
+        itr_op.loc = f"{State.filename}:{itr_loc}"
+    block = Block(BlockType.FOR, -1)
+    op = Op(OpType.FOR, (block, type_, itr_ops))
+    block.start = State.get_new_ip(op)
+    State.block_stack.append(block)
+    State.bind_stack.extend(("*" + bind, bind))
+    return op
+
+def parse_bind():
+    binded = 0
+    name_token = ("", "")
+    while ":" not in name_token[0]:
+        name_token = next(State.tokens)
+        parts = name_token[0].split(":") 
+        name = parts[0]
+        if len(parts) > 1:
+            queued_token = (parts[1].strip(), name_token[1])
+            if queued_token[0]:
+                State.tokens_queue.append(queued_token)
+        if not name:
+            continue
+        if name in State.procs or name in State.memories:
+            State.loc = name_token[1]
+            State.throw_error(f"name for bind \"{name}\" is already taken")
+        State.bind_stack.append(name)
+        binded += 1
+    op = Op(OpType.BIND, binded)
+    State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
+    return op
+
+def parse_do(ops: list[Op]):
+    if len(State.block_stack) <= 0:
+        State.throw_error("block for do not found")
+    if State.block_stack[-1].type == BlockType.IF:
+        if not State.ops_by_ips[State.block_stack[-1].start].compiled:
+            State.throw_error("do without if")
+
+        State.ops_by_ips[State.block_stack[-1].start].compiled = False
+        return Op(OpType.IF, State.block_stack[-1])
+    elif State.block_stack[-1].type == BlockType.WHILE:
+        orig_while = State.ops_by_ips[State.block_stack[-1].start]
+        orig_while.compiled = False
+        for i in reversed(ops):
+            if i is orig_while:
+                break
+            State.do_stack[-1].append(i.copy())    
+        op = Op(OpType.WHILE, orig_while.operand)
+        State.ops_by_ips[State.block_stack[-1].start] = op
+        return op
+    else:
+        State.throw_error("do without if or while")
+
+def include_file():
+    name = next(State.tokens)
+
+    path = ""
+    std_path = os.path.join(State.dir + "/std/", name[0])
+
+    if os.path.exists(name[0]):
+        path = name[0]
+    elif os.path.exists(std_path):
+        path = std_path
+    else:
+        State.loc = name[1]
+        State.throw_error(f"include file \"{name[0]}\" not found")
+
+    if os.path.abspath(path) in State.included_files:
+        return []
+
+    State.included_files.append(os.path.abspath(path))
+
+    orig_file = State.filename
+    State.filename = os.path.basename(os.path.splitext(path)[0])
+
+    with open(path, "r") as f:
+        ops = parse_to_ops(f.read())
+    
+    State.filename = orig_file
+
+    return ops
+
 def is_hex(token: str) -> bool:
     return all(i.lower() in "abcdef1234567890" for i in token)
 
@@ -391,40 +555,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return op
 
     elif token == "end":
-        if len(State.block_stack) <= 0:
-            State.throw_error("block for end not found")
-        block = State.block_stack.pop()
-        if block.type == BlockType.BIND:
-            unbinded = State.ops_by_ips[block.start].operand
-            op = Op(OpType.UNBIND, unbinded)
-            State.bind_stack = State.bind_stack[:-unbinded]
-        elif block.type == BlockType.PROC:
-            assert State.current_proc is not None
-            proc = State.current_proc
-            State.current_proc = None
-            op = Op(OpType.ENDPROC, block)
-            if proc.is_named:
-                State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
-                block.end = State.get_new_ip(op)
-                return [Op(OpType.UNBIND, len(proc.in_stack)), op]
-        elif block.type == BlockType.WHILE:
-            cond = State.do_stack.pop()[::-1]
-            for i in cond:
-                i.loc = State.loc
-            op = Op(OpType.ENDWHILE, block, State.loc)
-            op.operand.end = State.get_new_ip(op)
-            return [*cond, op]
-        elif block.type == BlockType.FOR:
-            State.bind_stack.pop()
-            State.bind_stack.pop()
-            op = Op(OpType.ENDFOR, State.ops_by_ips[block.start].operand, State.loc)
-            ip = State.get_new_ip(op)
-            block.end = ip
-        else:
-            op = Op(END_TYPES[block.type], block)
-
-        block.end = State.get_new_ip(op)
-        return op
+        return parse_end()
 
     elif token == "else":
         if len(State.block_stack) <= 0:
@@ -452,44 +583,10 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return op
 
     elif token == "for":
-        bind         = safe_next_token("bind name for for loop was not found")[0]
-        type_        = safe_next_token("separator for for loop was not found")[0]
-        itr, itr_loc = safe_next_token("iterator for for loop was not found")
-
-        if type_ not in ("in", "until"):
-            State.throw_error(f'unexpected token: expected "in" or "until", got "{type_}"')
-
-        itr_ops = parse_dot(itr, allow_var=True)
-        for itr_op in itr_ops:
-            itr_op.loc = f"{State.filename}:{itr_loc}"
-        block = Block(BlockType.FOR, -1)
-        op = Op(OpType.FOR, (block, type_, itr_ops))
-        block.start = State.get_new_ip(op)
-        State.block_stack.append(block)
-        State.bind_stack.extend(("*" + bind, bind))
-        return op
+        return parse_for()
 
     elif token == "do":
-        if len(State.block_stack) <= 0:
-            State.throw_error("block for do not found")
-        if State.block_stack[-1].type == BlockType.IF:
-            if not State.ops_by_ips[State.block_stack[-1].start].compiled:
-                State.throw_error("do without if")
-
-            State.ops_by_ips[State.block_stack[-1].start].compiled = False
-            return Op(OpType.IF, State.block_stack[-1])
-        elif State.block_stack[-1].type == BlockType.WHILE:
-            orig_while = State.ops_by_ips[State.block_stack[-1].start]
-            orig_while.compiled = False
-            for i in reversed(ops):
-                if i is orig_while:
-                    break
-                State.do_stack[-1].append(i.copy())    
-            op = Op(OpType.WHILE, orig_while.operand)
-            State.ops_by_ips[State.block_stack[-1].start] = op
-            return op
-        else:
-            State.throw_error("do without if or while")
+        return parse_do(ops)
 
     elif token == "memory":
         name = next(State.tokens)
@@ -505,41 +602,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return None
 
     elif token == "var":
-        name = next(State.tokens)
-        _type = parse_type(next(State.tokens), "variable", False) 
-        State.check_name(name, "variable")
-        mem = Memory.new_memory(name[0], sizeof(_type))
-        if State.is_init and _type != Array(typ=Ptr()):
-            State.throw_error(f"cannot auto init variable with type {type_to_str(_type)}")
-        if State.current_proc is not None:
-            State.current_proc.variables[name[0]] = _type
-        else:
-            State.variables[name[0]] = _type
-        is_init = State.is_init
-        State.is_init = False
-        try:
-            next_token = next(State.tokens)
-            if next_token[0] == "=":
-                if _type != Int():
-                    State.loc = next_token[1]
-                    State.throw_error("variable can't be initialized with non-int value")
-                value = evaluate_block(name[1], "variable value")
-                return [
-                    Op(OpType.PUSH_INT, value, State.loc), 
-                    Op(OpType.PUSH_VAR_PTR if State.current_proc is None else OpType.PUSH_LOCAL_VAR_PTR, name[0], State.loc),
-                    Op(OpType.OPERATOR, Operator.STORE, State.loc)
-                ]
-            else:
-                State.tokens_queue.append(next_token)
-        except StopIteration:
-            pass
-
-        if is_init:
-            if State.current_proc is None:
-                Memory.global_offset += sizeof(_type.typ.typ) * _type.len
-            else:
-                State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
-            return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(Op(OpType.AUTO_INIT))), loc=State.loc) if _type.len > 0 else None 
+        return parse_var()
 
     elif token == "memo":
         name = next(State.tokens)
@@ -559,26 +622,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return Op(OpType.PUSH_INT, sizeof(_type))
     
     elif token == "bind":
-        binded = 0
-        name_token = ("", "")
-        while ":" not in name_token[0]:
-            name_token = next(State.tokens)
-            parts = name_token[0].split(":") 
-            name = parts[0]
-            if len(parts) > 1:
-                queued_token = (parts[1].strip(), name_token[1])
-                if queued_token[0]:
-                    State.tokens_queue.append(queued_token)
-            if not name:
-                continue
-            if name in State.procs or name in State.memories:
-                State.loc = name_token[1]
-                State.throw_error(f"name for bind \"{name}\" is already taken")
-            State.bind_stack.append(name)
-            binded += 1
-        op = Op(OpType.BIND, binded)
-        State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
-        return op
+        return parse_bind()
         
     elif token == "proc":
         return parse_proc_head()
@@ -621,33 +665,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return Op(OpType.ASM, asm[1:-1])
 
     elif token == "include":
-        name = next(State.tokens)
-
-        path = ""
-        std_path = os.path.join(State.dir + "/std/", name[0])
-
-        if os.path.exists(name[0]):
-            path = name[0]
-        elif os.path.exists(std_path):
-            path = std_path
-        else:
-            State.loc = name[1]
-            State.throw_error(f"include file \"{name[0]}\" not found")
-
-        if os.path.abspath(path) in State.included_files:
-            return []
-
-        State.included_files.append(os.path.abspath(path))
-
-        orig_file = State.filename
-        State.filename = os.path.basename(os.path.splitext(path)[0])
-
-        with open(path, "r") as f:
-            ops = parse_to_ops(f.read())
-        
-        State.filename = orig_file
-
-        return ops
+        return include_file()
 
     elif token == "call_like":
         name = next(State.tokens)
