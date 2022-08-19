@@ -546,6 +546,9 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         if token.startswith("n\""):
             State.string_data[-1] += bytes("\0", "utf-8")
         return Op(optype, len(State.string_data)-1)
+    
+    elif token.startswith("'") and token.endswith("'") and len(token) == 3:
+        return Op(OpType.PUSH_INT, ord(token[1]))
 
     elif token == "if":
         op = Op(OpType.IF, -1)
