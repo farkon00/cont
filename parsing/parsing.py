@@ -225,8 +225,7 @@ def parse_struct_proc(struct: Struct, static_started: bool, current_token: tuple
     return ops
 
 def register_struct(name: tuple[str, str], fields: dict[str, object], struct_types: list[object],
-                    parent: Optional[Struct], defaults: dict[int, int], is_unpack: bool):
-    State.is_unpack = is_unpack
+                    parent: Optional[Struct], defaults: dict[int, int]):
     struct = Struct(name[0], fields, struct_types, parent, defaults)
     State.is_unpack = False
     if parent is not None:
@@ -235,16 +234,11 @@ def register_struct(name: tuple[str, str], fields: dict[str, object], struct_typ
     return struct
 
 def parse_struct() -> Op | list[Op] | None:
-    is_unpack = State.is_unpack
-    State.is_unpack = False
-
     parent, name = parse_struct_begining()
+    struct = register_struct(name, {}, [], parent, {})
 
     current_token = ("", "")
     field_type: Any = -1
-    fields = {} if parent is None else parent.fields.copy()
-    struct_types = [] if parent is None else parent.fields_types.copy()
-    defaults = {} if parent is None else parent.defaults.copy()
 
     ops: list[Op] = []
     started_proc: bool = False
@@ -265,9 +259,9 @@ def parse_struct() -> Op | list[Op] | None:
             continue
         if current_token[0] == "default":
             def_name, def_value = parse_struct_default(field_type, started_proc, static_started, current_token[1])
-            fields[def_name] = Int()
-            defaults[len(struct_types)] = def_value
-            struct_types.append(fields[def_name])
+            struct.fields[def_name] = Int()
+            struct.defaults[len(struct.fields_types)] = def_value
+            struct.fields_types.append(struct.fields[def_name])
             continue
         if current_token[0] in ("proc", "nproc"):
             if not started_proc:
@@ -275,7 +269,6 @@ def parse_struct() -> Op | list[Op] | None:
                 if field_type != -1:
                     State.loc = f"{State.filename}:{current_token[1]}"
                     State.throw_error("field name was not defined")
-                struct = register_struct(name, fields, struct_types, parent, defaults, is_unpack)
 
             ops.extend(parse_struct_proc(struct, static_started, current_token))
             continue
@@ -285,20 +278,17 @@ def parse_struct() -> Op | list[Op] | None:
                 State.throw_error("field defenition in non-field segment")
             field_type = parse_type(current_token, "structure definition")
         else:
-            if current_token[0] in fields:
+            if current_token[0] in struct.fields:
                 State.loc = f"{State.filename}:{current_token[1]}"
                 State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
             State.check_name(current_token, "field")
-            fields[current_token[0]] = field_type
-            struct_types.append(field_type)
+            struct.fields[current_token[0]] = field_type
+            struct.fields_types.append(field_type)
             field_type = -1
 
     if field_type != -1:
         State.loc = f"{State.filename}:{current_token[1]}"
         State.throw_error("field name was not defined")
-
-    if not started_proc:
-        struct = register_struct(name, fields, struct_types, parent, defaults, is_unpack)
 
     return ops
 
