@@ -175,7 +175,7 @@ def parse_proc_head():
     elif owner is None:
         State.procs[name_value] = proc
     if State.is_named and owner is not None:
-        names.insert(0, "self")
+        names.append("self")
     State.current_proc = proc
     State.block_stack.append(block)
     if State.is_named:
