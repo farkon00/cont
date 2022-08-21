@@ -26,6 +26,13 @@ def evaluate_token(token: str, stack: list):
     elif token == "<=": stack.append(int(stack.pop(-2) <= stack.pop()))
     elif token == "==": stack.append(int(stack.pop(-2) == stack.pop()))
     elif token == "!=": stack.append(int(stack.pop(-2) != stack.pop()))
+    elif token == "and": 
+        a,b = stack.pop(), stack.pop()
+        stack.append(int(a and b))
+    elif token == "or": 
+        a,b = stack.pop(), stack.pop()
+        stack.append(int(a or b))
+    elif token == "not": stack.append(int(not stack.pop()))
     elif token in State.constants: stack.append(State.constants[token])
     elif token.split(".", 1)[0] in State.enums:
         parts = token.split(".", 1)
