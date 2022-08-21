@@ -70,8 +70,8 @@ class Struct:
     def __init__(self, name: str, fields: dict[str, object], fields_types: list[object],
                  parent: Optional["Struct"], defaults: dict[int, int]):
         self.name: str = name
-        self.fields: dict[str, object] = fields
-        self.fields_types: list[object] = fields_types
+        self.fields: dict[str, object] = {**fields, **(parent.fields if parent else {})}
+        self.fields_types: list[object] = [*fields_types, *(parent.fields_types if parent else {})]
         self.is_unpackable: bool = State.is_unpack
         self.methods: dict[str, Proc] = {} if parent is None else parent.methods.copy()
         self.parent: "Struct" | None = parent
