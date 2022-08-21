@@ -1,0 +1,25 @@
+include std.cn
+
+const dimensions 2 ;
+
+#if dimensions 2 >= ;
+struct Vector2
+  int x 
+  int y
+end 
+#endif
+
+#if dimensions 3 >= ;
+struct (Vector2) Vector3 
+  int z
+end 
+#endif
+
+69 42 Vector2
+1 2 3 Vector3
+:
+
+:
+
+:
+[1;31mError tests/temp/code:19:13:[0m unknown token: Vector3

@@ -1,0 +1,16 @@
+include std.cn
+
+enum platforms
+  WIN LIN MAC
+end
+
+const platform platforms.WIN ;
+
+#if platform platforms.LIN == ;
+  "Nice" println
+#endif
+#if platform platforms.WIN == platform platforms.MAC == or ;
+  "Eeew" println
+#endif
+:
+Eeew
