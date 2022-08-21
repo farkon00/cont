@@ -121,6 +121,8 @@ class State:
     bind_stack: list = []
     do_stack: list[list[Op]] = []
     bind_stack_size: int = 0
+    compile_ifs_opened: int = 0
+    false_compile_ifs: int = 0
 
     memories: dict[str, Memory] = {}
     variables: dict[str, object] = {} 

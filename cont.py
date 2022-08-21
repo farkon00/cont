@@ -26,6 +26,10 @@ def main():
 
     ops = parse_to_ops(program, config.dump_tokens)
 
+    if State.compile_ifs_opened:
+        State.throw_error("unclosed #if")
+    assert not State.false_compile_ifs, "Something went terribly wrong with #if"
+
     if config.dump:
         for op in ops:
             if op.compiled:

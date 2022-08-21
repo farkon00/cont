@@ -567,6 +567,19 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         new_block.start = block.end
         return op
 
+    elif token == "#if":
+        cond = evaluate_block(State.loc, error="#if condition")
+        State.compile_ifs_opened += 1
+        State.false_compile_ifs += bool(State.false_compile_ifs) or not cond
+        return []
+    
+    elif token == "#endif":
+        if State.compile_ifs_opened == 0:
+            State.throw_error("#endif without #if")
+        State.compile_ifs_opened -= 1
+        State.false_compile_ifs -= bool(State.false_compile_ifs)
+        return []
+
     elif token == "while":
         block = Block(BlockType.WHILE, -1)
         op = Op(OpType.WHILE, block)
@@ -814,6 +827,8 @@ def parse_until_end() -> list[Op]:
     end = False
 
     for token, loc in State.tokens:
+        if State.false_compile_ifs and token not in ("#if", "#endif"):
+            continue
         if token == "end" and len(State.block_stack) - 1 == initial_blocks:
             end = True
         State.loc = f"{State.filename}:{loc}"
@@ -842,6 +857,8 @@ def parse_to_ops(program: str, dump_tokens: bool = False) -> list:
         exit()
 
     for token, loc in State.tokens:
+        if State.false_compile_ifs and token not in ("#if", "#endif"):
+            continue
         State.loc = f"{State.filename}:{loc}"
         op = lex_token(token, ops)
         if isinstance(op, list):
