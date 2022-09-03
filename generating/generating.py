@@ -9,72 +9,74 @@ SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
 def generate_fasm(ops: list):
     buf = ""
-    buf += """
+    buf += f"""
 format ELF64 executable 3
 segment readable executable
 entry _start
-check_array_bounds:
-    ;; rax - index
-    ;; rbx - size of an array
-    ;; r15 - loc pointer
-    ;; r12 - loc size
+{'''check_array_bounds:
+;; rax - index
+;; rbx - size of an array
+;; r15 - loc pointer
+;; r12 - loc size
 
-    ;; if rax >= rbx
-    cmp rax, rbx
-    jl array_bound_if
+;; if rax >= rbx
+cmp rax, rbx
+jl array_bound_if
 
-    ;; write out of range text to stdout
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, index_out_of_range_text
-    mov rdx, 22
-    syscall
+;; write out of range text to stdout
+mov rax, 1
+mov rdi, 1
+mov rsi, index_out_of_range_text
+mov rdx, 22
+syscall
 
-    ;; write loc to stdout
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, r15
-    mov rdx, r12
-    syscall
+;; write loc to stdout
+mov rax, 1
+mov rdi, 1
+mov rsi, r15
+mov rdx, r12
+syscall
 
-    ;; exit
-    mov rax, 60
-    mov rdi, 1
-    syscall
+;; exit
+mov rax, 60
+mov rdi, 1
+syscall
 
-    array_bound_if:
-    ret
+array_bound_if:
+ret'''
+if State.config.re_IOR else ''}
+{'''check_null_ptr:
+;; rax - ptr
+;; r15 - loc pointer
+;; r12 - loc size
 
-check_null_ptr:
-    ;; rax - ptr
-    ;; r15 - loc pointer
-    ;; r12 - loc size
+;; if ptr is null
+cmp rax, 0
+jne null_ptr_if
 
-    ;; if ptr is null
-    cmp rax, 0
-    jne null_ptr_if
+;; write null pointer dereference text to stdout
+mov rax, 1
+mov rdi, 1
+mov rsi, null_ptr_deref_text
+mov rdx, 28
+syscall
 
-    ;; write null pointer dereference text to stdout
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, null_ptr_deref_text
-    mov rdx, 28
-    syscall
+;; write loc to stdout
+mov rax, 1
+mov rdi, 1
+mov rsi, r15
+mov rdx, r12
+syscall
 
-    ;; write loc to stdout
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, r15
-    mov rdx, r12
-    syscall
+;; exit
+mov rax, 60
+mov rdi, 1
+syscall
 
-    ;; exit
-    mov rax, 60
-    mov rdi, 1
-    syscall
-
-    null_ptr_if:
-    ret
+null_ptr_if:
+ret'''
+if State.config.re_NPD else ''
+}
 _start:
 """
 
@@ -91,8 +93,8 @@ mov rax, 60
 mov rdi, 0
 syscall
 segment readable writeable
-index_out_of_range_text: db "Index out of range in "
-null_ptr_deref_text: db "Null pointer dereference in "
+{'index_out_of_range_text: db "Index out of range in "' if State.config.re_IOR else ''}
+{'null_ptr_deref_text: db "Null pointer dereference in "' if State.config.re_NPD else ''}
 """
     for index, i in enumerate(State.locs_to_include):
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
@@ -100,7 +102,7 @@ null_ptr_deref_text: db "Null pointer dereference in "
         buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
 
     buf += f"""
-mem: rb {Memory.global_offset}
+{f'mem: rb {Memory.global_offset}' if Memory.global_offset else ''}
 call_stack_ptr: rb 8
 bind_stack_ptr: rb 8
 bind_stack: rb {State.config.size_bind_stack}
