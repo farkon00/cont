@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 
+from typing import Any
+
 class Config:
     DESCRIPTIONS: dict[str, str] = {
         "program" : "The program to compile and optionally run",
@@ -41,12 +43,18 @@ class Config:
         "size_bind_stack" : 8192,
     }
 
+    CHECK_POSITIVE: list[str] = [
+        "size_call_stack", "size_bind_stack"
+    ]
+
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
-        self.config = self.load_config(self.args.config)
+        self.config, config_file = self.load_config(self.args.config)
         self.define_properties()
+        if config_file:
+            self._validate(config_file)
 
-    def setup_args_parser(self):
+    def setup_args_parser(self) -> argparse.ArgumentParser:
         args_parser = argparse.ArgumentParser()
 
         args_parser.add_argument("program", help=self.DESCRIPTIONS["program"])
@@ -60,14 +68,18 @@ class Config:
 
         return args_parser
 
-    def load_config(self, config_file):
+    @property
+    def _valid_keys(self) -> tuple[str, ...]:
+        return (*self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS, *self.CONFIG_INT_OPTIONS)
+
+    def load_config(self, config_file) -> tuple[dict[str, Any], str]:
         if config_file is None:
             if "cont_build.json" in os.listdir():
                 return self.load_config("cont_build.json")
-            return {}
+            return ({}, "")
 
         with open(config_file, "r") as f:
-            return json.load(f)
+            return (json.load(f), config_file)
 
     def define_properties(self):
         for name in self.BOOL_OPTIONS:
@@ -80,5 +92,22 @@ class Config:
         for name, default in {**self.CONFIG_BOOL_OPTIONS, **self.CONFIG_INT_OPTIONS}.items():
             setattr(self.__class__, name, property(fget=lambda self, name=name, default=default : self.config.get(name, default)))
 
+    def _check_key_validity(self, key: str) -> bool:
+        return key in self._valid_keys
+
+    def _validate(self, config_file: str):
+        for key in self.config:
+            if not self._check_key_validity(key):
+                print(f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring")   
+
+        for field in self.CHECK_POSITIVE:
+            if getattr(self, field) <= 0:
+                print(
+                    f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default " +\
+                     str(self.CONFIG_INT_OPTIONS[field])
+                )
+                del self.config[field]
+                assert getattr(self, field) > 0, "Wrong default value for field"
+
     @property
-    def program(self): return self.args.program
+    def program(self) -> str: return self.args.program
