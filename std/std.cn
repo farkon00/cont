@@ -8,7 +8,9 @@ proc ptr+ ptr int -> ptr:  swap  (int)      + (ptr) end
 proc ptr- ptr int -> ptr:  swap  (int) swap - (ptr) end
 proc +ptr int ptr -> ptr:        (int)      + (ptr) end
 proc -ptr int ptr -> ptr:        (int)      - (ptr) end
-proc ptr== ptr ptr -> int: (int) swap  (int) ==     end
+
+proc ptr== ptr ptr -> int: (int) swap (int) == end
+proc ptr!= ptr ptr -> int: (int) swap (int) != end
 
 proc NULL -> ptr: 0 (ptr) end
 
@@ -73,7 +75,7 @@ proc !32 int ptr:
 end
 
 proc sbrk int -> ptr:
-  NULL brk +ptr brk
+  NULL brk dup rot ptr+ brk drop
 end
 
 proc boolify int -> int: 0 != end
@@ -95,6 +97,7 @@ proc println @str: puts "\n" puts end
 nproc assert int cond @str:
   if cond not do
     len data puts
+    -1 exit
   end
 end
 
@@ -165,6 +168,68 @@ end
 
 proc print int:
   int_to_str println
+end
+
+struct MallocBlockMeta
+  int size
+  MallocBlockMeta next
+  int is_free
+end
+
+proc get_malloc_meta ptr -> MallocBlockMeta:
+  sizeoftype MallocBlockMeta ptr- (MallocBlockMeta)
+end
+
+var malloc_base *MallocBlockMeta
+var malloc_last *MallocBlockMeta
+
+nproc malloc int size -> ptr:
+  malloc_base dup NULL ptr!= while  
+    bind curr_block:    
+      if curr_block.is_free curr_block.size size >= and do     
+        if curr_block.size size - sizeoftype MallocBlockMeta > do        
+          curr_block sizeoftype MallocBlockMeta ptr+ curr_block.size size - ptr+ (MallocBlockMeta)        
+          bind new_block:
+            curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
+            curr_block.next !new_block.next
+            1 !new_block.is_free
+            new_block !curr_block.next
+            size !curr_block.size
+          end
+        end
+        *curr_block sizeoftype MallocBlockMeta ptr+ 0
+      else
+        if curr_block.next NULL ptr== do
+          NULL 0
+        else
+          *curr_block.next 1
+        end
+      end
+    end
+  end
+  if dup NULL ptr== do  
+    drop
+    size sizeoftype MallocBlockMeta +
+    sbrk (MallocBlockMeta) 
+    dup NULL ptr!= if // Sbrk failed
+      dup    
+      size swap !.size    
+      if malloc_last NULL ptr!= do      
+        dup malloc_last !.next
+      end    
+      dup !malloc_last    
+      if malloc_base NULL ptr== do
+        dup !malloc_base
+      end
+    end
+    sizeoftype MallocBlockMeta ptr+
+  end
+end
+
+proc free ptr: 
+  dup
+  1 swap get_malloc_meta !.is_free
+  dup get_malloc_meta .size swap clear_buf
 end
 
 proc null_str_len ptr -> int:
