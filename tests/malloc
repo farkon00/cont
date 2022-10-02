@@ -1,0 +1,37 @@
+include std.cn
+
+69 malloc 12 malloc
+bind mem1 mem2:
+  mem1 get_malloc_meta .size print
+  mem2 get_malloc_meta .size print
+  mem1 mem2 ptr!= print
+  mem1 @ print
+  mem2 @ print
+
+  // Check that things are actually allocated completly 
+  420 mem1 61 ptr+ !
+  420 mem2 8 ptr+ !32
+  
+  mem1 get_malloc_meta .next NULL ptr!= print
+  
+  mem1 free
+  
+  // DO NOT PUT ANYTHING THAT MAY ALLOCATE ANYTHING ON A HEAP HERE
+
+  // Checks that memory gets realocated
+  NULL brk
+  bind init_brk:
+    68 malloc
+    NULL brk init_brk ptr== print 
+  end
+  @ print
+end
+:
+69
+12
+1
+0
+0
+1
+1
+0
