@@ -296,11 +296,11 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> li
     res = []
     parts = token.split(".")
     if allow_var:
-        if token in getattr(State.current_proc, "variables", {}):
+        if parts[0] in getattr(State.current_proc, "variables", {}):
             assert State.current_proc is not None
-            res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, token))
+            res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, parts[0]))
             parts = parts[1:]
-        elif token in getattr(State.current_proc, "memories", {}):
+        elif parts[0] in getattr(State.current_proc, "memories", {}):
             assert State.current_proc is not None
             res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
             parts = parts[1:]
@@ -764,10 +764,13 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
     elif token.split(".", 1)[0][1:] in State.bind_stack or\
-         token.split(".", 1)[0][1:] in State.variables and token.split(".", 1)[0].startswith("*"):
+         token.split(".", 1)[0][1:] in State.variables or\
+         token.split(".", 1)[0][1:] in getattr(State.current_proc, "variables", {}) and\
+         token.split(".", 1)[0].startswith("*"):
         return parse_dot(token[1:], True, True)
 
-    elif token.split(".", 1)[0] in State.bind_stack or token.split(".", 1)[0] in State.variables:
+    elif token.split(".", 1)[0] in State.bind_stack or token.split(".", 1)[0] in State.variables or\
+         token.split(".", 1)[0] in getattr(State.current_proc, "variables", {}):
         return parse_dot(token, True)
 
     elif token.split(".", 1)[0] in State.enums:
