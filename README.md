@@ -23,42 +23,43 @@ You can find more examples in `tests` or `examples` folders.
 ```
 include std.cn
 
-"Hello, world!\n" puts
+"Hello, world!" println
 ```
 
 ## Fibonacci Numbers
 ```
-0 1 150 
-1 while
+include std.cn
+
+0 1 50 
+while dup 0 > do
   bind prev2 prev num:
     prev
     prev2 prev +
     dup print
     num 1 -
-    dup 0 >
   end
 end
 ```
 
 ## Memories
 
+Memories aren't recomended to use, because they don't have type safety in most cases you will want to use variables.
+
 ```
 include std.cn
 
-memory a 16
+memory a 16 // Global memory of size 16 bytes
 
-12 a !
-a @ print
-76 a 8 ptr+ !8
-a 8 ptr+ @ print
+12 a ! // Write 12 to first 8 bytes a
+a @ print // Read value of first 8 bytes of a
+76 a 8 ptr+ !8 // Write 76 to 9th byte of a
+a 8 ptr+ @ print // Read 8 bytes from a+8
 
 proc local:
-  memory b 8
-  2123 b !8
-  b @ print
+  memory b 8 // Local memory of size 8 bytes
+  2123 b !8 // Write 2123 to first byte of b(there will be overflow)
+  b @ print // Read first 8 bytes of b
 end
-
-local
 ```
 
 # Arrays
@@ -72,12 +73,12 @@ struct Vector2
   int y
 end
 
-init var coords [coords_len] Vector2
+init var coords [coords_len] Vector2 // Create array of Vector2 with size coodrs_len and init all of the pointers to the structure 
 
-42 68 coords [] !x
-420 12 coords [] !x
-68 coords [] .x print
-12 coords [] .x print
+42 68 coords [] !.x // Write 42 into x of 69th element of array
+420 12 coords [] !.x // Write 420 into x of 13th element of array
+68 coords [] .x print // Read x of 69th element of array
+12 coords [] .x print // Read x of 13th element of array
 4 2 Vector2 23 coords *[] ! // Writes new Vector in 24th array element
 ```
 
@@ -100,7 +101,7 @@ nproc [Vector2] 3diffy -> Vector3:
   Vector3
 end
 
-42 69 Vector2 .3diffy
-.x print
+42 69 Vector2 .3diffy // Call a 3diffy on newly created vector
+.x print // Print x field of return value of 3diffy
 // Btw you can call 3diffy on Vector3
 ```
