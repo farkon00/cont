@@ -128,48 +128,6 @@ nproc clear_buf int len ptr ptr:
   drop
 end
 
-proc u_to_str int -> @str:
-  var index int
-  20 !index
-  22 sbrk 
-  bind res:
-    dup 0 == if
-      48 res index ptr+ !8
-      *index dec
-    end 
-    dup 0 !=
-    while
-      10 div 
-      48 + // Get character from mod
-      index res +ptr !8
-      *index dec
-      dup 0 !=
-    end drop
-    20 index -
-    res index 1 + ptr+
-  end
-end
-
-nproc int_to_str int value -> @str:
-  22 sbrk
-  bind res:
-    value 0 < if
-      45 res !8
-      0 value - u_to_str 
-      bind len ptr:
-        len ptr res 1 ptr+ cpy_buf
-        len 1 + res
-      end
-    else
-      value u_to_str
-    end
-  end
-end
-
-proc print int:
-  int_to_str println
-end
-
 struct MallocBlockMeta
   int size
   MallocBlockMeta next
@@ -186,23 +144,27 @@ var malloc_last *MallocBlockMeta
 nproc malloc int size -> ptr:
   malloc_base dup NULL ptr!= while  
     bind curr_block:    
-      if curr_block.is_free curr_block.size size >= and do     
-        if curr_block.size size - sizeoftype MallocBlockMeta > do        
-          curr_block sizeoftype MallocBlockMeta ptr+ curr_block.size size - ptr+ (MallocBlockMeta)        
+      if curr_block.is_free curr_block.size size >= and do           
+        if curr_block.size size - sizeoftype MallocBlockMeta > do      
+          curr_block sizeoftype MallocBlockMeta ptr+ size ptr+ (MallocBlockMeta)        
           bind new_block:
             curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
             curr_block.next !new_block.next
+            if new_block.next NULL ptr== do
+              new_block !malloc_last
+            end
             1 !new_block.is_free
             new_block !curr_block.next
             size !curr_block.size
           end
         end
-        *curr_block sizeoftype MallocBlockMeta ptr+ 0
-      else
+        0 !curr_block.is_free
+        curr_block sizeoftype MallocBlockMeta ptr+ 0
+      else      
         if curr_block.next NULL ptr== do
           NULL 0
         else
-          *curr_block.next 1
+          curr_block.next 1
         end
       end
     end
@@ -230,6 +192,67 @@ proc free ptr:
   dup
   1 swap get_malloc_meta !.is_free
   dup get_malloc_meta .size swap clear_buf
+end
+
+proc u_to_str int -> @str:
+  var index int
+  21 !index
+  22 malloc
+  bind res:
+    dup 0 == if
+      48 res index ptr+ !8
+      *index dec
+    end 
+    dup 0 !=
+    while
+      10 div 
+      48 + // Get character from mod
+      index res +ptr !8
+      *index dec
+      dup 0 !=
+    end drop
+    21 index -
+    bind len:
+      len res 1 index + ptr+ res cpy_buf
+      len res
+    end
+  end
+end
+
+nproc int_to_str int value -> @str:
+  value 0 < if 
+    0 value - u_to_str 
+    bind len ptr:
+      22 malloc
+      bind buf:
+        len ptr buf 1 ptr+ cpy_buf // Shift u_to_str result and put into buf
+        ptr free
+        45 buf !8
+        len 1 + buf
+      end
+    end
+  else
+    value u_to_str
+  end
+end
+
+proc print int: 
+  int_to_str dup rot swap println free
+end
+
+// Debug procedure
+proc print_malloc_list:
+  malloc_base 1 
+  while
+    dup NULL ptr!= if 
+      dup .size u_to_str dup rot swap puts free
+      " -> " puts
+      (MallocBlockMeta) .next 1
+    else
+      "NULL" println
+      0
+    end
+  end drop
 end
 
 proc null_str_len ptr -> int:
