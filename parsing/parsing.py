@@ -155,7 +155,8 @@ def parse_proc_head():
         State.throw_error(f"{name_value} method required to have 1 argument and 2 out types", False)
         sys.stdout.write("\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n")
         exit()
-    if (name_value in State.DUNDER_METHODS or name_value == "__div__") and owner is not None:
+    if name_value in State.DUNDER_METHODS or name_value == "__div__" and owner is not None and\
+         name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS:
         if owner.typ is not in_types[0].typ:
             State.loc = f"{State.filename}:{name[1]}"
             State.throw_error(f"{name_value} must have owner structure as argument")

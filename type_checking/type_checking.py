@@ -314,6 +314,15 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         if len(stack) < 1:
             State.throw_error("stack is too short")
         arr = stack[-1]
+        if isinstance(arr, Ptr):
+            if isinstance(arr.typ, Struct):
+                if f"__{op.type.name.lower()}__" in arr.typ.methods:
+                    proc = arr.typ.methods[f"__{op.type.name.lower()}__"]
+                    State.add_proc_use(proc)
+                    check_stack(stack, proc.in_stack)
+                    stack.extend(proc.out_stack)
+                    return [Op(OpType.CALL, proc, op.loc)]
+                stack.pop()
         check_stack(stack, [Int(), Ptr(Array())])
         stack.append(arr.typ.typ if op.type == OpType.INDEX else Ptr(arr.typ.typ))
         if State.config.re_IOR:

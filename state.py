@@ -167,6 +167,9 @@ class State:
     DUNDER_METHODS: list[str] = [
         "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__",
     ]
+    NOT_SAME_TYPE_DUNDER_METHODS: list[str] = [
+        "__index__", "__index_ptr__"
+    ]
 
     @staticmethod
     def get_new_ip(op: Op):
