@@ -1,0 +1,52 @@
+include std.cn
+
+const VEC_INIT_CAPACITY 10 ;
+const VEC_CAPACITY_STEP 10 ;
+const VEC_MAX_CAPACITY 0x7FFFFFFFFFFFFFFF ;
+
+struct IntVector
+  default capacity VEC_INIT_CAPACITY ;
+  int len
+  [VEC_MAX_CAPACITY] int data
+
+  nproc __init__:
+    VEC_INIT_CAPACITY sizeoftype int * malloc !self.data
+    0 !self.len
+  end
+
+  nproc check_innitted:
+    self.data NULL ptr== if
+      "Vector wasn't innitted" println
+      1 exit
+    end 
+  end
+
+  nproc reallocate:
+    self.check_innitted
+    self.capacity VEC_CAPACITY_STEP + sizeoftype int * malloc
+    bind new_data:
+      self.len self.data new_data cpy_buf
+      self.data free
+      *self.capacity VEC_CAPACITY_STEP incby
+      new_data !self.data
+    end
+  end
+
+  nproc push int value:
+    self.check_innitted
+    if self.len self.capacity == do
+      self.reallocate
+    end
+    value self.data self.len sizeoftype int * ptr+ !
+    *self.len inc
+  end
+
+  nproc __index_ptr__ int index -> *int:
+    self.check_innitted
+    index self.data *[]
+  end
+
+  nproc __index__ int index -> int:
+    index self.__index_ptr__ @
+  end
+end
