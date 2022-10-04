@@ -37,8 +37,20 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
 
         stack1[i] = down_cast(stack1[i], stack2[i])
 
-def type_check(ops: list[Op]):
+def type_check(ops: list[Op], is_main: bool = False):
     stack: list = [] 
+
+    if is_main and State.config.struct_malloc[0] and State.config.struct_malloc[1]:
+        State.loc = ""
+        if "malloc" not in State.procs:
+            State.throw_error("Malloc procedure not found while struct_malloc is enabled")
+        else:
+            proc = State.procs["malloc"]
+            if proc.in_stack != [Int()]:
+                State.throw_error("Malloc must take one integer, disable struct_malloc if you don't want language to use malloc")
+            if proc.out_stack != [Ptr()]:
+                State.throw_error("Malloc must return one pointer, disable struct_malloc if you don't want language to use malloc")
+            State.add_proc_use(proc)
     
     index = 0
     while index < len(ops):

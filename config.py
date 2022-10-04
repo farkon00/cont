@@ -38,6 +38,10 @@ class Config:
         "o_UPR" : True,
     }
 
+    CONFIG_BOOL_CLEAR_OPTIONS: dict[str, bool] = {
+        "struct_malloc" : True,
+    }
+
     CONFIG_INT_OPTIONS: dict[str, int] = {
         "size_call_stack" : 65536,
         "size_bind_stack" : 8192,
@@ -70,7 +74,7 @@ class Config:
 
     @property
     def _valid_keys(self) -> tuple[str, ...]:
-        return (*self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS, *self.CONFIG_INT_OPTIONS)
+        return (*self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS, *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS)
 
     def load_config(self, config_file) -> tuple[dict[str, Any], str]:
         if config_file is None:
@@ -91,6 +95,10 @@ class Config:
 
         for name, default in {**self.CONFIG_BOOL_OPTIONS, **self.CONFIG_INT_OPTIONS}.items():
             setattr(self.__class__, name, property(fget=lambda self, name=name, default=default : self.config.get(name, default)))
+
+        for name, default in self.CONFIG_BOOL_CLEAR_OPTIONS.items():
+            setattr(self.__class__, name, property(fget=lambda self, name=name, default=default :\
+                (name in self.config, self.config.get(name, default))))
 
     def _check_key_validity(self, key: str) -> bool:
         return key in self._valid_keys

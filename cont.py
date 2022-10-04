@@ -36,7 +36,7 @@ def main():
                 print(f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}")
         return 
 
-    type_check(ops)
+    type_check(ops, is_main=True)
 
     if config.dump_tc:
         for op in ops:

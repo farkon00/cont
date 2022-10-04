@@ -300,7 +300,15 @@ mov [rax], rbx
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         size = sizeof(struct)
-        buf = comment + \
+        if State.config.struct_malloc[1]:
+            buf = comment +\
+f"""
+push {size}
+call addr_{State.procs["malloc"].ip}
+pop rbx
+"""
+        else:
+            buf = comment +\
 f"""
 mov rdi, 0
 mov rax, 12
@@ -310,6 +318,9 @@ add rax, {size}
 mov rdi, rax
 mov rax, 12
 syscall
+"""
+        buf += \
+"""
 mov rcx, [bind_stack_ptr]
 mov [bind_stack+rcx], rbx
 add rcx, 8
