@@ -7,6 +7,9 @@ from parsing.op import *
 
 def evaluate_token(token: str, stack: list):
     if token.isnumeric(): stack.append(int(token))
+    elif token.startswith("0x") and State.is_hex(token[2:]): stack.append(int(token[2:], 16))
+    elif token.startswith("0b") and State.is_bin(token[2:]): stack.append(int(token[2:], 2))
+    elif token.startswith("0o") and State.is_oct(token[2:]): stack.append(int(token[2:], 8))
     elif token == "+": stack.append(stack.pop(-2) + stack.pop())
     elif token == "-": stack.append(stack.pop(-2) - stack.pop())
     elif token == "*": stack.append(stack.pop(-2) * stack.pop())

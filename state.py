@@ -221,3 +221,16 @@ class State:
                 continue
             State.used_procs.add(i)
             State._compute_used_procs(i)
+
+
+    @staticmethod
+    def is_hex(token: str) -> bool:
+        return all(i.lower() in "abcdef1234567890" for i in token)
+
+    @staticmethod
+    def is_bin(token: str) -> bool:
+        return all(i.lower() in "01" for i in token)
+
+    @staticmethod
+    def is_oct(token: str) -> bool:
+        return all(i.lower() in "01234567" for i in token)

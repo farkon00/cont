@@ -488,15 +488,6 @@ def include_file():
 
     return ops
 
-def is_hex(token: str) -> bool:
-    return all(i.lower() in "abcdef1234567890" for i in token)
-
-def is_bin(token: str) -> bool:
-    return all(i.lower() in "01" for i in token)
-
-def is_oct(token: str) -> bool:
-    return all(i.lower() in "01234567" for i in token)
-
 def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     assert len(OpType) == 40, "Unimplemented type in lex_token"
 
@@ -521,13 +512,13 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     elif token.startswith("-") and token[1:].isnumeric():
         return Op(OpType.PUSH_INT, 0x10000000000000000-int(token[1:]))
 
-    elif token.startswith("0x") and is_hex(token[2:]):
+    elif token.startswith("0x") and State.is_hex(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 16))
     
-    elif token.startswith("0b") and is_bin(token[2:]):
+    elif token.startswith("0b") and State.is_bin(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 2))
     
-    elif token.startswith("0o") and is_oct(token[2:]):
+    elif token.startswith("0o") and State.is_oct(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 8))
 
     elif (token.startswith("\"") or token.startswith("n\"")) and token.endswith("\""):
