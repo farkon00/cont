@@ -1,9 +1,10 @@
 from parsing.op import * 
 from type_checking.types import Array, sizeof
 from state import *
+from type_checking.types import *
 
 assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 40, "Unimplemented type in generating.py"
+assert len(OpType) == 41, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
@@ -95,6 +96,7 @@ syscall
 segment readable writeable
 {'index_out_of_range_text: db "Index out of range in "' if State.config.re_IOR else ''}
 {'null_ptr_deref_text: db "Null pointer dereference in "' if State.config.re_NPD else ''}
+{generate_fasm_types()}
 """
     for index, i in enumerate(State.locs_to_include):
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
@@ -111,6 +113,50 @@ call_stack: rb {State.config.size_call_stack}
 
     return buf
 
+def generate_fasm_types():
+    buf = ""
+    queue = State.runtimed_types.copy()
+    generated_types: set[object] = set()
+    while queue:
+        typ = queue.pop()
+        if typ.text_repr() in generated_types:
+            continue
+        generated_types.add(typ.text_repr())
+        buf += generate_fasm_type(typ, queue, generated_types) + "\n"
+    return buf
+
+def generate_fasm_type(typ, queue: set[object], generated_types: set[object]):
+    addr = f"type_{typ.text_repr()}: "
+    if isinstance(typ, Int):
+        return addr + f"dq {State.TYPE_IDS['int']},8,1"
+    elif isinstance(typ, Addr):
+        return addr + f"dq {State.TYPE_IDS['addr']},8,1"
+    elif isinstance(typ, Ptr):
+        if typ.typ is None:
+            return addr + f"dq {State.TYPE_IDS['ptr']},8,1,0"
+        else:
+            if typ not in generated_types:
+                queue.add(typ.typ)
+            return addr + f"dq {State.TYPE_IDS['ptr']},8,1,type_{typ.typ.text_repr()}"
+    elif isinstance(typ, Array):
+        assert typ.len != -1 and typ.typ is not None, "In lang(impossible to create by user) array given to generate_fasm_type"
+        if typ not in generated_types:
+            queue.add(typ.typ)
+        return addr + f"dq {State.TYPE_IDS['array']},8,1,type_{typ.typ.text_repr()},{typ.len}"
+    elif isinstance(typ, Struct):
+        State.curr_type_id += 1
+        buf = addr + f"dq {State.curr_type_id},{sizeof(typ)},0,"
+        if typ.parent is not None:
+            buf += f"type_{typ.parent.text_repr()}"
+        else:
+            buf += "0"
+        buf += ",$+8"
+        for field in typ.fields_types:
+            if typ not in generated_types:
+                queue.add(field)
+            buf += f",type_{field.text_repr()}" # type: ignore
+        return buf + ",0" # Null for the end of fields
+
 def generate_op_comment(op : Op):
     buf = f";; {State.loc} {op.type.name} "
     if op.type == OpType.OPERATOR:
@@ -122,7 +168,7 @@ def generate_op_comment(op : Op):
     return buf
 
 def generate_op(op: Op):
-    assert len(OpType) == 40, "Unimplemented type in generate_op"
+    assert len(OpType) == 41, "Unimplemented type in generate_op"
     
     if not op.compiled:
         return ""
@@ -489,6 +535,8 @@ push rbx
         return comment + code
     elif op.type == OpType.ASM:
         return op.operand + "\n"
+    elif op.type == OpType.PUSH_TYPE:
+        return comment + f"push type_{op.operand.text_repr()}\n"
     elif op.type == OpType.CAST:
         return "" # Casts are type checking thing
     else:

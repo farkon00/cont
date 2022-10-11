@@ -12,6 +12,12 @@ class Ptr:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+    def text_repr(self) -> str:
+        return f"ptr{'_' + self.typ.text_repr() if self.typ is not None else ''}"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 class Array:
     def __init__(self, len=-1, typ=None):
         self.len = len
@@ -26,6 +32,13 @@ class Array:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+    def text_repr(self) -> str:
+        assert self.typ is not None
+        return f"arr_{self.typ.text_repr()}_{self.len}"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 class Int:
     def __eq__(self, other) -> bool:
         return isinstance(other, Int) or other is None
@@ -33,12 +46,24 @@ class Int:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+    def text_repr(self) -> str:
+        return f"int"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 class Addr:
     def __eq__(self, other) -> bool:
         return isinstance(other, Addr) or other is None
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def text_repr(self) -> str:
+        return f"addr"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
 
 def type_to_str(_type):
     """
@@ -62,7 +87,7 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: tuple[str, str], error, auto_ptr: bool = True, allow_unpack: bool = False, 
+def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_unpack: bool = False, 
                end: str | None = None, throw_exc: bool = True):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]

@@ -1,0 +1,69 @@
+const Struct_FIELDS_SIZE 0x7FFFFFFFFFFFFFFF ;
+
+const Type.INT_ID 0 ;
+const Type.PTR_ID 1 ;
+const Type.ARRAY_ID 2 ;
+const Type.ADDR_ID 3 ;
+const Type.CUSTOM_TYPES_MIN_ID Type.ADDR_ID 1 + ;
+
+struct Type
+  int id
+  int size
+  int is_primitive
+
+  proc __eq__ Type -> int:
+    .id swap .id ==
+  end
+end
+
+struct (Type) PtrType
+  Type type
+end
+
+struct (Type) ArrayType
+  Type type
+  int len
+end
+
+struct (Type) Struct
+  Struct parent
+  [Struct_FIELDS_SIZE] Type fields
+end
+
+nproc print_type Type typ:
+  typ.id u_to_str puts " " puts
+  typ.size u_to_str puts " " puts
+  if typ.is_primitive do
+    "primitive " puts
+  end
+  if typ.id Type.PTR_ID == do
+    "to: " puts 
+    if typ (PtrType) .type NULL ptr!= do 
+      typ (PtrType) .type print_type 
+    else
+      "void " puts 
+    end
+  end
+  if typ.id Type.ARRAY_ID == do
+    "len: " puts 
+    typ (ArrayType) .len u_to_str puts    
+    " of: " puts 
+    typ (ArrayType) .type print_type
+  end
+  if typ.id Type.CUSTOM_TYPES_MIN_ID >= do
+    if typ (Struct) .parent NULL ptr!= do
+      "parent: " puts typ (Struct) .parent print_type
+    end
+    "fields: " puts
+    typ (Struct) .fields 0
+    0 typ (Struct) .fields [] NULL ptr!=
+    while
+      bind arr index: 
+        index arr [] print_type
+        " " puts
+        arr index 1 +
+        dup arr [] NULL ptr!=
+      end
+    end drop drop
+  end
+end

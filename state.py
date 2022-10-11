@@ -99,6 +99,12 @@ class Struct:
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
+    def text_repr(self) -> str:
+        return f"struct_{id(self)}"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 
 class StateSaver:
     def __init__(self):
@@ -133,6 +139,8 @@ class State:
 
     used_procs: set[Proc] = set()
     included_files: list[str] = []
+    runtimed_types: set[object] = set()
+    curr_type_id: int = 3
 
     string_data: list[bytes] = [] 
     locs_to_include: list[str] = []
@@ -170,6 +178,16 @@ class State:
     NOT_SAME_TYPE_DUNDER_METHODS: list[str] = [
         "__index__", "__index_ptr__"
     ]
+
+    TYPE_STRUCTS: list[str] = [
+        "Type", "PtrType", "ArrayType", "Struct"
+    ] 
+    TYPE_IDS: dict[str, int] = {
+        "int" : 0,
+        "ptr" : 1,
+        "array" : 2,
+        "addr" : 3,
+    } 
 
     @staticmethod
     def get_new_ip(op: Op):

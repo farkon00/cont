@@ -39,6 +39,7 @@ class OpType(Enum):
     AUTO_INIT = auto()
     SIZEOF = auto()
     SYSCALL = auto()
+    PUSH_TYPE = auto()
     ASM = auto()
     OPERATOR = auto()
 

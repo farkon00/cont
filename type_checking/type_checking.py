@@ -6,7 +6,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 40, "Unimplemented type in type_checking.py"
+assert len(OpType) == 41, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -51,6 +51,12 @@ def type_check(ops: list[Op], is_main: bool = False):
             if proc.out_stack != [Ptr()]:
                 State.throw_error("Malloc must return one pointer, disable struct_malloc if you don't want language to use malloc")
             State.add_proc_use(proc)
+
+    if is_main and len(State.runtimed_types):
+        State.loc = ""
+        for struct in State.TYPE_STRUCTS:
+            if struct not in State.structures:
+                State.throw_error(f"If types in runtime are used type.cn must be included from std. Structure {struct} not found.")
     
     index = 0
     while index < len(ops):
@@ -109,7 +115,7 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
     ]
 
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
-    assert len(OpType) == 40, "Unimplemented type in type_check_op"
+    assert len(OpType) == 41, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -353,6 +359,13 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
             _type = _type.typ
             
         return Op(OpType.PUSH_INT, sizeof(_type))
+    elif op.type == OpType.PUSH_TYPE:
+        if isinstance(op.operand, (Int, Addr)):
+            stack.append(Ptr(State.structures["Type"]))
+        elif isinstance(op.operand, Ptr):
+            stack.append(Ptr(State.structures["PtrType"]))
+        elif isinstance(op.operand, Array):
+            stack.append(Ptr(State.structures["ArrayType"]))
     elif op.type == OpType.SYSCALL:
         check_stack(stack, [None] * (op.operand + 1))
         stack.append(None)

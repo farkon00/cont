@@ -40,7 +40,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 40, "Unimplemented type in parsing.py"
+assert len(OpType) == 41, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def safe_next_token(exception: str = "") -> tuple[str, str]:
@@ -489,7 +489,7 @@ def include_file():
     return ops
 
 def lex_token(token: str, ops: list[Op]) -> Op | None | list:
-    assert len(OpType) == 40, "Unimplemented type in lex_token"
+    assert len(OpType) == 41, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -667,6 +667,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             State.throw_error("asm must be followed by a string")
         
         return Op(OpType.ASM, asm[1:-1])
+
+    elif token == "type":
+        typ = parse_type(safe_next_token(), "type")
+        State.runtimed_types.add(typ)
+        return Op(OpType.PUSH_TYPE, typ, token[1])
 
     elif token == "include":
         return include_file()
