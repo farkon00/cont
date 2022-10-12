@@ -9,10 +9,33 @@ const Type.CUSTOM_TYPES_MIN_ID Type.ADDR_ID 1 + ;
 struct Type
   int id
   int size
-  int is_primitive
+  int is_primitive 
 
-  proc __eq__ Type -> int:
-    .id swap .id ==
+  nproc __eq__ Type typ -> int:
+    if self.id typ.id == do
+      if self.id Type.PTR_ID == do
+        self 24 ptr+ (*Type) @ // TODO: Start using a cast and sizeoftype in here when compiler will allow
+        typ 24 ptr+ (*Type) @
+        bind self_type typ_type:
+          self_type NULL ptr== typ_type NULL ptr== or
+          dup not if
+            drop
+            self_type typ_type ==
+          end
+        end
+      else if self.id Type.ARRAY_ID == do
+        self 24 ptr+ (*Type) @ // TODO: Start using a cast and sizeoftype in here when compiler will allow
+        typ 24 ptr+ (*Type) @
+        ==
+        self 32 ptr+ @
+        typ 32 ptr+ @
+        == and
+      else
+        1
+      end end
+    else
+      0
+    end
   end
 end
 
