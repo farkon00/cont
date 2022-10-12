@@ -390,8 +390,8 @@ def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
             stack.append(Int())
         elif type1 == Ptr() and type2 == Ptr():
             if isinstance(type1.typ, Struct):
-                if type1.typ != type2.typ:
-                    State.throw_error(f"cant add different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
+                if type1.typ != type2.typ and type2.typ != type1.typ:
+                    State.throw_error(f"cant perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}")
                 if f"__{op.operand.name.lower()}__" not in type1.typ.methods:
                     State.throw_error(f"method __{op.operand.name.lower()}__ not found on {type_to_str(type1.typ)}")
                 method = type1.typ.methods[f"__{op.operand.name.lower()}__"]
