@@ -1,3 +1,5 @@
+include core.cn
+
 enum SYSCALL
   READ WRITE OPEN CLOSE STAT FSTAT LSTAT POLL LSEEK MMAP MPROTECT MUNMAP BRK RT_SIGACTION RT_SIGPROCMASK
   RT_SIGRETURN IOCTL PREAD64 PWRITE64 READV WRITEV ACCESS PIPE SELECT SCHED_YIELD MREMAP MSYNC MINCORE 
@@ -32,6 +34,19 @@ enum SYSCALL
   MEMBARRIER MLOCK2 COPY_FILE_RANGE PREADV2 PWRITEV2 PKEY_MPROTECT PKEY_ALLOC PKEY_FREE STATX
 end
 
+enum OSError
+  EPERM ENOENT ESRCH EINTR EIO ENXIO E2BIG ENOEXEC EBADF ECHILD EAGAIN ENOMEM EACCES EFAULT ENOTBLK EBUSY EEXIST EXDEV
+  ENODEV ENOTDIR EISDIR EINVAL ENFILE EMFILE ENOTTY ETXTBSY EFBIG ENOSPC ESPIPE EROFS EMLINK EPIPE EDOM ERANGE EDEADLK 
+  ENAMETOOLONG ENOLCK ENOSYS ENOTEMPTY ELOOP ENOMSG EIDRM ECHRNG EL2NSYNC EL3HLT EL3RST ELNRNG EUNATCH ENOCSI EL2HLT 
+  EBADE EBADR EXFULL ENOANO EBADRQC EBADSLT EBFONT ENOSTR ENODATA ETIME ENOSR ENONET ENOPKG EREMOTE ENOLINK EADV ESRMNT
+  ECOMM EPROTO EMULTIHOP EDOTDOT EBADMSG EOVERFLOW ENOTUNIQ EBADFD EREMCHG ELIBACC ELIBBAD ELIBSCN ELIBMAX ELIBEXEC
+  EILSEQ ERESTART ESTRPIPE EUSERS ENOTSOCK EDESTADDRREQ EMSGSIZE EPROTOTYPE ENOPROTOOPT EPROTONOSUPPORT ESOCKTNOSUPPORT 
+  EOPNOTSUPP EPFNOSUPPORT EAFNOSUPPORT EADDRINUSE EADDRNOTAVAIL ENETDOWN ENETUNREACH ENETRESET ECONNABORTED ECONNRESET 
+  ENOBUFS EISCONN ENOTCONN ESHUTDOWN ETOOMANYREFS ETIMEDOUT ECONNREFUSED EHOSTDOWN EHOSTUNREACH EALREADY EINPROGRESS 
+  ESTALE EUCLEAN ENOTNAM ENAVAIL EISNAM EREMOTEIO EDQUOT ENOMEDIUM EMEDIUMTYPE ECANCELED ENOKEY EKEYEXPIRED EKEYREVOKED 
+  EKEYREJECTED EOWNERDEAD ENOTRECOVERABLE
+end
+
 const STDIN 0 end
 const STDOUT 1 end
 const STDERR 2 end
@@ -57,11 +72,34 @@ const O_RSYNC     131072  end
 const AF_INET 2 end
 const SOCK_STREAM 1 end
 
+struct timespec
+  int sec
+  int nsec
+end
+
+// Stat structure definition
+proc osstatget_st_dev ptr -> int:       0   ptr+  @    end
+proc osstatget_st_ino ptr -> int:       8   ptr+  @    end
+proc osstatget_st_mode ptr -> int:      24  ptr+  @32  end
+proc osstatget_st_nlink ptr -> int:     16  ptr+  @    end
+proc osstatget_st_uid ptr -> int:       28  ptr+  @32  end
+proc osstatget_st_gid ptr -> int:       32  ptr+  @32  end
+proc osstatget_st_rdev ptr -> int:      40  ptr+  @    end
+proc osstatget_st_size ptr -> int:      48  ptr+  @    end
+proc osstatget_st_blksize ptr -> int:   56  ptr+  @    end
+proc osstatget_st_blocks ptr -> int:    64  ptr+  @    end
+proc osstatget_st_atim ptr -> timespec: 72  ptr+       end
+proc osstatget_st_mtim ptr -> timespec: 88  ptr+       end
+proc osstatget_st_ctim ptr -> timespec: 104 ptr+       end
+
+const sizeof(stat) 120 ;
+
 proc read int ptr int -> int: SYSCALL.READ syscall3 end
 proc write int ptr int -> int: SYSCALL.WRITE syscall3 end
 
-proc opensys int int ptr -> int: SYSCALL.OPEN syscall3 end
-proc opensys2 int ptr -> int: SYSCALL.OPEN syscall2 end
+proc open int int ptr -> int: SYSCALL.OPEN syscall3 end
+proc open2 int ptr -> int: SYSCALL.OPEN syscall2 end
+proc fstat ptr int -> int: SYSCALL.FSTAT syscall2 end 
 proc close int -> int: SYSCALL.CLOSE syscall1 end
 
 proc fork -> int: SYSCALL.FORK syscall0 end  

@@ -22,7 +22,7 @@ proc jmp_to ptr:
   shadowp
 end
 
-O_RDONLY n"source.bf" opensys2
+O_RDONLY n"source.bf" open2
 bind fd:
   2048 file
   fd

@@ -1,0 +1,113 @@
+include std.cn
+
+
+struct File
+  int fd
+  
+  proc print_error @str:
+    drop // Drop self
+    "\033[1;31mError: \033[0m" puts
+    println
+    1 exit
+  end
+
+  // TODO: Handle all errors
+  nproc check_fd int fd:
+    if fd 0 < do
+      0 fd - // Invert errno back into possitive
+      if dup OSError.EACCES == do
+        "Access error, permissions forbidden (errno EACCES)" self.print_error 
+      end
+      if dup OSError.EFAULT == do
+        // Malloc failed and path pointer isn't valid
+        "Internal memory allocation error (errno EFAULT)" self.print_error 
+      end
+      if dup OSError.EOVERFLOW == dup OSError.EFBIG == or do
+        "File too big (errno EOVERFLOW|EFBIG)" self.print_error 
+      end
+      if dup OSError.EEXIST == do
+        "File already exists (errno EEXIST)" self.print_error 
+      end
+      if dup OSError.EINVAL == do
+        "Invalid flags or invalid path with O_CREAT specified (errno EINVAL)" self.print_error
+      end
+      if dup OSError.ELOOP == do
+        "Symlink error (errno ELOOP)" self.print_error 
+      end
+      if dup OSError.ENOENT == do
+        "File or directory not found (errno ENOENT)" self.print_error 
+      end
+      // If no of specific error messages was triggred
+      "Error while opening a file" self.print_error
+      drop // Drop fd
+    end
+  end
+
+  nproc __init__ int flags @str:
+    len 1 + malloc
+    bind path:
+      // Convert path to null-terminated string 
+      len data path cpy_buf
+      0 path len ptr+ !8
+
+      flags path open2
+      dup self.check_fd
+      !self.fd
+
+      path free
+    end
+  end
+
+  nproc read int size -> @str:
+    if size -1 == do
+      sizeof(stat) malloc
+      dup self.fd fstat
+      if 0 < do
+        "Fstat syscall failed" self.print_error
+      end
+      osstatget_st_size
+      self.read
+    else
+      if size 0 < do
+        "Size can't be negative and not equal to -1" self.print_error
+      end 
+      
+      size malloc
+      bind buff:
+        // TODO: Handle errors in here with better discriptions
+        size buff self.fd read
+        if dup 0 < do
+          "Read syscall failed" self.print_error
+        end
+        buff
+      end
+    end
+  end
+
+  nproc read_all -> @str:
+    -1 self.read
+  end
+
+  nproc write @str:
+    len data self.fd write
+    if dup 0 < do
+      "Write syscall failed" self.print_error
+    end
+    if dup len != do
+      "Not all of the string was written" self.print_error
+    end
+    drop
+  end
+
+  nproc close:
+    self.fd close
+    if 0 < do
+      "Close syscall failed" self.print_error
+    end
+  end
+
+  nproc close_and_free:
+    self.close
+    self free
+  end
+end

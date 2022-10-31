@@ -56,6 +56,7 @@ end
 
 proc compare int ptr ptr int ptr -> int:
   bind show res exp testlen test:
+    // TODO: nstr_to_str was removed from std
     res nstr_to_str
     exp nstr_to_str swap 2 - swap 1 ptr+
     streq
@@ -67,6 +68,7 @@ proc compare int ptr ptr int ptr -> int:
       end
       1
     else
+      // TODO: nstr_to_str was removed from std
       "\033[1;31mTest failed:⠀" puts
       testlen test puts
       "\033[0m\n===========================\n" puts
@@ -92,6 +94,7 @@ n"-r"                 build_argv
 1 while
   get_curr_test if
     bind pathlen path:
+      // Btw that looks like bug, open2 accepts nstr and flags 
       0 pathlen path open2
       
       file_buf
@@ -123,7 +126,7 @@ n"-r"                 build_argv
         end
       end drop drop
 
-      200 65 n"stdin.txt" opensys
+      200 65 n"stdin.txt" open
       bind fd:
         stdin 1 ptr+ dup null_str_len 1 - swap // len stdin 
         fd write
@@ -134,7 +137,7 @@ n"-r"                 build_argv
         fd close drop
       end
 
-      200 65 n"code.txt" opensys
+      200 65 n"code.txt" open
       bind fd:
         code dup null_str_len 1 - swap // len stdin
         fd write
@@ -160,7 +163,7 @@ n"-r"                 build_argv
           wait4 drop
 
           2048 compare_file clear_buf
-          0 n"stdout.txt" opensys2
+          0 n"stdout.txt" open2
           bind fd:
             2048
             compare_file
@@ -170,7 +173,7 @@ n"-r"                 build_argv
           0 compare_file stdout pathlen path compare // Will go to line with second compare at the end of stack
 
           2048 compare_file clear_buf
-          0 n"stderr.txt" opensys2
+          0 n"stderr.txt" open2
           bind fd:
             2048
             compare_file

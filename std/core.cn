@@ -1,0 +1,121 @@
+include stack.cn
+
+proc / int int -> int: div drop end
+proc % int int -> int: div swap drop end
+
+proc ptr+ ptr int -> ptr:  swap  (int)      + (ptr) end
+proc ptr- ptr int -> ptr:  swap  (int) swap - (ptr) end
+proc +ptr int ptr -> ptr:        (int)      + (ptr) end
+proc -ptr int ptr -> ptr:        (int)      - (ptr) end
+
+proc ptr== ptr ptr -> int: (int) swap (int) == end
+proc ptr!= ptr ptr -> int: (int) swap (int) != end
+
+proc NULL -> ptr: 0 (ptr) end
+
+
+proc inc ptr:
+  dup @int 1 + swap ! 
+end
+proc dec ptr:
+  dup @int 1 - swap ! 
+end
+proc inc8 ptr:
+  dup @8 1 + swap !8 
+end
+proc dec8 ptr:
+  dup @8 1 - swap !8 
+end
+
+nproc incby ptr ptr int by:
+  ptr @int by + ptr !
+end
+nproc decby ptr ptr int by:
+  ptr @int by - ptr !
+end
+nproc inc8by ptr ptr int by:
+  ptr @8 by + ptr !8
+end
+nproc dec8by ptr ptr int by:
+  ptr @8 by - ptr !8
+end
+
+
+proc @16 ptr -> int:
+  shadowp
+  asm "xor rax, rax"
+  asm "pop rbx"
+  asm "mov ax, [rbx]"
+  asm "push rax"
+  unshadowi
+end
+ 
+proc !16 int ptr:
+  shadowp
+  shadowi
+  asm "pop rbx"
+  asm "pop rcx"
+  asm "mov [rbx], cx"
+end
+
+proc @32 ptr -> int:
+  shadowp
+  asm "xor rax, rax"
+  asm "pop rbx"
+  asm "mov eax, [rbx]"
+  asm "push rax"
+  unshadowi
+end
+ 
+proc !32 int ptr:
+  shadowp
+  shadowi
+  asm "pop rbx"
+  asm "pop rcx"
+  asm "mov [rbx], ecx"
+end
+
+
+proc boolify int -> int: 0 != end
+
+proc and int int -> int: boolify swap boolify + 1 >  end
+proc or int int -> int:  boolify swap boolify + 0 >  end
+proc not int -> int:     boolify 1 -  boolify        end
+proc xor int int -> int: boolify swap boolify + 1 == end
+
+
+proc & int int -> int: 
+  shadowi shadowi
+  asm "pop rax"
+  asm "pop rbx"
+  asm "and rax, rbx"
+  asm "push rax"
+  unshadowi
+end
+
+proc | int int -> int: 
+  shadowi shadowi
+  asm "pop rax"
+  asm "pop rbx"
+  asm "or rax, rbx"
+  asm "push rax"
+  unshadowi
+end
+
+proc bnot int int -> int: 
+  shadowi shadowi
+  asm "pop rax"
+  asm "pop rbx"
+  asm "not rax, rbx"
+  asm "push rax"
+  unshadowi
+end
+
+proc ^ int int -> int: 
+  shadowi shadowi
+  asm "pop rax"
+  asm "pop rbx"
+  asm "xor rax, rbx"
+  asm "push rax"
+  unshadowi
+end
