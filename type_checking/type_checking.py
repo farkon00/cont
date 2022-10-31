@@ -278,7 +278,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         if "__init__" in struct.methods:
-            args = struct.methods["__init__"].in_stack.copy()[1:]
+            args = struct.methods["__init__"].in_stack.copy()[:-1]
             State.add_proc_use(struct.methods["__init__"])
         else:
             args = struct.fields_types.copy()
