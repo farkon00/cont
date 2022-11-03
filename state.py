@@ -136,7 +136,7 @@ class State:
     structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
     enums: dict[str, list[str]] = {}
-    var_types: dict[str, "TypeVar"] = {}
+    var_types: dict[str, "VarType"] = {} # type: ignore
 
     used_procs: set[Proc] = set()
     included_files: list[str] = []

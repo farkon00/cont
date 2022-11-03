@@ -116,8 +116,8 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
 
 def process_call(op: Op, stack) -> None:
     var_types: dict[int, object] = {}
-    in_types = []
-    out_types = []
+    in_types: list[object] = []
+    out_types: list[object] = []
     if len(op.operand.in_stack) > len(stack):
         State.throw_error("Not enough elements on the stack")
     for stack_offset, typ in enumerate(op.operand.in_stack):
@@ -299,7 +299,7 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         stack.extend(State.route_stack.pop()[1])
         State.current_proc = None
     elif op.type == OpType.CALL:
-        return process_call(op, stack)
+        process_call(op, stack)
     elif op.type == OpType.TYPED_LOAD:
         check_stack(stack, [Ptr(op.operand)])
         stack.append(op.operand)
