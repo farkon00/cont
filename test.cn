@@ -29,7 +29,7 @@ end
 "tests/arithmetics\0" add_test
 
 proc build_argv ptr:
-  args args_index @ ptr+ !ptr
+  args args_index @ ptr+ !
   args_index 8 incby
 end
 

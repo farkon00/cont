@@ -6,7 +6,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 41, "Unimplemented type in type_checking.py"
+assert len(OpType) == 40, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -114,8 +114,39 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
+def process_call(op: Op, stack) -> None:
+    var_types: dict[int, object] = {}
+    in_types = []
+    out_types = []
+    if len(op.operand.in_stack) > len(stack):
+        State.throw_error("Not enough elements on the stack")
+    for stack_offset, typ in enumerate(op.operand.in_stack):
+        if isinstance(typ, VarType):
+            stack_index = len(stack) - len(op.operand.in_stack) + stack_offset
+            if id(typ) in var_types:
+                if not check_varient(stack[stack_index], var_types[id(typ)]):
+                    State.throw_error(f"missmatched variable type values", False)
+                    sys.stderr.write(f"\033[1;34mElement {len(in_types)-stack_index}\033[0m: " +\
+                        str(stack[stack_index]) +\
+                        f"instead of {type_to_str(var_types[id(typ)])}\n")
+                    exit(1)
+
+                in_types.append(down_cast(stack[stack_index], var_types[id(typ)]))
+            else:
+                var_types[id(typ)] = stack[stack_index]
+                in_types.append(stack[stack_index])
+        else:
+            in_types.append(typ)
+    for typ in op.operand.out_stack:
+        if isinstance(typ, VarType):
+            out_types.append(var_types[id(typ)])
+        else:
+            out_types.append(typ)
+    check_stack(stack, in_types)
+    stack.extend(out_types)
+
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
-    assert len(OpType) == 41, "Unimplemented type in type_check_op"
+    assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -268,13 +299,10 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         stack.extend(State.route_stack.pop()[1])
         State.current_proc = None
     elif op.type == OpType.CALL:
-        check_stack(stack, op.operand.in_stack.copy())
-        stack.extend(op.operand.out_stack)
+        return process_call(op, stack)
     elif op.type == OpType.TYPED_LOAD:
         check_stack(stack, [Ptr(op.operand)])
         stack.append(op.operand)
-    elif op.type == OpType.TYPED_STORE:
-        check_stack(stack, [op.operand, Ptr(op.operand)])
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         if "__init__" in struct.methods:
