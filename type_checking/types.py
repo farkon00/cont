@@ -103,7 +103,7 @@ def type_to_str(_type):
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
 def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_unpack: bool = False, 
-               end: str | None = None, throw_exc: bool = True, allow_var_type_def: bool = False):
+               end: str | None = None, throw_exc: bool = True, var_type_scope: dict[str, VarType] = None):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if end is not None:
@@ -114,7 +114,7 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
             if not name.strip():
                 return None
     if name.startswith("*"):
-        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack))
+        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack, var_type_scope=var_type_scope))
     elif name == "int":
         return Int()
     elif name == "ptr":
@@ -143,7 +143,7 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
                 State.throw_error(f"constant \"{name[1:-1]}\" was not found")
             else:
                 return None
-        arr = Array(length, parse_type(next(State.tokens), error, True, False, end))
+        arr = Array(length, parse_type(next(State.tokens), error, True, False, end, var_type_scope=var_type_scope))
         if arr is None:
             if throw_exc:
                 State.throw_error("array type was not defined")
@@ -151,12 +151,12 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
                 return None
         return Ptr(arr) if auto_ptr else arr
     else:
-        if name in State.var_types:
-            return State.var_types[name]
+        if name in State.var_types():
+            return State.var_types()[name]
         else:
-            if allow_var_type_def:
+            if var_type_scope is not None:
                 var_type = VarType(name)
-                State.var_types[name] = var_type
+                var_type_scope[name] = var_type
                 return var_type
             elif throw_exc:
                 State.throw_error(f"Unknown type \"{name}\" in {error}")

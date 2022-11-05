@@ -72,6 +72,8 @@ def parse_proc_head():
     out_types: list[object] = []
     names: list[str] = []
     owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
+    var_types_scope: dict[str, VarType] = {}
+    State.var_type_scopes.append(var_types_scope)
 
     if State.current_proc is not None:
         State.throw_error("nested procedures aren't allowed")
@@ -123,8 +125,8 @@ def parse_proc_head():
                 types.extend(struct.fields_types)
                 continue
                     
-            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract",
-                allow_unpack=True, end=":", allow_var_type_def=(types is in_types))
+            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True,
+                end=":", var_type_scope=var_types_scope if types is in_types else None)
             if isinstance(res, Iterable):
                 types.extend(res)
             elif res is None: # If ended in array type
@@ -166,6 +168,7 @@ def parse_proc_head():
                 State.loc = f"{State.filename}:{name[1]}"
                 State.throw_error(f"{name_value} must have owner structure as argument")
 
+    State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, owner)
     op = Op(OpType.DEFPROC, proc)

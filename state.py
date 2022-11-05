@@ -3,6 +3,7 @@ import sys
 from dataclasses import dataclass
 from typing import Generator, Optional, Any
 from enum import Enum, auto
+from functools import reduce
 
 from parsing.op import Op
 
@@ -136,7 +137,7 @@ class State:
     structures: dict[str, Struct] = {}
     constants: dict[str, int] = {}
     enums: dict[str, list[str]] = {}
-    var_types: dict[str, "VarType"] = {} # type: ignore
+    var_type_scopes: list[dict[str, "VarType"]] = [] # type: ignore
 
     used_procs: set[Proc] = set()
     included_files: list[str] = []
@@ -189,6 +190,9 @@ class State:
         "array" : 2,
         "addr" : 3,
     } 
+
+    def var_types() -> dict[str, "VarType"]: # type: ignore
+        return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
 
     @staticmethod
     def get_new_ip(op: Op):

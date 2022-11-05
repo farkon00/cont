@@ -114,34 +114,42 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
-def process_call(op: Op, stack) -> None:
+def match_type_var(typ: object, actual: object) -> dict[int, object]:
+    if isinstance(typ, VarType):
+        return {id(typ) : actual}
+    if isinstance(typ, Ptr) and isinstance(actual, Ptr):
+        return match_type_var(typ.typ, actual.typ)
+    if isinstance(typ, Array) and isinstance(actual, Array):
+        return match_type_var(typ.typ, actual.typ)
+    return {}
+
+def get_var_type_values(types: list[object], stack: list[object]) -> dict[int, object]:
     var_types: dict[int, object] = {}
+    if len(types) > len(stack):
+        State.throw_error("Not enough elements on the stack")
+    for typ, actual in zip(types, stack):
+        var_types = {**match_type_var(typ, actual), **var_types}
+    return var_types
+
+def get_concrete_type(typ: object, var_types: dict[int, object]) -> object:
+    if isinstance(typ, VarType):
+        if id(typ) not in var_types:
+            State.throw_error(f"Cannot obtain value for type varaible \"{typ.name}\"")
+        return var_types[id(typ)]
+    if isinstance(typ, Ptr):
+        return Ptr(get_concrete_type(typ.typ, var_types))
+    if isinstance(typ, Array):
+        return Array(typ.len, get_concrete_type(typ.typ, var_types))
+    return typ
+
+def process_call(op: Op, stack) -> None:
     in_types: list[object] = []
     out_types: list[object] = []
-    if len(op.operand.in_stack) > len(stack):
-        State.throw_error("Not enough elements on the stack")
-    for stack_offset, typ in enumerate(op.operand.in_stack):
-        if isinstance(typ, VarType):
-            stack_index = len(stack) - len(op.operand.in_stack) + stack_offset
-            if id(typ) in var_types:
-                if not check_varient(stack[stack_index], var_types[id(typ)]):
-                    State.throw_error(f"missmatched variable type values", False)
-                    sys.stderr.write(f"\033[1;34mElement {len(in_types)-stack_index}\033[0m: " +\
-                        str(stack[stack_index]) +\
-                        f"instead of {type_to_str(var_types[id(typ)])}\n")
-                    exit(1)
-
-                in_types.append(down_cast(stack[stack_index], var_types[id(typ)]))
-            else:
-                var_types[id(typ)] = stack[stack_index]
-                in_types.append(stack[stack_index])
-        else:
-            in_types.append(typ)
+    var_types = get_var_type_values(op.operand.in_stack, stack[-len(op.operand.in_stack):])
+    for typ in op.operand.in_stack:
+        in_types.append(get_concrete_type(typ, var_types))
     for typ in op.operand.out_stack:
-        if isinstance(typ, VarType):
-            out_types.append(var_types[id(typ)])
-        else:
-            out_types.append(typ)
+        out_types.append(get_concrete_type(typ, var_types))
     check_stack(stack, in_types)
     stack.extend(out_types)
 
