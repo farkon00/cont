@@ -1,0 +1,67 @@
+include std.cn
+include io.cn
+
+proc err @str:
+  println
+  1 exit
+end
+
+nproc check_fail int res @str:
+  res 0 < if
+    "Error code: " puts
+    0 res - print
+    len data puts
+    " failed" err
+  end
+end
+
+proc init_address -> ptr:
+  16 malloc
+  bind address:
+    AF_INET    address        !16
+    6969 htons address 2 ptr+ !16
+    0          address 4 ptr+ !32
+    address
+  end
+end
+
+nproc init_socket ptr address -> int:
+  0 SOCK_STREAM AF_INET socket
+  bind fd:
+    fd "Socket syscall" check_fail
+    16 address fd bind_sock
+    "Bind" check_fail
+    10 fd listen
+    "Listen" check_fail
+    fd
+  end
+end
+
+nproc respond int fd:
+  "HTTP/1.0\ncontent-type: text/html; charset=utf-8 200 OK\n\n" fd write
+  "Write" check_fail
+  "<h1>Hello world!</h1>" fd write
+  "Write" check_fail
+end
+
+var sizeof(addr) int
+16 !sizeof(addr)
+memory buf 2048
+init_address
+dup init_socket
+bind address sockfd:
+  while 1 do
+  *sizeof(addr) address sockfd accept
+  dup "Accept" check_fail
+    bind fd:
+      2048 buf fd read
+      dup "Read" check_fail
+      buf println
+      fd respond
+      fd close
+      "Closing connection" check_fail
+    end
+  end
+  sockfd close
+  "Closing socket" check_fail
+end
