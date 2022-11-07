@@ -40,7 +40,7 @@ END_TYPES = {
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
-assert len(OpType) == 41, "Unimplemented type in parsing.py"
+assert len(OpType) == 40, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
 def safe_next_token(exception: str = "") -> tuple[str, str]:
@@ -72,6 +72,8 @@ def parse_proc_head():
     out_types: list[object] = []
     names: list[str] = []
     owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
+    var_types_scope: dict[str, VarType] = {}
+    State.var_type_scopes.append(var_types_scope)
 
     if State.current_proc is not None:
         State.throw_error("nested procedures aren't allowed")
@@ -123,7 +125,8 @@ def parse_proc_head():
                 types.extend(struct.fields_types)
                 continue
                     
-            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True, end=":")
+            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True,
+                end=":", var_type_scope=var_types_scope if types is in_types else None)
             if isinstance(res, Iterable):
                 types.extend(res)
             elif res is None: # If ended in array type
@@ -165,6 +168,7 @@ def parse_proc_head():
                 State.loc = f"{State.filename}:{name[1]}"
                 State.throw_error(f"{name_value} must have owner structure as argument")
 
+    State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, owner)
     op = Op(OpType.DEFPROC, proc)
@@ -489,7 +493,7 @@ def include_file():
     return ops
 
 def lex_token(token: str, ops: list[Op]) -> Op | None | list:
-    assert len(OpType) == 41, "Unimplemented type in lex_token"
+    assert len(OpType) == 40, "Unimplemented type in lex_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -747,14 +751,10 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         ]
 
     elif token.startswith("!"):
-        _type = parse_type((token[1:], State.loc), "store type", throw_exc=False)
-        if _type is not None:
-            return Op(OpType.TYPED_STORE, _type)
-        else:
-            return [
-                *parse_dot(token[1:], allow_var=True, auto_ptr=True),
-                Op(OpType.OPERATOR, Operator.STORE, State.loc)
-            ]
+        return [
+            *parse_dot(token[1:], allow_var=True, auto_ptr=True),
+            Op(OpType.OPERATOR, Operator.STORE, State.loc)
+        ]
 
     elif token.startswith("*") and token[1:] in State.procs:
         State.add_proc_use(State.procs[token[1:]].ip)

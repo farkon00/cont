@@ -1,19 +1,26 @@
-nproc 2duppi ptr a int b -> ptr int ptr int:
+nproc 2dup t1 a t2 b -> t1 t2 t1 t2:
   a b a b
 end
-nproc 2dupip int a ptr b -> int ptr int ptr:
-  a b a b
+
+proc 2duppi ptr int -> ptr int ptr int:
+  2dup
+end
+proc 2dupip int ptr -> int ptr int ptr:
+  2dup
+end
+
+proc shadow a:
+  asm "push 0"
+  drop
 end
 
 proc shadowi int:
-  asm "push 0"
-  drop
+  shadow
+end 
+proc shadowp ptr:
+  shadow
 end 
 
-proc shadowp ptr:
-  asm "push 0"
-  drop
-end 
 
 proc unshadowi -> int:
   0

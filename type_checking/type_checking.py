@@ -6,7 +6,7 @@ from .types import type_to_str
 from .types import *
 
 assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
-assert len(OpType) == 41, "Unimplemented type in type_checking.py"
+assert len(OpType) == 40, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
 def check_stack(stack: list, expected: list, arg=0):
@@ -114,8 +114,47 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
+def match_type_var(typ: object, actual: object) -> dict[int, object]:
+    if isinstance(typ, VarType):
+        return {id(typ) : actual}
+    if isinstance(typ, Ptr) and isinstance(actual, Ptr):
+        return match_type_var(typ.typ, actual.typ)
+    if isinstance(typ, Array) and isinstance(actual, Array):
+        return match_type_var(typ.typ, actual.typ)
+    return {}
+
+def get_var_type_values(types: list[object], stack: list[object]) -> dict[int, object]:
+    var_types: dict[int, object] = {}
+    if len(types) > len(stack):
+        State.throw_error("Not enough elements on the stack")
+    for typ, actual in zip(types, stack):
+        var_types = {**match_type_var(typ, actual), **var_types}
+    return var_types
+
+def get_concrete_type(typ: object, var_types: dict[int, object]) -> object:
+    if isinstance(typ, VarType):
+        if id(typ) not in var_types:
+            State.throw_error(f"Cannot obtain value for type varaible \"{typ.name}\"")
+        return var_types[id(typ)]
+    if isinstance(typ, Ptr):
+        return Ptr(get_concrete_type(typ.typ, var_types))
+    if isinstance(typ, Array):
+        return Array(typ.len, get_concrete_type(typ.typ, var_types))
+    return typ
+
+def process_call(op: Op, stack) -> None:
+    in_types: list[object] = []
+    out_types: list[object] = []
+    var_types = get_var_type_values(op.operand.in_stack, stack[-len(op.operand.in_stack):])
+    for typ in op.operand.in_stack:
+        in_types.append(get_concrete_type(typ, var_types))
+    for typ in op.operand.out_stack:
+        out_types.append(get_concrete_type(typ, var_types))
+    check_stack(stack, in_types)
+    stack.extend(out_types)
+
 def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
-    assert len(OpType) == 41, "Unimplemented type in type_check_op"
+    assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
 
@@ -268,13 +307,10 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         stack.extend(State.route_stack.pop()[1])
         State.current_proc = None
     elif op.type == OpType.CALL:
-        check_stack(stack, op.operand.in_stack.copy())
-        stack.extend(op.operand.out_stack)
+        process_call(op, stack)
     elif op.type == OpType.TYPED_LOAD:
         check_stack(stack, [Ptr(op.operand)])
         stack.append(op.operand)
-    elif op.type == OpType.TYPED_STORE:
-        check_stack(stack, [op.operand, Ptr(op.operand)])
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand]
         if "__init__" in struct.methods:

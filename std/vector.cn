@@ -5,12 +5,13 @@ const VEC_CAPACITY_STEP 10 ;
 const VEC_MAX_CAPACITY 0x7FFFFFFFFFFFFFFF ;
 
 struct IntVector
-  default capacity VEC_INIT_CAPACITY ;
+  int capacity
   int len
   [VEC_MAX_CAPACITY] int data
 
   nproc __init__:
-    VEC_INIT_CAPACITY sizeoftype int * malloc !self.data
+    VEC_INIT_CAPACITY !self.capacity
+    self.capacity sizeoftype int * malloc !self.data
     0 !self.len
   end
 

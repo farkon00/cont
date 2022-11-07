@@ -65,6 +65,19 @@ class Addr:
     def __hash__(self) -> int:
         return hash(self.text_repr())
 
+class VarType:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __eq__(self, other) -> bool:
+        return self is other
+        
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        State.throw_error("Can't get variable type runtime representation")
+
 def type_to_str(_type):
     """
     Converts cont type object to string
@@ -82,13 +95,15 @@ def type_to_str(_type):
         return type_to_str(_type.typ) + "[" + str(_type.len) + "]" 
     elif isinstance(_type, Struct):
         return _type.name
+    elif isinstance(_type, VarType):
+        return _type.name
     elif _type is None:
         return "any"
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
 def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_unpack: bool = False, 
-               end: str | None = None, throw_exc: bool = True):
+               end: str | None = None, throw_exc: bool = True, var_type_scope: dict[str, VarType] = None):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if end is not None:
@@ -99,7 +114,7 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
             if not name.strip():
                 return None
     if name.startswith("*"):
-        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack))
+        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack, var_type_scope=var_type_scope))
     elif name == "int":
         return Int()
     elif name == "ptr":
@@ -128,7 +143,7 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
                 State.throw_error(f"constant \"{name[1:-1]}\" was not found")
             else:
                 return None
-        arr = Array(length, parse_type(next(State.tokens), error, True, False, end))
+        arr = Array(length, parse_type(next(State.tokens), error, True, False, end, var_type_scope=var_type_scope))
         if arr is None:
             if throw_exc:
                 State.throw_error("array type was not defined")
@@ -136,10 +151,15 @@ def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_
                 return None
         return Ptr(arr) if auto_ptr else arr
     else:
-        if throw_exc:
-            State.throw_error(f"unknown type \"{token[0]}\" in {error}")
+        if name in State.var_types():
+            return State.var_types()[name]
         else:
-            return None
+            if var_type_scope is not None:
+                var_type = VarType(name)
+                var_type_scope[name] = var_type
+                return var_type
+            elif throw_exc:
+                State.throw_error(f"Unknown type \"{name}\" in {error}")
 
 def sizeof(_type) -> int:
     if isinstance(_type, Int) or isinstance(_type, Ptr) or isinstance(_type, Addr):
@@ -148,8 +168,10 @@ def sizeof(_type) -> int:
         return sum([sizeof(field) for field in _type.fields_types])
     elif isinstance(_type, Array):
         return _type.len * sizeof(_type.typ)
+    elif isinstance(_type, VarType):
+        State.throw_error("Can't get size of type variable")
     elif _type is None:
-        State.throw_error("cant get size of any")
+        State.throw_error("Cant get size of any")
     else:
         assert False, f"Unimplemented type in sizeof: {type_to_str(_type)}"
     
@@ -175,10 +197,6 @@ def check_contravariant(got: Struct, exp: Struct) -> bool:
 
 
 def check_varient(got: object, exp: object):
-    if isinstance(exp, Int) and isinstance(got, Int):
-        return True
-    if isinstance(exp, Addr) and isinstance(got, Addr):
-        return True
     if isinstance(exp, Ptr) and isinstance(got, Ptr):
         return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
     if isinstance(exp, Array) and isinstance(got, Array):
@@ -186,6 +204,8 @@ def check_varient(got: object, exp: object):
     if isinstance(exp, Struct) and isinstance(got, Struct):
         # equal is covariant
         return got == exp or check_contravariant(got, exp)
+    if got == exp:
+        return True
 
     return False
 

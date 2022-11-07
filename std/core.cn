@@ -119,3 +119,21 @@ proc ^ int int -> int:
   asm "push rax"
   unshadowi
 end
+
+proc >> int int -> int:
+  shadow shadow
+  asm "pop rcx"
+  asm "pop rbx"
+  asm "shr rbx, cl"
+  asm "push rbx"
+  unshadowi
+end
+
+proc << int int -> int:
+  shadow shadow
+  asm "pop rcx"
+  asm "pop rbx"
+  asm "shl rbx, cl"
+  asm "push rbx"
+  unshadowi
+end
