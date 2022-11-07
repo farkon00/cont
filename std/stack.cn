@@ -9,15 +9,18 @@ proc 2dupip int ptr -> int ptr int ptr:
   2dup
 end
 
-proc shadowi int:
+proc shadow a:
   asm "push 0"
   drop
+end
+
+proc shadowi int:
+  shadow
+end 
+proc shadowp ptr:
+  shadow
 end 
 
-proc shadowp ptr:
-  asm "push 0"
-  drop
-end 
 
 proc unshadowi -> int:
   0
