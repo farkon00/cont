@@ -17,7 +17,7 @@ $ python cont.py <source_code>.cn -r
 ```
 
 # Examples
-You can find more examples in `tests` or `examples` folders.
+You can find more examples in `tests` or `examples` folders or in the standard library source, which can be found in `std`.
 
 ## Hello world
 ```
