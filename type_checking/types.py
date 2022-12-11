@@ -1,3 +1,5 @@
+from typing import Optional
+
 from state import State, Struct
 
 class Ptr:
@@ -103,7 +105,7 @@ def type_to_str(_type):
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
 def parse_type(token: tuple[str, str], error: str, auto_ptr: bool = True, allow_unpack: bool = False, 
-               end: str | None = None, throw_exc: bool = True, var_type_scope: dict[str, VarType] = None):
+               end: str | None = None, throw_exc: bool = True, var_type_scope: Optional[dict[str, VarType]] = None):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if end is not None:
