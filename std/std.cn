@@ -42,17 +42,27 @@ nproc cpy_buf int size ptr buf ptr des:
   drop
 end
 
-nproc clear_buf int len ptr ptr:
+// Synonym
+proc memcpy int ptr ptr:
+  cpy_buf
+end
+
+nproc memset ptr ptr int val int len:
   0
   len 0 >
   while
     bind index: 
-      0 ptr index ptr+ !8
+      val ptr index ptr+ !8
       index 1 +
     end
     dup len < 
   end
   drop
+end
+
+// Sysnonym for backwards compitability
+nproc clear_buf int len ptr ptr:
+  ptr 0 len memset
 end
 
 struct MallocBlockMeta
@@ -165,6 +175,26 @@ end
 
 proc print int: 
   int_to_str dup rot swap println free
+end
+
+nproc str_to_int @str -> int:
+  var res int
+  0 !res
+  0 while dup len < do
+    dup data +ptr @8
+    bind char:
+      if char '0' < char '9' > or do
+        "Non-digit character in str_to_int: " puts
+        dup 1 swap data +ptr puts
+        "\n" puts
+        0 exit
+      end 
+      res 10 * !res
+      *res char '0' - incby
+      1 +
+    end
+  end drop
+  res
 end
 
 // Debug procedure

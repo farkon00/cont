@@ -33,6 +33,7 @@ struct IntVector
     end
   end
 
+  // Public
   nproc push int value:
     self.check_innitted
     if self.len self.capacity == do
@@ -40,6 +41,19 @@ struct IntVector
     end
     value self.data self.len sizeoftype int * ptr+ !
     *self.len inc
+  end
+
+  nproc remove int index:
+    self.check_innitted
+    if index self.len >= do
+      "Index out of bounds for remove" println
+      1 exit
+    end
+    self.len index - 1 -                      // size
+    index 1 + sizeoftype int * self.data +ptr // src
+    index sizeoftype int *     self.data +ptr // dst 
+    memcpy
+    *self.len dec
   end
 
   nproc __index_ptr__ int index -> *int:
