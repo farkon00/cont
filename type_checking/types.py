@@ -94,7 +94,7 @@ def type_to_str(_type):
         else:
             return "ptr"
     elif isinstance(_type, Array):
-        return type_to_str(_type.typ) + "[" + str(_type.len) + "]" 
+        return "[" + str(_type.len) + "] " + type_to_str(_type.typ) 
     elif isinstance(_type, Struct):
         return _type.name
     elif isinstance(_type, VarType):
