@@ -101,7 +101,10 @@ segment readable writeable
     for index, i in enumerate(State.locs_to_include):
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
     for index, i in enumerate(State.string_data):
-        buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
+        if len(i) != 0:
+            buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
+        else:
+            buf += f"str_{index}:\n"
 
     buf += f"""
 {f'mem: rb {Memory.global_offset}' if Memory.global_offset else ''}
