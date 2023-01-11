@@ -46,19 +46,19 @@ def type_check(ops: list[Op], is_main: bool = False):
             if State.config.struct_malloc[0]:
                 State.throw_error("Malloc procedure not found while struct_malloc is enabled")
             else:
-                State.config.struct_malloc[1] = False
+                State.config.config["struct_malloc"] = (State.config.struct_malloc[0], False)
         else:
             proc = State.procs["malloc"]
             if proc.in_stack != [Int()]:
                 if State.config.struct_malloc[0]:
                     State.throw_error("Malloc must take one integer, disable struct_malloc if you don't want language to use malloc")
                 else:
-                    State.config.struct_malloc[1] = False
+                    State.config.config["struct_malloc"] = (State.config.struct_malloc[0], False)
             if proc.out_stack != [Ptr()]:
                 if State.config.struct_malloc[0]:
                     State.throw_error("Malloc must return one pointer, disable struct_malloc if you don't want language to use malloc")
                 else:
-                    State.config.struct_malloc[1] = False
+                    State.config.config["struct_malloc"] = (State.config.struct_malloc[0], False)
         
         if State.config.struct_malloc[1]:
             State.add_proc_use(proc)
