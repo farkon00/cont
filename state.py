@@ -1,7 +1,7 @@
 import sys
 
 from dataclasses import dataclass
-from typing import Generator, Optional, Any
+from typing import List, Tuple, Dict, Set, Optional, Any, Generator
 from enum import Enum, auto
 from functools import reduce
 
@@ -45,20 +45,20 @@ class Memory:
 
 
 class Proc:
-    def __init__(self, name: str, ip: int, in_stack: list[object], out_stack: list[object], block: Block, is_named: bool, owner=None):
+    def __init__(self, name: str, ip: int, in_stack: List[object], out_stack: List[object], block: Block, is_named: bool, owner=None):
 
         self.name: str = name
         self.ip: int = ip
-        self.in_stack: list[object] = in_stack + ([owner] if owner is not None else []) 
-        self.out_stack: list[object] = out_stack
+        self.in_stack: List[object] = in_stack + ([owner] if owner is not None else []) 
+        self.out_stack: List[object] = out_stack
         self.block: Block = block
         self.is_named = is_named
 
-        self.memories: dict[str, Memory] = {}
+        self.memories: Dict[str, Memory] = {}
         self.memory_size : int = 0
-        self.variables : dict[str, object] = {}
+        self.variables : Dict[str, object] = {}
 
-        self.used_procs: set[Proc] = set()
+        self.used_procs: Set[Proc] = set()
         
         if owner is not None:
             owner.typ.add_method(self)
@@ -68,17 +68,17 @@ class Proc:
 
 
 class Struct:
-    def __init__(self, name: str, fields: dict[str, object], fields_types: list[object],
-                 parent: Optional["Struct"], defaults: dict[int, int]):
+    def __init__(self, name: str, fields: Dict[str, object], fields_types: List[object],
+                 parent: Optional["Struct"], defaults: Dict[int, int]):
         self.name: str = name
-        self.fields: dict[str, object] = {**fields, **(parent.fields if parent else {})}
-        self.fields_types: list[object] = [*fields_types, *(parent.fields_types if parent else {})]
+        self.fields: Dict[str, object] = {**fields, **(parent.fields if parent else {})}
+        self.fields_types: List[object] = [*fields_types, *(parent.fields_types if parent else {})]
         self.is_unpackable: bool = State.is_unpack
-        self.methods: dict[str, Proc] = {} if parent is None else parent.methods.copy()
-        self.parent: "Struct" | None = parent
-        self.children: list["Struct"] = []
-        self.defaults: dict[int, int] = defaults
-        self.static_methods: dict[str, Proc] = {}
+        self.methods: Dict[str, Proc] = {} if parent is None else parent.methods.copy()
+        self.parent: Optional["Struct"] = parent
+        self.children: List["Struct"] = []
+        self.defaults: Dict[int, int] = defaults
+        self.static_methods: Dict[str, Proc] = {}
 
     def add_method(self, method: Proc):
         self.methods[method.name] = method
@@ -90,7 +90,7 @@ class Struct:
             return False
         if self is other:
             return True
-        curr: Struct | None = self
+        curr: Optional[Struct] = self
         while curr is not None:
             curr = curr.parent
             if curr is other:
@@ -123,50 +123,50 @@ class StateSaver:
 class State:
     config: Any = None
 
-    block_stack: list[Block] = []
-    route_stack: list[tuple[str, list[type]]] = []
+    block_stack: List[Block] = []
+    route_stack: List[Tuple[str, List[type]]] = []
     bind_stack: list = []
-    do_stack: list[list[Op]] = []
+    do_stack: List[List[Op]] = []
     bind_stack_size: int = 0
     compile_ifs_opened: int = 0
     false_compile_ifs: int = 0
 
-    memories: dict[str, Memory] = {}
-    variables: dict[str, object] = {} 
-    procs: dict[str, Proc] = {}
-    structures: dict[str, Struct] = {}
-    constants: dict[str, int] = {}
-    enums: dict[str, list[str]] = {}
-    var_type_scopes: list[dict[str, "VarType"]] = [] # type: ignore
+    memories: Dict[str, Memory] = {}
+    variables: Dict[str, object] = {} 
+    procs: Dict[str, Proc] = {}
+    structures: Dict[str, Struct] = {}
+    constants: Dict[str, int] = {}
+    enums: Dict[str, List[str]] = {}
+    var_type_scopes: List[Dict[str, "VarType"]] = [] # type: ignore
 
-    used_procs: set[Proc] = set()
-    included_files: list[str] = []
-    runtimed_types: set[object] = set()
+    used_procs: Set[Proc] = set()
+    included_files: List[str] = []
+    runtimed_types: Set[object] = set()
     curr_type_id: int = 3
 
-    string_data: list[bytes] = [] 
-    locs_to_include: list[str] = []
+    string_data: List[bytes] = [] 
+    locs_to_include: List[str] = []
 
     tokens: Generator = (i for i in ()) # type: ignore
-    tokens_queue: list[tuple[str, str]] = []
-    ops_by_ips: list[Op] = []
+    tokens_queue: List[Tuple[str, str]] = []
+    ops_by_ips: List[Op] = []
 
     is_unpack = False
     is_init = False
     is_static = False
     is_named = False
 
-    owner: Struct | None = None
+    owner: Optional[Struct] = None
 
     loc: str = ""
     filename: str = ""
 
     current_ip: int = -1
-    current_proc: Proc | None = None
+    current_proc: Optional[Proc] = None
 
     dir: str = ""
 
-    UNAVAILABLE_NAMES: list[str] = [
+    UNAVAILABLE_NAMES: List[str] = [
         "if", "else", "end", "while", "proc", "bind", 
         *["syscall" + str(i) for i in range(7)], 
         "+", "-", "*", "div", "dup", "drop", "swap", "rot",
@@ -174,24 +174,24 @@ class State:
         "@8"
     ]
 
-    DUNDER_METHODS: list[str] = [
+    DUNDER_METHODS: List[str] = [
         "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__",
     ]
-    NOT_SAME_TYPE_DUNDER_METHODS: list[str] = [
+    NOT_SAME_TYPE_DUNDER_METHODS: List[str] = [
         "__index__", "__index_ptr__"
     ]
 
-    TYPE_STRUCTS: list[str] = [
+    TYPE_STRUCTS: List[str] = [
         "Type", "PtrType", "ArrayType", "Struct"
     ] 
-    TYPE_IDS: dict[str, int] = {
+    TYPE_IDS: Dict[str, int] = {
         "int" : 0,
         "ptr" : 1,
         "array" : 2,
         "addr" : 3,
     } 
 
-    def var_types() -> dict[str, "VarType"]: # type: ignore
+    def var_types() -> Dict[str, "VarType"]: # type: ignore
         return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
 
     @staticmethod
@@ -201,7 +201,7 @@ class State:
         return State.current_ip
 
     @staticmethod
-    def check_name(token: tuple[str, str], error="procedure"):
+    def check_name(token: Tuple[str, str], error="procedure"):
         if token[0] in State.procs or token[0] in State.memories or\
            token[0] in State.constants or token[0] in State.structures or\
            token[0] in State.enums:

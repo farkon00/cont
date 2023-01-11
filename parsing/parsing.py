@@ -1,6 +1,6 @@
 import os
 
-from typing import Iterable
+from typing import List, Tuple, Dict, Union, Iterable
 
 from compile_eval.compile_eval import evaluate_block
 from type_checking.types import *
@@ -43,7 +43,7 @@ assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
 assert len(OpType) == 40, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
 
-def safe_next_token(exception: str = "") -> tuple[str, str]:
+def safe_next_token(exception: str = "") -> Tuple[str, str]:
     try:
         token = next(State.tokens)
         State.loc = token[1]
@@ -55,7 +55,7 @@ def safe_next_token(exception: str = "") -> tuple[str, str]:
 
     return token
 
-def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], str]:
+def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], str]:
     try:
         proc_token = next(State.tokens)
     except StopIteration:
@@ -67,12 +67,12 @@ def next_proc_contract_token(name: tuple[str, str]) -> tuple[tuple[str, str], st
     return proc_token, proc_token_value
 
 def parse_proc_head():
-    first_token: tuple[str, str] = next(State.tokens)
-    in_types: list[object] = []
-    out_types: list[object] = []
-    names: list[str] = []
-    owner: Ptr | None = None if State.owner is None or State.is_static else Ptr(State.owner) 
-    var_types_scope: dict[str, VarType] = {}
+    first_token: Tuple[str, str] = next(State.tokens)
+    in_types: List[object] = []
+    out_types: List[object] = []
+    names: List[str] = []
+    owner: Optional[Ptr] = None if State.owner is None or State.is_static else Ptr(State.owner) 
+    var_types_scope: Dict[str, VarType] = {}
     State.var_type_scopes.append(var_types_scope)
 
     if State.current_proc is not None:
@@ -189,7 +189,7 @@ def parse_proc_head():
         return [op, Op(OpType.BIND, len(names))]
     return op
 
-def parse_struct_begining() -> tuple[Optional[Struct], tuple[str, str]]:
+def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
     first_token = next(State.tokens)
     parent = None
     if first_token[0].startswith("(") and first_token[0].endswith(")"):
@@ -205,7 +205,7 @@ def parse_struct_begining() -> tuple[Optional[Struct], tuple[str, str]]:
 
     return parent, name
 
-def parse_struct_default(field_type: Any, started_proc: bool, static_started: bool, loc: str) -> tuple[str, int]:
+def parse_struct_default(field_type: Any, started_proc: bool, static_started: bool, loc: str) -> Tuple[str, int]:
     if field_type != -1:
         State.loc = f"{State.filename}:{loc}"
         State.throw_error("field name was not defined")
@@ -220,7 +220,7 @@ def parse_struct_default(field_type: Any, started_proc: bool, static_started: bo
     def_value = evaluate_block(def_name[1], "default value")
     return def_name[0], def_value
 
-def parse_struct_proc(struct: Struct, static_started: bool, current_token: tuple[str, str]):
+def parse_struct_proc(struct: Struct, static_started: bool, current_token: Tuple[str, str]):
     State.tokens_queue.append(current_token)
     State.owner = struct
     State.is_static = static_started
@@ -229,8 +229,8 @@ def parse_struct_proc(struct: Struct, static_started: bool, current_token: tuple
     State.is_static = False
     return ops
 
-def register_struct(name: tuple[str, str], fields: dict[str, object], struct_types: list[object],
-                    parent: Optional[Struct], defaults: dict[int, int]):
+def register_struct(name: Tuple[str, str], fields: Dict[str, object], struct_types: List[object],
+                    parent: Optional[Struct], defaults: Dict[int, int]):
     struct = Struct(name[0], fields, struct_types, parent, defaults)
     State.is_unpack = False
     if parent is not None:
@@ -238,14 +238,14 @@ def register_struct(name: tuple[str, str], fields: dict[str, object], struct_typ
     State.structures[name[0]] = struct
     return struct
 
-def parse_struct() -> Op | list[Op] | None:
+def parse_struct() -> Union[Op, List[Op]]:
     parent, name = parse_struct_begining()
     struct = register_struct(name, {}, [], parent, {})
 
     current_token = ("", "")
     field_type: Any = -1
 
-    ops: list[Op] = []
+    ops: List[Op] = []
     started_proc: bool = False
     static_started: bool = False
     while True:
@@ -297,7 +297,7 @@ def parse_struct() -> Op | list[Op] | None:
 
     return ops
 
-def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> list[Op]:
+def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> List[Op]:
     res = []
     parts = token.split(".")
     if allow_var:
@@ -364,6 +364,8 @@ def parse_var():
         else:
             State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
         return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(Op(OpType.AUTO_INIT))), loc=State.loc) if _type.len > 0 else None 
+
+    return []
 
 def parse_end():
     if len(State.block_stack) <= 0:
@@ -441,7 +443,7 @@ def parse_bind():
     State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
     return op
 
-def parse_do(ops: list[Op]):
+def parse_do(ops: List[Op]):
     if len(State.block_stack) <= 0:
         State.throw_error("block for do not found")
     if State.block_stack[-1].type == BlockType.IF:
@@ -492,8 +494,8 @@ def include_file():
 
     return ops
 
-def lex_token(token: str, ops: list[Op]) -> Op | None | list:
-    assert len(OpType) == 40, "Unimplemented type in lex_token"
+def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
+    assert len(OpType) == 40, "Unimplemented type in parse_token"
 
     if State.is_unpack and token != "struct":
         State.throw_error("unpack must be followed by struct")
@@ -567,7 +569,6 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         cond = evaluate_block(State.loc, error="#if condition")
         State.compile_ifs_opened += 1
         State.false_compile_ifs += bool(State.false_compile_ifs) or not cond
-        return []
     
     elif token == "#else":
         if not State.compile_ifs_opened:
@@ -580,7 +581,6 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             State.throw_error("#endif without #if")
         State.compile_ifs_opened -= 1
         State.false_compile_ifs -= bool(State.false_compile_ifs)
-        return []
 
     elif token == "while":
         block = Block(BlockType.WHILE, -1)
@@ -607,7 +607,6 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             Memory.new_memory(name[0], int(size[0]))
         else:
             Memory.new_memory(name[0], State.constants[size[0]])
-        return None
 
     elif token == "var":
         return parse_var()
@@ -617,13 +616,11 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
         State.check_name(name, "memory")
         size = evaluate_block(State.loc)
         Memory.new_memory(name[0], size)
-        return None
 
     elif token == "const":
         name = next(State.tokens)
         State.check_name(name)
         State.constants[name[0]] = evaluate_block(State.loc)
-        return None
 
     elif token == "sizeoftype":
         _type = parse_type(next(State.tokens), "size", False)
@@ -652,7 +649,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
     elif token == "enum":
         name = next(State.tokens)
         State.check_name(name, "enum")
-        values: list[str] = []
+        values: List[str] = []
         while True:
             current_token = next(State.tokens)
             if current_token[0] == "end":
@@ -663,7 +660,6 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
             values.append(current_token[0])
 
         State.enums[name[0]] = values
-        return None
 
     elif token == "asm":
         asm = safe_next_token()[0]
@@ -785,7 +781,7 @@ def lex_token(token: str, ops: list[Op]) -> Op | None | list:
 
     else:
         State.throw_error(f"unknown token: {token}")
-    return None
+    return []
 
 def delete_comments(program: str) -> str:
     while True:
@@ -826,8 +822,8 @@ def tokens(program: str):
             yield (token, f"{i+1}:{j+1}")
             token = ""
 
-def parse_until_end() -> list[Op]:
-    ops: list[Op] = []
+def parse_until_end() -> List[Op]:
+    ops: List[Op] = []
     initial_loc = State.loc
     initial_blocks = len(State.block_stack)
     end = False
@@ -838,7 +834,7 @@ def parse_until_end() -> list[Op]:
         if token == "end" and len(State.block_stack) - 1 == initial_blocks:
             end = True
         State.loc = f"{State.filename}:{loc}"
-        op = lex_token(token, ops)
+        op = parse_token(token, ops)
         
         if isinstance(op, list):
             ops.extend(op)
@@ -853,10 +849,10 @@ def parse_until_end() -> list[Op]:
 
     return ops
 
-def parse_to_ops(program: str, dump_tokens: bool = False) -> list:
+def parse_to_ops(program: str, dump_tokens: bool = False) -> List[Op]:
     saver = StateSaver()
     State.tokens = tokens(program)
-    ops: list[Op] = []
+    ops: List[Op] = []
 
     if dump_tokens:
         print(" ".join([f"'{i[0]}'" for i in State.tokens]))
@@ -866,16 +862,15 @@ def parse_to_ops(program: str, dump_tokens: bool = False) -> list:
         if State.false_compile_ifs and token not in ("#if", "#else", "#endif"):
             continue
         State.loc = f"{State.filename}:{loc}"
-        op = lex_token(token, ops)
+        op = parse_token(token, ops)
         if isinstance(op, list):
             for locating_op in op:
                 if locating_op.loc == "":
                     locating_op.loc = f"{State.filename}:{loc}"
             ops.extend(op)
             continue
-        if op is not None:
-            op.loc = f"{State.filename}:{loc}"
-            ops.append(op)
+        op.loc = f"{State.filename}:{loc}"
+        ops.append(op)
 
     if State.block_stack:
         if State.block_stack[-1].start != -1:

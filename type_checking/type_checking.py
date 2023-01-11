@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import List, Dict, Union, Iterable
 
 from parsing.op import *
 from state import *
@@ -37,7 +37,7 @@ def check_route_stack(stack1: list, stack2: list, error: str = "in different rou
 
         stack1[i] = down_cast(stack1[i], stack2[i])
 
-def type_check(ops: list[Op], is_main: bool = False):
+def type_check(ops: List[Op], is_main: bool = False):
     stack: list = [] 
 
     if is_main and State.config.struct_malloc[1]:
@@ -125,7 +125,7 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
-def match_type_var(typ: object, actual: object) -> dict[int, object]:
+def match_type_var(typ: object, actual: object) -> Dict[int, object]:
     if isinstance(typ, VarType):
         return {id(typ) : actual}
     if isinstance(typ, Ptr) and isinstance(actual, Ptr):
@@ -134,15 +134,15 @@ def match_type_var(typ: object, actual: object) -> dict[int, object]:
         return match_type_var(typ.typ, actual.typ)
     return {}
 
-def get_var_type_values(types: list[object], stack: list[object]) -> dict[int, object]:
-    var_types: dict[int, object] = {}
+def get_var_type_values(types: List[object], stack: List[object]) -> Dict[int, object]:
+    var_types: Dict[int, object] = {}
     if len(types) > len(stack):
         State.throw_error("Not enough elements on the stack")
     for typ, actual in zip(types, stack):
         var_types = {**match_type_var(typ, actual), **var_types}
     return var_types
 
-def get_concrete_type(typ: object, var_types: dict[int, object]) -> object:
+def get_concrete_type(typ: object, var_types: Dict[int, object]) -> object:
     if isinstance(typ, VarType):
         if id(typ) not in var_types:
             State.throw_error(f"Cannot obtain value for type varaible \"{typ.name}\"")
@@ -154,8 +154,8 @@ def get_concrete_type(typ: object, var_types: dict[int, object]) -> object:
     return typ
 
 def process_call(op: Op, stack) -> None:
-    in_types: list[object] = []
-    out_types: list[object] = []
+    in_types: List[object] = []
+    out_types: List[object] = []
     var_types = get_var_type_values(op.operand.in_stack, stack[-len(op.operand.in_stack):])
     for typ in op.operand.in_stack:
         in_types.append(get_concrete_type(typ, var_types))
@@ -164,7 +164,7 @@ def process_call(op: Op, stack) -> None:
     check_stack(stack, in_types)
     stack.extend(out_types)
 
-def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
+def type_check_op(op: Op, stack: list) -> Optional[Union[Op, List[Op]]]:
     assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
@@ -422,9 +422,10 @@ def type_check_op(op: Op, stack: list) -> Op | list[Op] | None:
         pass # This operations are generation thing
     else:
         assert False, f"unknown op type in type_check_op: {op.type.name}"
+
     return None
 
-def type_check_operator(op: Op, stack: list) -> Op | list[Op] | None:
+def type_check_operator(op: Op, stack: list) -> Optional[Union[Op, List[Op]]]:
     assert len(Operator) == 20, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,

@@ -1,3 +1,4 @@
+from typing import List, Set
 from parsing.op import * 
 from type_checking.types import Array, sizeof
 from state import *
@@ -8,7 +9,7 @@ assert len(OpType) == 40, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
-def generate_fasm(ops: list):
+def generate_fasm(ops: List[Op]):
     buf = ""
     buf += f"""
 format ELF64 executable 3
@@ -81,13 +82,13 @@ if State.config.re_NPD else ''
 _start:
 """
 
-    for i in ops:
+    for op in ops:
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
-                if i.type == OpType.ENDPROC:
+                if op.type == OpType.ENDPROC:
                     State.current_proc = None
                 continue
-        buf += generate_op(i)
+        buf += generate_op(op)
 
     buf += f"""
 mov rax, 60
@@ -98,11 +99,11 @@ segment readable writeable
 {'null_ptr_deref_text: db "Null pointer dereference in "' if State.config.re_NPD else ''}
 {generate_fasm_types()}
 """
-    for index, i in enumerate(State.locs_to_include):
-        buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(i, encoding='utf-8')])}, 10\n"
-    for index, i in enumerate(State.string_data):
-        if len(i) != 0:
-            buf += f"str_{index}: db {', '.join([str(j) for j in i])}\n"
+    for index, loc in enumerate(State.locs_to_include):
+        buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(loc, encoding='utf-8')])}, 10\n"
+    for index, string in enumerate(State.string_data):
+        if len(string) != 0:
+            buf += f"str_{index}: db {', '.join([str(j) for j in string])}\n"
         else:
             buf += f"str_{index}:\n"
 
@@ -119,7 +120,7 @@ call_stack: rb {State.config.size_call_stack}
 def generate_fasm_types():
     buf = ""
     queue = State.runtimed_types.copy()
-    generated_types: set[object] = set()
+    generated_types: Set[object] = set()
     while queue:
         typ = queue.pop()
         if typ.text_repr() in generated_types:
@@ -128,7 +129,7 @@ def generate_fasm_types():
         buf += generate_fasm_type(typ, queue, generated_types) + "\n"
     return buf
 
-def generate_fasm_type(typ, queue: set[object], generated_types: set[object]):
+def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
     addr = f"type_{typ.text_repr()}: "
     if isinstance(typ, Int):
         return addr + f"dq {State.TYPE_IDS['int']},8,1"

@@ -46,7 +46,7 @@ def evaluate_token(token: str, stack: list):
         State.throw_error(f"unknown or unavailiable while compile time evaluation token {token}")
 
 def evaluate_block(orig_loc: str, error: str = "memo"):
-    stack: list = []
+    stack: List[int] = []
     while True:
         try:
             token = next(State.tokens)

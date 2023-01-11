@@ -2,7 +2,7 @@
 
 __Cont__ is compiled statically-typed concatenative programming language, that has elements of OOP, written in Python and heavily inspired by [Porth](https://gitlab.com/tsoding/porth).
 
-## Where did name come from
+## Where did the name come from
 From word concatinative. 
 How i came up with that specific word?
 I just mixed beggining of this word and tried to came up with something sounding good.
@@ -83,7 +83,7 @@ init var coords [coords_len] Vector2 // Create array of Vector2 with size coodrs
 ```
 
 ## Structures
-Structures technically support OOP in cont. It doesn't have some really advanced features like interface, generics, but there is moves in that direction like dunder methods or static methods. 
+Structures technically support OOP in cont. It doesn't have some really advanced features like interface, generics, but there is movement in that direction like dunder methods or static methods. 
 
 ```
 struct Vector2

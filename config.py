@@ -2,10 +2,10 @@ import argparse
 import json
 import os
 
-from typing import Any
+from typing import List, Tuple, Dict, Any
 
 class Config:
-    DESCRIPTIONS: dict[str, str] = {
+    DESCRIPTIONS: Dict[str, str] = {
         "program" : "The program to compile and optionally run",
         "run" : "Run program after compilation",
         "dump" : "Dump operations without compilation",
@@ -18,36 +18,36 @@ class Config:
         "error" : "Stderr for program",
     }
 
-    BOOL_OPTIONS: dict[str, tuple[list[str], bool]] = {
+    BOOL_OPTIONS: Dict[str, Tuple[List[str], bool]] = {
         "run" : (["-r", "-run"], False),
         "dump" : (["-d", "-dump"], False),
         "dump_tokens" : (["-dt", "-dump_tokens"], False),
         "dump_tc" : (["-dtc", "-dump_tc"], False),
     }
 
-    REGULAR_OPTIONS: dict[str, list[str]] = {
+    REGULAR_OPTIONS: Dict[str, List[str]] = {
         "out" : ["-o", "--out"],
         "stdout" : ["-stdo", "--stdout"],
         "input" : ["-i", "--input"],
         "error" : ["-e", "--error"],
     }
 
-    CONFIG_BOOL_OPTIONS: dict[str, bool] = {
+    CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
         "re_IOR" : True,
         "re_NPD" : True,
         "o_UPR" : True,
     }
 
-    CONFIG_BOOL_CLEAR_OPTIONS: dict[str, bool] = {
+    CONFIG_BOOL_CLEAR_OPTIONS: Dict[str, bool] = {
         "struct_malloc" : True,
     }
 
-    CONFIG_INT_OPTIONS: dict[str, int] = {
+    CONFIG_INT_OPTIONS: Dict[str, int] = {
         "size_call_stack" : 65536,
         "size_bind_stack" : 8192,
     }
 
-    CHECK_POSITIVE: list[str] = [
+    CHECK_POSITIVE: List[str] = [
         "size_call_stack", "size_bind_stack"
     ]
 
@@ -73,10 +73,10 @@ class Config:
         return args_parser
 
     @property
-    def _valid_keys(self) -> tuple[str, ...]:
+    def _valid_keys(self) -> Tuple[str, ...]:
         return (*self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS, *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS)
 
-    def load_config(self, config_file) -> tuple[dict[str, Any], str]:
+    def load_config(self, config_file) -> Tuple[Dict[str, Any], str]:
         if config_file is None:
             if "cont_build.json" in os.listdir():
                 return self.load_config("cont_build.json")
