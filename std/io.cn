@@ -44,12 +44,8 @@ struct File
   end
 
   nproc __init__ int flags @str:
-    len 1 + malloc
+    len data str_to_nstr
     bind path:
-      // Convert path to null-terminated string 
-      len data path cpy_buf
-      0 path len ptr+ !8
-
       flags path open2
       dup self.check_fd
       !self.fd

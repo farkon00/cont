@@ -56,7 +56,6 @@ end
 
 proc compare int ptr ptr int ptr -> int:
   bind show res exp testlen test:
-    // TODO: nstr_to_str was removed from std
     res nstr_to_str
     exp nstr_to_str swap 2 - swap 1 ptr+
     streq
@@ -68,7 +67,6 @@ proc compare int ptr ptr int ptr -> int:
       end
       1
     else
-      // TODO: nstr_to_str was removed from std
       "\033[1;31mTest failed:⠀" puts
       testlen test puts
       "\033[0m\n===========================\n" puts

@@ -221,6 +221,18 @@ proc null_str_len ptr -> int:
   end drop
 end
 
+proc nstr_to_str ptr -> @str:
+  dup null_str_len swap
+end
+
+nproc str_to_nstr @str -> ptr:
+  len 1 + malloc
+  bind buf:
+    len data buf memcpy
+    0 buf len ptr+ !8
+    buf
+  end
+end
 
 proc streq @str @str -> int:
   bind len data len2 data2:
