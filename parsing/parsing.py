@@ -68,8 +68,8 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
 
 def parse_proc_head():
     first_token: Tuple[str, str] = next(State.tokens)
-    in_types: List[object] = []
-    out_types: List[object] = []
+    in_types: List[Type] = []
+    out_types: List[Type] = []
     names: List[str] = []
     owner: Optional[Ptr] = None if State.owner is None or State.is_static else Ptr(State.owner) 
     var_types_scope: Dict[str, VarType] = {}
@@ -231,7 +231,7 @@ def parse_struct_proc(struct: Struct, static_started: bool, current_token: Tuple
 
 def register_struct(name: Tuple[str, str], fields: Dict[str, object], struct_types: List[object],
                     parent: Optional[Struct], defaults: Dict[int, int]):
-    struct = Struct(name[0], fields, struct_types, parent, defaults)
+    struct = Struct(name[0], fields, struct_types, parent, defaults, State.is_unpack)
     State.is_unpack = False
     if parent is not None:
         parent.children.append(struct)

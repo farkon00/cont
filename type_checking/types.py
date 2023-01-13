@@ -1,27 +1,33 @@
-from typing import Tuple, Dict, Optional
+from abc import ABC, abstractmethod
+from typing import List, Tuple, Dict, Optional
 
-from state import State, Struct
+from state import State, Proc
 
-class Ptr:
-    def __init__(self, typ = None):
+class Type(ABC):
+    @abstractmethod
+    def __eq__(self, other) -> bool: ...
+
+    @abstractmethod
+    def text_repr(self) -> str: ...
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
+class Ptr(Type):
+    def __init__(self, typ: Optional[Type] = None):
         self.typ = typ
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Ptr):
             return self.typ == other.typ or other.typ is None or self.typ is None 
         return False
-        
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
 
     def text_repr(self) -> str:
         return f"ptr{'_' + self.typ.text_repr() if self.typ is not None else ''}"
 
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
 
-class Array:
-    def __init__(self, len=-1, typ=None):
+class Array(Type):
+    def __init__(self, len: int = -1, typ: Optional[Type] = None):
         self.len = len
         self.typ = typ
 
@@ -30,55 +36,71 @@ class Array:
             return (self.typ == other.typ and (self.len == other.len or -1 in (self.len, other.len)))\
              or other.typ is None or self.typ is None 
         return False
-        
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
 
     def text_repr(self) -> str:
         assert self.typ is not None
         return f"arr_{self.typ.text_repr()}_{self.len}"
 
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
-
-class Int:
+class Int(Type):
     def __eq__(self, other) -> bool:
         return isinstance(other, Int) or other is None
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
 
     def text_repr(self) -> str:
         return f"int"
 
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
 
-class Addr:
+class Addr(Type):
     def __eq__(self, other) -> bool:
         return isinstance(other, Addr) or other is None
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
 
     def text_repr(self) -> str:
         return f"addr"
 
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
 
-class VarType:
+class VarType(Type):
     def __init__(self, name: str):
         self.name = name
 
     def __eq__(self, other) -> bool:
         return self is other
-        
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
 
-    def __hash__(self):
+    def text_repr(self) -> str:
         State.throw_error("Can't get variable type runtime representation")
+        return "unreachable"
+
+class Struct(Type):
+    def __init__(self, name: str, fields: Dict[str, object], fields_types: List[object],
+                 parent: Optional["Struct"], defaults: Dict[int, int], is_unpack: bool):
+        self.name: str = name
+        self.fields: Dict[str, object] = {**fields, **(parent.fields if parent else {})}
+        self.fields_types: List[object] = [*fields_types, *(parent.fields_types if parent else {})]
+        self.is_unpackable: bool = is_unpack
+        self.methods: Dict[str, Proc] = {} if parent is None else parent.methods.copy()
+        self.parent: Optional["Struct"] = parent
+        self.children: List["Struct"] = []
+        self.defaults: Dict[int, int] = defaults
+        self.static_methods: Dict[str, Proc] = {}
+
+    def add_method(self, method: Proc):
+        self.methods[method.name] = method
+        for i in self.children:
+            i.add_method(method)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Struct):
+            return False
+        if self is other:
+            return True
+        curr: Optional[Struct] = self
+        while curr is not None:
+            curr = curr.parent
+            if curr is other:
+                return True
+        return False
+
+    def text_repr(self) -> str:
+        return f"struct_{id(self)}"
+
 
 def type_to_str(_type):
     """

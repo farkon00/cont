@@ -56,7 +56,7 @@ class Proc:
 
         self.memories: Dict[str, Memory] = {}
         self.memory_size : int = 0
-        self.variables : Dict[str, object] = {}
+        self.variables : Dict[str, "Type"] = {} # type: ignore
 
         self.used_procs: Set[Proc] = set()
         
@@ -65,46 +65,6 @@ class Proc:
 
     def __hash__(self) -> int:
         return id(self)
-
-
-class Struct:
-    def __init__(self, name: str, fields: Dict[str, object], fields_types: List[object],
-                 parent: Optional["Struct"], defaults: Dict[int, int]):
-        self.name: str = name
-        self.fields: Dict[str, object] = {**fields, **(parent.fields if parent else {})}
-        self.fields_types: List[object] = [*fields_types, *(parent.fields_types if parent else {})]
-        self.is_unpackable: bool = State.is_unpack
-        self.methods: Dict[str, Proc] = {} if parent is None else parent.methods.copy()
-        self.parent: Optional["Struct"] = parent
-        self.children: List["Struct"] = []
-        self.defaults: Dict[int, int] = defaults
-        self.static_methods: Dict[str, Proc] = {}
-
-    def add_method(self, method: Proc):
-        self.methods[method.name] = method
-        for i in self.children:
-            i.add_method(method)
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Struct):
-            return False
-        if self is other:
-            return True
-        curr: Optional[Struct] = self
-        while curr is not None:
-            curr = curr.parent
-            if curr is other:
-                return True
-        return False
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
-
-    def text_repr(self) -> str:
-        return f"struct_{id(self)}"
-
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
 
 
 class StateSaver:
@@ -124,7 +84,7 @@ class State:
     config: Any = None
 
     block_stack: List[Block] = []
-    route_stack: List[Tuple[str, List[type]]] = []
+    route_stack: List[Tuple[str, List["Type"]]] = [] # type: ignore
     bind_stack: list = []
     do_stack: List[List[Op]] = []
     bind_stack_size: int = 0
@@ -132,16 +92,16 @@ class State:
     false_compile_ifs: int = 0
 
     memories: Dict[str, Memory] = {}
-    variables: Dict[str, object] = {} 
+    variables: Dict[str, "Type"] = {} # type: ignore
     procs: Dict[str, Proc] = {}
-    structures: Dict[str, Struct] = {}
+    structures: Dict[str, "Struct"] = {} # type: ignore
     constants: Dict[str, int] = {}
     enums: Dict[str, List[str]] = {}
     var_type_scopes: List[Dict[str, "VarType"]] = [] # type: ignore
 
     used_procs: Set[Proc] = set()
     included_files: List[str] = []
-    runtimed_types: Set[object] = set()
+    runtimed_types: Set["Type"] = set() # type: ignore
     curr_type_id: int = 3
 
     string_data: List[bytes] = [] 
@@ -156,7 +116,7 @@ class State:
     is_static = False
     is_named = False
 
-    owner: Optional[Struct] = None
+    owner: Optional["Struct"] = None # type: ignore
 
     loc: str = ""
     filename: str = ""

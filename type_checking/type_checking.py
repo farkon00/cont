@@ -9,7 +9,7 @@ assert len(Operator) == 20, "Unimplemented operator in type_checking.py"
 assert len(OpType) == 40, "Unimplemented type in type_checking.py"
 assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
-def check_stack(stack: list, expected: list, arg=0):
+def check_stack(stack: List[Type], expected: List[Type], arg=0):
     if len(stack) < len(expected):
         State.throw_error("stack is too short")
     for i in range(len(expected)):
@@ -20,7 +20,7 @@ def check_stack(stack: list, expected: list, arg=0):
             sys.stderr.write(f"\033[1;34mArgument {i+1+arg}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n")
             exit(1)
 
-def check_route_stack(stack1: list, stack2: list, error: str = "in different routes of if-end"):
+def check_route_stack(stack1: List[Type], stack2: List[Type], error: str = "in different routes of if-end"):
     if len(stack1) > len(stack2):
         State.throw_error(f"stack has extra elements {error}", False)
         sys.stderr.write(f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}\n")
@@ -83,7 +83,7 @@ def type_check(ops: List[Op], is_main: bool = False):
     
     return stack
 
-def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
+def process_for_in(op: Op, stack: List[Type], iter_stack: list) -> list:
     type_ = iter_stack[0]
     check_stack(iter_stack, [Ptr(Array())])
     type_ = type_.typ
@@ -105,7 +105,7 @@ def process_for_in(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
-def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
+def process_for_until(op: Op, stack: List[Type], iter_stack: list) -> list:
     check_stack(iter_stack, [Ptr()])
     State.route_stack.append(("for", stack.copy()))
     State.bind_stack.extend((Ptr(), Int()))
@@ -125,7 +125,9 @@ def process_for_until(op: Op, stack: list, iter_stack: list) -> list:
         Op(OpType.BIND, 2, loc=op.loc)
     ]
 
-def match_type_var(typ: object, actual: object) -> Dict[int, object]:
+def match_type_var(typ: Optional[Type], actual: Optional[Type]) -> Dict[int, Type]:
+    if typ is None or actual is None:
+        return {}
     if isinstance(typ, VarType):
         return {id(typ) : actual}
     if isinstance(typ, Ptr) and isinstance(actual, Ptr):
@@ -134,26 +136,26 @@ def match_type_var(typ: object, actual: object) -> Dict[int, object]:
         return match_type_var(typ.typ, actual.typ)
     return {}
 
-def get_var_type_values(types: List[object], stack: List[object]) -> Dict[int, object]:
-    var_types: Dict[int, object] = {}
+def get_var_type_values(types: List[Type], stack: List[Type]) -> Dict[int, Type]:
+    var_types: Dict[int, Type] = {}
     if len(types) > len(stack):
         State.throw_error("Not enough elements on the stack")
     for typ, actual in zip(types, stack):
         var_types = {**match_type_var(typ, actual), **var_types}
     return var_types
 
-def get_concrete_type(typ: object, var_types: Dict[int, object]) -> object:
+def get_concrete_type(typ: Type, var_types: Dict[int, Type]) -> Type:
     if isinstance(typ, VarType):
         if id(typ) not in var_types:
             State.throw_error(f"Cannot obtain value for type varaible \"{typ.name}\"")
         return var_types[id(typ)]
     if isinstance(typ, Ptr):
-        return Ptr(get_concrete_type(typ.typ, var_types))
+        return Ptr(get_concrete_type(typ.typ, var_types)) # type: ignore
     if isinstance(typ, Array):
-        return Array(typ.len, get_concrete_type(typ.typ, var_types))
+        return Array(typ.len, get_concrete_type(typ.typ, var_types)) # type: ignore
     return typ
 
-def process_call(op: Op, stack) -> None:
+def process_call(op: Op, stack: List[Type]) -> None:
     in_types: List[object] = []
     out_types: List[object] = []
     var_types = get_var_type_values(op.operand.in_stack, stack[-len(op.operand.in_stack):])
@@ -164,7 +166,7 @@ def process_call(op: Op, stack) -> None:
     check_stack(stack, in_types)
     stack.extend(out_types)
 
-def type_check_op(op: Op, stack: list) -> Optional[Union[Op, List[Op]]]:
+def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
     assert len(OpType) == 40, "Unimplemented type in type_check_op"
 
     State.loc = op.loc
@@ -425,7 +427,7 @@ def type_check_op(op: Op, stack: list) -> Optional[Union[Op, List[Op]]]:
 
     return None
 
-def type_check_operator(op: Op, stack: list) -> Optional[Union[Op, List[Op]]]:
+def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
     assert len(Operator) == 20, "Unimplemented operator in type_check_operator"
 
     if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL, Operator.GT, Operator.LT,

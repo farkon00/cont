@@ -469,7 +469,10 @@ sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
         if State.current_proc is None:
             var: Array = State.variables[op.operand[0].name] # type: ignore
         else:
-            var = State.current_proc.variables[op.operand[0].name] # type: ignore
+            var: Array = State.current_proc.variables[op.operand[0].name] # type: ignore
+        assert hasattr(var.typ, "typ") 
+        assert var.typ is not None 
+        assert var.typ.typ is not None
         return comment + \
 f"""
 ;; loop
