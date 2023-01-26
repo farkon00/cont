@@ -1,5 +1,6 @@
 import sys
 import os
+import stat
 import subprocess
 
 from state import State
@@ -52,6 +53,7 @@ def main():
         f.write(generate_fasm(ops))
 
     subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
+    os.chmod(out, os.stat(out).st_mode | stat.S_IEXEC) # Give execution permission to the file
 
     if config.run:
         subprocess.run([f"./{out}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr)
