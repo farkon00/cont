@@ -8,12 +8,20 @@ How i came up with that specific word?
 I just mixed beggining of this word and tried to came up with something sounding good.
 
 # Quick Start
-```console
-$ python -V
+You can learn the language by using ["Learn cont" manual](https://github.com/farkon00/cont/blob/master/learn-cont/00-learn-cont.md)
+
+```bash
+$ python3 -V
  Python >=3.10
+
 $ git clone https://github.com/farkon00/cont.git
 $ cd cont
-$ python cont.py <source_code>.cn -r
+
+$ sudo apt install fasm # Install fasm with your package manager
+$ python3 -m pip install pytest
+$ pytest test.py
+
+$ python3 cont.py <source_code>.cn -r
 ```
 
 # Examples
