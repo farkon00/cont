@@ -30,6 +30,11 @@ def test(test_name):
         exp_stderr = parts[3]
     else:
         exp_stderr = ""
+    
+    fasm = subprocess.getstatusoutput('fasm -v')
+
+    if fasm[0] == 0:
+        print("Please install Flat Assembler (Fasm)")
 
     subprocess.run(["python", "cont.py", "tests/temp/code.cn", "-i", "tests/temp/stdin", "-e",
                     f"tests/results/{test_name}_stderr", "--stdout", f"tests/results/{test_name}_stdout", "-r"])
