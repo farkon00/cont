@@ -1,16 +1,19 @@
 include std.cn
 
-0 1 50 
-1 while
+0 print 1 print
+
+0 1 48 
+while dup 0 > do
   bind prev2 prev num:
     prev
     prev2 prev +
     dup print
     num 1 -
-    dup 0 >
   end
 end
 :
+0
+1
 1
 2
 3
@@ -59,5 +62,3 @@ end
 2971215073
 4807526976
 7778742049
-12586269025
-20365011074

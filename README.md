@@ -43,9 +43,9 @@ include std.cn
 0 1 48 
 while dup 0 > do
   bind prev2 prev num:
-    prev // prev
-    prev2 prev + // prev next
-    dup print // prev next
+    prev
+    prev2 prev +
+    dup print
     num 1 -
   end
 end
