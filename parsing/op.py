@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+
 class OpType(Enum):
     PUSH_INT = auto()
     PUSH_MEMORY = auto()
@@ -42,6 +43,7 @@ class OpType(Enum):
     ASM = auto()
     OPERATOR = auto()
 
+
 class Operator(Enum):
     ADD = auto()
     SUB = auto()
@@ -62,12 +64,13 @@ class Operator(Enum):
     STRONG_STORE = auto()
     STORE8 = auto()
     LOAD = auto()
-    LOAD8 = auto() 
+    LOAD8 = auto()
+
 
 class Op:
     def __init__(self, type: OpType, operand=None, loc: str = "", loc_id=-1) -> None:
         self.type: OpType = type
-        self.operand = operand 
+        self.operand = operand
         self.loc: str = loc
         self.loc_id: int = loc_id
         self.compiled: bool = True

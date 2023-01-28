@@ -4,6 +4,7 @@ import os
 
 from typing import List, Tuple, Dict, Any
 
+
 class Config:
     DESCRIPTIONS: Dict[str, str] = {
         "program" : "The program to compile and optionally run",
@@ -47,9 +48,7 @@ class Config:
         "size_bind_stack" : 8192,
     }
 
-    CHECK_POSITIVE: List[str] = [
-        "size_call_stack", "size_bind_stack"
-    ]
+    CHECK_POSITIVE: List[str] = ["size_call_stack", "size_bind_stack"]
 
     def __init__(self, argv):
         self.args = self.setup_args_parser().parse_args(argv[1:])
@@ -62,19 +61,38 @@ class Config:
         args_parser = argparse.ArgumentParser()
 
         args_parser.add_argument("program", help=self.DESCRIPTIONS["program"])
-        args_parser.add_argument("-c", "--config", default=None, dest="config", help=self.DESCRIPTIONS["config"])
+        args_parser.add_argument(
+            "-c",
+            "--config",
+            default=None,
+            dest="config",
+            help=self.DESCRIPTIONS["config"],
+        )
 
         for name, i in self.BOOL_OPTIONS.items():
-            args_parser.add_argument(*i[0], action="store_true", default=i[1], dest=name, help=self.DESCRIPTIONS[name])
+            args_parser.add_argument(
+                *i[0],
+                action="store_true",
+                default=i[1],
+                dest=name,
+                help=self.DESCRIPTIONS[name],
+            )
 
         for name, args in self.REGULAR_OPTIONS.items():
-            args_parser.add_argument(*args, default=None, dest=name, help=self.DESCRIPTIONS[name])
+            args_parser.add_argument(
+                *args, default=None, dest=name, help=self.DESCRIPTIONS[name]
+            )
 
         return args_parser
 
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
-        return (*self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS, *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS)
+        return (
+            *self.REGULAR_OPTIONS,
+            *self.CONFIG_BOOL_OPTIONS,
+            *self.CONFIG_INT_OPTIONS,
+            *self.CONFIG_BOOL_CLEAR_OPTIONS,
+        )
 
     def load_config(self, config_file) -> Tuple[Dict[str, Any], str]:
         if config_file is None:
@@ -87,18 +105,44 @@ class Config:
 
     def define_properties(self):
         for name in self.BOOL_OPTIONS:
-            setattr(self.__class__, name, property(fget=lambda self, name=name : getattr(self.args, name)))
+            setattr(
+                self.__class__, name,
+                property(fget=lambda self, name=name: getattr(self.args, name)),
+            )
 
         for name in self.REGULAR_OPTIONS:
-            setattr(self.__class__, name, property(fget=lambda self, name=name : \
-                self.config.get(name, getattr(self.args, name))))
+            setattr(
+                self.__class__, name,
+                property(
+                    fget=lambda self, name=name: self.config.get(
+                        name, getattr(self.args, name)
+                    )
+                ),
+            )
 
-        for name, default in {**self.CONFIG_BOOL_OPTIONS, **self.CONFIG_INT_OPTIONS}.items():
-            setattr(self.__class__, name, property(fget=lambda self, name=name, default=default : self.config.get(name, default)))
+        for name, default in {
+            **self.CONFIG_BOOL_OPTIONS,
+            **self.CONFIG_INT_OPTIONS,
+        }.items():
+            setattr(
+                self.__class__, name,
+                property(
+                    fget=lambda self, name=name, default=default: self.config.get(
+                        name, default
+                    )
+                ),
+            )
 
         for name, default in self.CONFIG_BOOL_CLEAR_OPTIONS.items():
-            setattr(self.__class__, name, property(fget=lambda self, name=name, default=default :\
-                (name in self.config, self.config.get(name, default))))
+            setattr(
+                self.__class__, name,
+                property(
+                    fget=lambda self, name=name, default=default: (
+                        name in self.config,
+                        self.config.get(name, default),
+                    )
+                ),
+            )
 
     def _check_key_validity(self, key: str) -> bool:
         return key in self._valid_keys
@@ -106,16 +150,19 @@ class Config:
     def _validate(self, config_file: str):
         for key in self.config:
             if not self._check_key_validity(key):
-                print(f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring")   
+                print(
+                    f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring"
+                )
 
         for field in self.CHECK_POSITIVE:
             if getattr(self, field) <= 0:
                 print(
-                    f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default " +\
-                     str(self.CONFIG_INT_OPTIONS[field])
+                    f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default "
+                    + str(self.CONFIG_INT_OPTIONS[field])
                 )
                 del self.config[field]
                 assert getattr(self, field) > 0, "Wrong default value for field"
 
     @property
-    def program(self) -> str: return self.args.program
+    def program(self) -> str:
+        return self.args.program

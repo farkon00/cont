@@ -13,11 +13,12 @@ try:
 except FileExistsError:
     tests.remove("temp")
 
+
 @pytest.mark.parametrize("test_name", tests)
 def test(test_name):
     with open(f"tests/{test_name}", "r") as f:
         test = f.read()
-    
+
     parts = test.split("\n:\n")
 
     with open("tests/temp/code.cn", "w") as f:
@@ -30,14 +31,26 @@ def test(test_name):
         exp_stderr = parts[3]
     else:
         exp_stderr = ""
-    
-    fasm = subprocess.getstatusoutput('fasm -v')
+
+    fasm = subprocess.getstatusoutput("fasm -v")
 
     if fasm[0] == 0:
         print("Please install Flat Assembler (Fasm)")
 
-    subprocess.run(["python", "cont.py", "tests/temp/code.cn", "-i", "tests/temp/stdin", "-e",
-                    f"tests/results/{test_name}_stderr", "--stdout", f"tests/results/{test_name}_stdout", "-r"])
+    subprocess.run(
+        [
+            "python",
+            "cont.py",
+            "tests/temp/code.cn",
+            "-i",
+            "tests/temp/stdin",
+            "-e",
+            f"tests/results/{test_name}_stderr",
+            "--stdout",
+            f"tests/results/{test_name}_stdout",
+            "-r",
+        ]
+    )
 
     with open(f"tests/results/{test_name}_stdout", "r") as f:
         stdout = f.read()

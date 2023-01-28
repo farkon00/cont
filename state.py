@@ -39,27 +39,38 @@ class Memory:
             State.memories[name] = mem
         else:
             mem = Memory(name, State.current_proc.memory_size)
-            State.current_proc.memory_size += size + (8 - size % 8 if size % 8 != 0 else 0)
+            State.current_proc.memory_size += size + (
+                8 - size % 8 if size % 8 != 0 else 0
+            )
             State.current_proc.memories[name] = mem
         return mem
 
 
 class Proc:
-    def __init__(self, name: str, ip: int, in_stack: List[object], out_stack: List[object], block: Block, is_named: bool, owner=None):
+    def __init__(
+        self,
+        name: str,
+        ip: int,
+        in_stack: List[object],
+        out_stack: List[object],
+        block: Block,
+        is_named: bool,
+        owner=None,
+    ):
 
         self.name: str = name
         self.ip: int = ip
-        self.in_stack: List[object] = in_stack + ([owner] if owner is not None else []) 
+        self.in_stack: List[object] = in_stack + ([owner] if owner is not None else [])
         self.out_stack: List[object] = out_stack
         self.block: Block = block
         self.is_named = is_named
 
         self.memories: Dict[str, Memory] = {}
-        self.memory_size : int = 0
-        self.variables : Dict[str, "Type"] = {} # type: ignore
+        self.memory_size: int = 0
+        self.variables: Dict[str, "Type"] = {}  # type: ignore
 
         self.used_procs: Set[Proc] = set()
-        
+
         if owner is not None:
             owner.typ.add_method(self)
 
@@ -80,11 +91,12 @@ class StateSaver:
         State.tokens_queue = self.tokens_queue
         State.loc = self.loc
 
+
 class State:
     config: Any = None
 
     block_stack: List[Block] = []
-    route_stack: List[Tuple[str, List["Type"]]] = [] # type: ignore
+    route_stack: List[Tuple[str, List["Type"]]] = []  # type: ignore
     bind_stack: list = []
     do_stack: List[List[Op]] = []
     bind_stack_size: int = 0
@@ -92,22 +104,22 @@ class State:
     false_compile_ifs: int = 0
 
     memories: Dict[str, Memory] = {}
-    variables: Dict[str, "Type"] = {} # type: ignore
+    variables: Dict[str, "Type"] = {}  # type: ignore
     procs: Dict[str, Proc] = {}
-    structures: Dict[str, "Struct"] = {} # type: ignore
+    structures: Dict[str, "Struct"] = {}  # type: ignore
     constants: Dict[str, int] = {}
     enums: Dict[str, List[str]] = {}
-    var_type_scopes: List[Dict[str, "VarType"]] = [] # type: ignore
+    var_type_scopes: List[Dict[str, "VarType"]] = []  # type: ignore
 
     used_procs: Set[Proc] = set()
     included_files: List[str] = []
-    runtimed_types: Set["Type"] = set() # type: ignore
+    runtimed_types: Set["Type"] = set()  # type: ignore
     curr_type_id: int = 3
 
-    string_data: List[bytes] = [] 
+    string_data: List[bytes] = []
     locs_to_include: List[str] = []
 
-    tokens: Generator = (i for i in ()) # type: ignore
+    tokens: Generator = (i for i in ())  # type: ignore
     tokens_queue: List[Tuple[str, str]] = []
     ops_by_ips: List[Op] = []
 
@@ -116,7 +128,7 @@ class State:
     is_static = False
     is_named = False
 
-    owner: Optional["Struct"] = None # type: ignore
+    owner: Optional["Struct"] = None  # type: ignore
 
     loc: str = ""
     filename: str = ""
@@ -135,23 +147,19 @@ class State:
     ]
 
     DUNDER_METHODS: List[str] = [
-        "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__",
+        "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__"
     ]
-    NOT_SAME_TYPE_DUNDER_METHODS: List[str] = [
-        "__index__", "__index_ptr__"
-    ]
+    NOT_SAME_TYPE_DUNDER_METHODS: List[str] = ["__index__", "__index_ptr__"]
 
-    TYPE_STRUCTS: List[str] = [
-        "Type", "PtrType", "ArrayType", "Struct"
-    ] 
+    TYPE_STRUCTS: List[str] = ["Type", "PtrType", "ArrayType", "Struct"]
     TYPE_IDS: Dict[str, int] = {
         "int" : 0,
         "ptr" : 1,
         "array" : 2,
         "addr" : 3,
-    } 
+    }
 
-    def var_types() -> Dict[str, "VarType"]: # type: ignore
+    def var_types() -> Dict[str, "VarType"]:  # type: ignore
         return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
 
     @staticmethod
@@ -162,14 +170,13 @@ class State:
 
     @staticmethod
     def check_name(token: Tuple[str, str], error="procedure"):
-        if token[0] in State.procs or token[0] in State.memories or\
-           token[0] in State.constants or token[0] in State.structures or\
-           token[0] in State.enums:
+        if token[0] in [*State.procs, *State.memories, 
+            *State.constants, *State.structures, *State.enums]:
             State.loc = token[1]
-            State.throw_error(f"name for {error} \"{token[0]}\" is already taken")
+            State.throw_error(f'name for {error} "{token[0]}" is already taken')
         if token[0] in State.UNAVAILABLE_NAMES:
             State.loc = token[1]
-            State.throw_error(f"name for {error} \"{token[0]}\" is unavailable")
+            State.throw_error(f'name for {error} "{token[0]}" is unavailable')
 
     @staticmethod
     def get_proc_by_block(block: Block):
@@ -204,7 +211,6 @@ class State:
                 continue
             State.used_procs.add(i)
             State._compute_used_procs(i)
-
 
     @staticmethod
     def is_hex(token: str) -> bool:
