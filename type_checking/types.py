@@ -3,15 +3,19 @@ from typing import List, Tuple, Dict, Optional
 
 from state import State, Proc
 
+
 class Type(ABC):
     @abstractmethod
-    def __eq__(self, other) -> bool: ...
+    def __eq__(self, other) -> bool:
+        ...
 
     @abstractmethod
-    def text_repr(self) -> str: ...
+    def text_repr(self) -> str:
+        ...
 
     def __hash__(self) -> int:
         return hash(self.text_repr())
+
 
 class Ptr(Type):
     def __init__(self, typ: Optional[Type] = None):
@@ -19,7 +23,7 @@ class Ptr(Type):
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Ptr):
-            return self.typ == other.typ or other.typ is None or self.typ is None 
+            return self.typ == other.typ or other.typ is None or self.typ is None
         return False
 
     def text_repr(self) -> str:
@@ -33,13 +37,20 @@ class Array(Type):
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Array):
-            return (self.typ == other.typ and (self.len == other.len or -1 in (self.len, other.len)))\
-             or other.typ is None or self.typ is None 
+            return (
+                (
+                    self.typ == other.typ
+                    and (self.len == other.len or -1 in (self.len, other.len))
+                )
+                or other.typ is None
+                or self.typ is None
+            )
         return False
 
     def text_repr(self) -> str:
         assert self.typ is not None
         return f"arr_{self.typ.text_repr()}_{self.len}"
+
 
 class Int(Type):
     def __eq__(self, other) -> bool:
@@ -68,12 +79,23 @@ class VarType(Type):
         State.throw_error("Can't get variable type runtime representation")
         return "unreachable"
 
+
 class Struct(Type):
-    def __init__(self, name: str, fields: Dict[str, object], fields_types: List[object],
-                 parent: Optional["Struct"], defaults: Dict[int, int], is_unpack: bool):
+    def __init__(
+        self,
+        name: str,
+        fields: Dict[str, object],
+        fields_types: List[object],
+        parent: Optional["Struct"],
+        defaults: Dict[int, int],
+        is_unpack: bool,
+    ):
         self.name: str = name
         self.fields: Dict[str, object] = {**fields, **(parent.fields if parent else {})}
-        self.fields_types: List[object] = [*fields_types, *(parent.fields_types if parent else {})]
+        self.fields_types: List[object] = [
+            *fields_types,
+            *(parent.fields_types if parent else {}),
+        ]
         self.is_unpackable: bool = is_unpack
         self.methods: Dict[str, Proc] = {} if parent is None else parent.methods.copy()
         self.parent: Optional["Struct"] = parent
@@ -116,7 +138,7 @@ def type_to_str(_type):
         else:
             return "ptr"
     elif isinstance(_type, Array):
-        return "[" + str(_type.len) + "] " + type_to_str(_type.typ) 
+        return "[" + str(_type.len) + "] " + type_to_str(_type.typ)
     elif isinstance(_type, Struct):
         return _type.name
     elif isinstance(_type, VarType):
@@ -126,19 +148,35 @@ def type_to_str(_type):
     else:
         assert False, f"Unimplemented type in type_to_str: {_type}"
 
-def parse_type(token: Tuple[str, str], error: str, auto_ptr: bool = True, allow_unpack: bool = False, 
-               end: Optional[str] = None, throw_exc: bool = True, var_type_scope: Optional[Dict[str, VarType]] = None):
+
+def parse_type(
+    token: Tuple[str, str],
+    error: str,
+    auto_ptr: bool = True,
+    allow_unpack: bool = False,
+    end: Optional[str] = None,
+    throw_exc: bool = True,
+    var_type_scope: Optional[Dict[str, VarType]] = None,
+):
     State.loc = f"{State.filename}:{token[1]}"
     name = token[0]
     if end is not None:
         if end in name:
             end_index = name.find(end)
-            State.tokens_queue.append((name[end_index+len(end):], token[1]))
-            name = name[:end_index] 
+            State.tokens_queue.append((name[end_index + len(end) :], token[1]))
+            name = name[:end_index]
             if not name.strip():
                 return None
     if name.startswith("*"):
-        return Ptr(parse_type((token[0][1:], token[1]), error, auto_ptr, allow_unpack, var_type_scope=var_type_scope))
+        return Ptr(
+            parse_type(
+                (token[0][1:], token[1]),
+                error,
+                auto_ptr,
+                allow_unpack,
+                var_type_scope=var_type_scope,
+            )
+        )
     elif name == "int":
         return Int()
     elif name == "ptr":
@@ -153,7 +191,7 @@ def parse_type(token: Tuple[str, str], error: str, auto_ptr: bool = True, allow_
     elif name.startswith("@") and allow_unpack:
         if name[1:] not in State.structures:
             if throw_exc:
-                State.throw_error(f"structure \"{name[1:]}\" was not found")
+                State.throw_error(f'structure "{name[1:]}" was not found')
             else:
                 return None
         return State.structures[name[1:]].fields_types
@@ -164,10 +202,20 @@ def parse_type(token: Tuple[str, str], error: str, auto_ptr: bool = True, allow_
             length = int(name[1:-1])
         else:
             if throw_exc:
-                State.throw_error(f"constant \"{name[1:-1]}\" was not found")
+                State.throw_error(f'constant "{name[1:-1]}" was not found')
             else:
                 return None
-        arr = Array(length, parse_type(next(State.tokens), error, True, False, end, var_type_scope=var_type_scope))
+        arr = Array(
+            length,
+            parse_type(
+                next(State.tokens),
+                error,
+                True,
+                False,
+                end,
+                var_type_scope=var_type_scope,
+            ),
+        )
         if arr is None:
             if throw_exc:
                 State.throw_error("array type was not defined")
@@ -183,7 +231,8 @@ def parse_type(token: Tuple[str, str], error: str, auto_ptr: bool = True, allow_
                 var_type_scope[name] = var_type
                 return var_type
             elif throw_exc:
-                State.throw_error(f"Unknown type \"{name}\" in {error}")
+                State.throw_error(f'Unknown type "{name}" in {error}')
+
 
 def sizeof(_type) -> int:
     if isinstance(_type, Int) or isinstance(_type, Ptr) or isinstance(_type, Addr):
@@ -198,8 +247,9 @@ def sizeof(_type) -> int:
         State.throw_error("Cant get size of any")
     else:
         assert False, f"Unimplemented type in sizeof: {type_to_str(_type)}"
-    
-    return 0 # Mypy, shut up!
+
+    return 0  # Mypy, shut up!
+
 
 def must_ptr(_type) -> bool:
     return isinstance(_type, Struct) or isinstance(_type, Array)
@@ -232,6 +282,7 @@ def check_varient(got: object, exp: object):
         return True
 
     return False
+
 
 def down_cast(type1: object, type2: object) -> object:
     """

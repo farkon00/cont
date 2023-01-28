@@ -9,39 +9,40 @@ from .op import *
 from state import *
 
 OPERATORS = {
-    "+" : Operator.ADD,
-    "-" : Operator.SUB,
-    "*" : Operator.MUL,
-    "div" : Operator.DIV,
-    "dup" : Operator.DUP,
-    "drop" : Operator.DROP,
-    "swap" : Operator.SWAP,
-    "rot" : Operator.ROT,
-    "over" : Operator.OVER,
-    "<" : Operator.LT,
-    ">" : Operator.GT,
-    "<=" : Operator.LE,
-    ">=" : Operator.GE,
-    "==" : Operator.EQ,
-    "!=" : Operator.NE,
-    "!" : Operator.STORE,
-    "!!" : Operator.STRONG_STORE,
-    "!8" : Operator.STORE8,
-    "@" : Operator.LOAD,
-    "@8" : Operator.LOAD8,
+    "+": Operator.ADD,
+    "-": Operator.SUB,
+    "*": Operator.MUL,
+    "div": Operator.DIV,
+    "dup": Operator.DUP,
+    "drop": Operator.DROP,
+    "swap": Operator.SWAP,
+    "rot": Operator.ROT,
+    "over": Operator.OVER,
+    "<": Operator.LT,
+    ">": Operator.GT,
+    "<=": Operator.LE,
+    ">=": Operator.GE,
+    "==": Operator.EQ,
+    "!=": Operator.NE,
+    "!": Operator.STORE,
+    "!!": Operator.STRONG_STORE,
+    "!8": Operator.STORE8,
+    "@": Operator.LOAD,
+    "@8": Operator.LOAD8,
 }
 END_TYPES = {
-    BlockType.IF : OpType.ENDIF,
-    BlockType.ELSE : OpType.ENDIF,
-    BlockType.WHILE : OpType.ENDWHILE,
-    BlockType.FOR : OpType.ENDFOR,
-    BlockType.PROC : OpType.ENDPROC,
-    BlockType.BIND : OpType.UNBIND,
+    BlockType.IF: OpType.ENDIF,
+    BlockType.ELSE: OpType.ENDIF,
+    BlockType.WHILE: OpType.ENDWHILE,
+    BlockType.FOR: OpType.ENDFOR,
+    BlockType.PROC: OpType.ENDPROC,
+    BlockType.BIND: OpType.UNBIND,
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
 assert len(OpType) == 40, "Unimplemented type in parsing.py"
 assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py"
+
 
 def safe_next_token(exception: str = "") -> Tuple[str, str]:
     try:
@@ -55,6 +56,7 @@ def safe_next_token(exception: str = "") -> Tuple[str, str]:
 
     return token
 
+
 def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], str]:
     try:
         proc_token = next(State.tokens)
@@ -66,12 +68,15 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
 
     return proc_token, proc_token_value
 
+
 def parse_proc_head():
     first_token: Tuple[str, str] = next(State.tokens)
     in_types: List[Type] = []
     out_types: List[Type] = []
     names: List[str] = []
-    owner: Optional[Ptr] = None if State.owner is None or State.is_static else Ptr(State.owner) 
+    owner: Optional[Ptr] = (
+        None if State.owner is None or State.is_static else Ptr(State.owner)
+    )
     var_types_scope: Dict[str, VarType] = {}
     State.var_type_scopes.append(var_types_scope)
 
@@ -81,7 +86,9 @@ def parse_proc_head():
     if first_token[0].startswith("[") and first_token[0].endswith("]"):
         if State.owner is not None:
             State.loc = f"{State.filename}:{first_token[1]}"
-            State.throw_error("cannot explicitly specify method's structure inside structure")
+            State.throw_error(
+                "cannot explicitly specify method's structure inside structure"
+            )
 
         name = next(State.tokens)
         if first_token[0][1:-1] not in State.structures:
@@ -90,7 +97,7 @@ def parse_proc_head():
         owner = Ptr(State.structures[first_token[0][1:-1]])
     else:
         name = first_token
-    
+
     name_value = name[0]
 
     has_contaract = ":" not in name[0]
@@ -117,27 +124,36 @@ def parse_proc_head():
                 State.throw_error("few -> separators was found in proc contract")
             types = out_types
         else:
-            if proc_token_value.startswith("@") and State.is_named and types is in_types:
+            if (
+                proc_token_value.startswith("@")
+                and State.is_named
+                and types is in_types
+            ):
                 if proc_token_value[1:] not in State.structures:
                     State.throw_error(f"structure {proc_token_value[1:]} was not found")
                 struct = State.structures[proc_token_value[1:]]
                 names.extend(struct.fields.keys())
                 types.extend(struct.fields_types)
                 continue
-                    
-            res = parse_type((proc_token_value, proc_token[1]), "procedure contaract", allow_unpack=True,
-                end=":", var_type_scope=var_types_scope if types is in_types else None)
+
+            res = parse_type(
+                (proc_token_value, proc_token[1]),
+                "procedure contaract",
+                allow_unpack=True,
+                end=":",
+                var_type_scope=var_types_scope if types is in_types else None,
+            )
             if isinstance(res, Iterable):
                 types.extend(res)
-            elif res is None: # If ended in array type
+            elif res is None:  # If ended in array type
                 break
             else:
                 types.append(res)
                 if State.is_named and types is in_types:
                     proc_token, proc_token_value = next_proc_contract_token(name)
-                    if not proc_token_value: State.throw_error("name for argument was not specified")
+                    if not proc_token_value:
+                        State.throw_error("name for argument was not specified")
                     names.append(proc_token_value)
-                    
 
     if has_contaract and ":" in proc_token:
         queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
@@ -146,20 +162,36 @@ def parse_proc_head():
 
     if name_value == "__init__" and out_types:
         State.loc = f"{State.filename}:{name[1]}"
-        State.throw_error("constructor cannot have out types") 
+        State.throw_error("constructor cannot have out types")
 
-    if name_value in State.DUNDER_METHODS and owner is not None and\
-       not (len(in_types) == 1 and len(out_types) == 1):
+    if (
+        name_value in State.DUNDER_METHODS
+        and owner is not None
+        and not (len(in_types) == 1 and len(out_types) == 1)
+    ):
         State.loc = f"{State.filename}:{name[1]}"
-        State.throw_error(f"{name_value} method required to have 1 argument and 1 out type")
-    if name_value == "__div__" and owner is not None and\
-       not (len(in_types) == 1 and len(out_types) == 2):
+        State.throw_error(
+            f"{name_value} method required to have 1 argument and 1 out type"
+        )
+    if (
+        name_value == "__div__"
+        and owner is not None
+        and not (len(in_types) == 1 and len(out_types) == 2)
+    ):
         State.loc = f"{State.filename}:{name[1]}"
-        State.throw_error(f"{name_value} method required to have 1 argument and 2 out types", False)
-        sys.stdout.write("\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n")
+        State.throw_error(
+            f"{name_value} method required to have 1 argument and 2 out types", False
+        )
+        sys.stdout.write(
+            "\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n"
+        )
         exit()
-    if name_value in State.DUNDER_METHODS or name_value == "__div__" and owner is not None and\
-         name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS:
+    if (
+        name_value in State.DUNDER_METHODS
+        or name_value == "__div__"
+        and owner is not None
+        and name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
+    ):
         if owner.typ is not in_types[0].typ:
             State.loc = f"{State.filename}:{name[1]}"
             State.throw_error(f"{name_value} must have owner structure as argument")
@@ -189,23 +221,29 @@ def parse_proc_head():
         return [op, Op(OpType.BIND, len(names))]
     return op
 
+
 def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
     first_token = next(State.tokens)
     parent = None
     if first_token[0].startswith("(") and first_token[0].endswith(")"):
         if first_token[0][1:-1] not in State.structures:
-            State.throw_error(f"structure \"{first_token[0][1:-1]}\" is not defined")
+            State.throw_error(f'structure "{first_token[0][1:-1]}" is not defined')
         parent = State.structures[first_token[0][1:-1]]
         name = next(State.tokens)
     else:
         name = first_token
     State.check_name(name, "structure")
     if name[0].endswith(":"):
-        sys.stderr.write(f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesnt need :\n")
+        sys.stderr.write(
+            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesnt need :\n"
+        )
 
     return parent, name
 
-def parse_struct_default(field_type: Any, started_proc: bool, static_started: bool, loc: str) -> Tuple[str, int]:
+
+def parse_struct_default(
+    field_type: Any, started_proc: bool, static_started: bool, loc: str
+) -> Tuple[str, int]:
     if field_type != -1:
         State.loc = f"{State.filename}:{loc}"
         State.throw_error("field name was not defined")
@@ -220,7 +258,10 @@ def parse_struct_default(field_type: Any, started_proc: bool, static_started: bo
     def_value = evaluate_block(def_name[1], "default value")
     return def_name[0], def_value
 
-def parse_struct_proc(struct: Struct, static_started: bool, current_token: Tuple[str, str]):
+
+def parse_struct_proc(
+    struct: Struct, static_started: bool, current_token: Tuple[str, str]
+):
     State.tokens_queue.append(current_token)
     State.owner = struct
     State.is_static = static_started
@@ -229,14 +270,21 @@ def parse_struct_proc(struct: Struct, static_started: bool, current_token: Tuple
     State.is_static = False
     return ops
 
-def register_struct(name: Tuple[str, str], fields: Dict[str, object], struct_types: List[object],
-                    parent: Optional[Struct], defaults: Dict[int, int]):
+
+def register_struct(
+    name: Tuple[str, str],
+    fields: Dict[str, object],
+    struct_types: List[object],
+    parent: Optional[Struct],
+    defaults: Dict[int, int],
+):
     struct = Struct(name[0], fields, struct_types, parent, defaults, State.is_unpack)
     State.is_unpack = False
     if parent is not None:
         parent.children.append(struct)
     State.structures[name[0]] = struct
     return struct
+
 
 def parse_struct() -> Union[Op, List[Op]]:
     parent, name = parse_struct_begining()
@@ -263,7 +311,9 @@ def parse_struct() -> Union[Op, List[Op]]:
                 State.throw_error("field name was not defined")
             continue
         if current_token[0] == "default":
-            def_name, def_value = parse_struct_default(field_type, started_proc, static_started, current_token[1])
+            def_name, def_value = parse_struct_default(
+                field_type, started_proc, static_started, current_token[1]
+            )
             struct.fields[def_name] = Int()
             struct.defaults[len(struct.fields_types)] = def_value
             struct.fields_types.append(struct.fields[def_name])
@@ -285,7 +335,9 @@ def parse_struct() -> Union[Op, List[Op]]:
         else:
             if current_token[0] in struct.fields:
                 State.loc = f"{State.filename}:{current_token[1]}"
-                State.throw_error(f"field \"{current_token[0]}\" is already defined in structure")
+                State.throw_error(
+                    f'field "{current_token[0]}" is already defined in structure'
+                )
             State.check_name(current_token, "field")
             struct.fields[current_token[0]] = field_type
             struct.fields_types.append(field_type)
@@ -297,40 +349,61 @@ def parse_struct() -> Union[Op, List[Op]]:
 
     return ops
 
+
 def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> List[Op]:
     res = []
     parts = token.split(".")
     if allow_var:
         if parts[0] in getattr(State.current_proc, "variables", {}):
             assert State.current_proc is not None
-            res.append(Op(OpType.PUSH_LOCAL_VAR if must_ptr(State.current_proc.variables[parts[0]]) else OpType.PUSH_LOCAL_VAR_PTR, parts[0]))
+            res.append(
+                Op(
+                    OpType.PUSH_LOCAL_VAR
+                    if must_ptr(State.current_proc.variables[parts[0]])
+                    else OpType.PUSH_LOCAL_VAR_PTR,
+                    parts[0],
+                )
+            )
             parts = parts[1:]
         elif parts[0] in getattr(State.current_proc, "memories", {}):
             assert State.current_proc is not None
-            res.append(Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset))
+            res.append(
+                Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
+            )
             parts = parts[1:]
         elif parts[0] in State.variables:
-            res.append(Op(OpType.PUSH_VAR if must_ptr(State.variables[parts[0]]) else OpType.PUSH_VAR_PTR, parts[0], State.loc))
+            res.append(
+                Op(
+                    OpType.PUSH_VAR
+                    if must_ptr(State.variables[parts[0]])
+                    else OpType.PUSH_VAR_PTR,
+                    parts[0],
+                    State.loc,
+                )
+            )
             parts = parts[1:]
         elif parts[0] in State.memories:
             res.append(Op(OpType.PUSH_MEMORY, State.memories[parts[0]].offset))
             parts = parts[1:]
         elif parts[0] in State.bind_stack:
-            res.append(Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc))
+            res.append(
+                Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc)
+            )
             parts = parts[1:]
         else:
-            State.throw_error(f"name \"{parts[0]}\" is not defined")
+            State.throw_error(f'name "{parts[0]}" is not defined')
     for i in parts:
         res.append(Op(OpType.PUSH_FIELD, i, State.loc))
-    
+
     if auto_ptr and res[-1].type == OpType.PUSH_FIELD:
         res[-1] = Op(OpType.PUSH_FIELD_PTR, res[-1].operand, State.loc)
-    
+
     return res
+
 
 def parse_var():
     name = safe_next_token("Expected variable name")
-    _type = parse_type(safe_next_token("Expected variable type"), "variable", False) 
+    _type = parse_type(safe_next_token("Expected variable type"), "variable", False)
     State.check_name(name, "variable")
     mem = Memory.new_memory(name[0], sizeof(_type))
     if State.is_init and _type != Array(typ=Ptr()):
@@ -349,9 +422,15 @@ def parse_var():
                 State.throw_error("variable can't be initialized with non-int value")
             value = evaluate_block(name[1], "variable value")
             return [
-                Op(OpType.PUSH_INT, value, State.loc), 
-                Op(OpType.PUSH_VAR_PTR if State.current_proc is None else OpType.PUSH_LOCAL_VAR_PTR, name[0], State.loc),
-                Op(OpType.OPERATOR, Operator.STORE, State.loc)
+                Op(OpType.PUSH_INT, value, State.loc),
+                Op(
+                    OpType.PUSH_VAR_PTR
+                    if State.current_proc is None
+                    else OpType.PUSH_LOCAL_VAR_PTR,
+                    name[0],
+                    State.loc,
+                ),
+                Op(OpType.OPERATOR, Operator.STORE, State.loc),
             ]
         else:
             State.tokens_queue.append(next_token)
@@ -363,9 +442,18 @@ def parse_var():
             Memory.global_offset += sizeof(_type.typ.typ) * _type.len
         else:
             State.current_proc.memory_size += sizeof(_type.typ.typ) * _type.len
-        return Op(OpType.AUTO_INIT, (mem, State.get_new_ip(Op(OpType.AUTO_INIT))), loc=State.loc) if _type.len > 0 else None 
+        return (
+            Op(
+                OpType.AUTO_INIT,
+                (mem, State.get_new_ip(Op(OpType.AUTO_INIT))),
+                loc=State.loc,
+            )
+            if _type.len > 0
+            else None
+        )
 
     return []
+
 
 def parse_end():
     if len(State.block_stack) <= 0:
@@ -381,7 +469,7 @@ def parse_end():
         State.current_proc = None
         op = Op(OpType.ENDPROC, block)
         if proc.is_named:
-            State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
+            State.bind_stack = State.bind_stack[: -len(proc.in_stack)]
             block.end = State.get_new_ip(op)
             return [Op(OpType.UNBIND, len(proc.in_stack)), op]
     elif block.type == BlockType.WHILE:
@@ -403,9 +491,10 @@ def parse_end():
     block.end = State.get_new_ip(op)
     return op
 
+
 def parse_for():
-    bind         = safe_next_token("bind name for for loop was not found")[0]
-    type_        = safe_next_token("separator for for loop was not found")[0]
+    bind = safe_next_token("bind name for for loop was not found")[0]
+    type_ = safe_next_token("separator for for loop was not found")[0]
     itr, itr_loc = safe_next_token("iterator for for loop was not found")
 
     if type_ not in ("in", "until"):
@@ -421,12 +510,13 @@ def parse_for():
     State.bind_stack.extend(("*" + bind, bind))
     return op
 
+
 def parse_bind():
     binded = 0
     name_token = ("", "")
     while ":" not in name_token[0]:
         name_token = next(State.tokens)
-        parts = name_token[0].split(":") 
+        parts = name_token[0].split(":")
         name = parts[0]
         if len(parts) > 1:
             queued_token = (parts[1].strip(), name_token[1])
@@ -436,12 +526,13 @@ def parse_bind():
             continue
         if name in State.procs or name in State.memories:
             State.loc = name_token[1]
-            State.throw_error(f"name for bind \"{name}\" is already taken")
+            State.throw_error(f'name for bind "{name}" is already taken')
         State.bind_stack.append(name)
         binded += 1
     op = Op(OpType.BIND, binded)
     State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
     return op
+
 
 def parse_do(ops: List[Op]):
     if len(State.block_stack) <= 0:
@@ -458,12 +549,13 @@ def parse_do(ops: List[Op]):
         for i in reversed(ops):
             if i is orig_while:
                 break
-            State.do_stack[-1].append(i.copy())    
+            State.do_stack[-1].append(i.copy())
         op = Op(OpType.WHILE, orig_while.operand)
         State.ops_by_ips[State.block_stack[-1].start] = op
         return op
     else:
         State.throw_error("do without if or while")
+
 
 def include_file():
     name = next(State.tokens)
@@ -477,7 +569,7 @@ def include_file():
         path = std_path
     else:
         State.loc = name[1]
-        State.throw_error(f"include file \"{name[0]}\" not found")
+        State.throw_error(f'include file "{name[0]}" not found')
 
     if os.path.abspath(path) in State.included_files:
         return []
@@ -489,10 +581,11 @@ def include_file():
 
     with open(path, "r") as f:
         ops = parse_to_ops(f.read())
-    
+
     State.filename = orig_file
 
     return ops
+
 
 def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     assert len(OpType) == 40, "Unimplemented type in parse_token"
@@ -514,27 +607,29 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token.isnumeric():
         return Op(OpType.PUSH_INT, int(token) % 2**64)
-    
+
     elif token.startswith("-") and token[1:].isnumeric():
-        return Op(OpType.PUSH_INT, 0x10000000000000000-int(token[1:]))
+        return Op(OpType.PUSH_INT, 0x10000000000000000 - int(token[1:]))
 
     elif token.startswith("0x") and State.is_hex(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 16))
-    
+
     elif token.startswith("0b") and State.is_bin(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 2))
-    
+
     elif token.startswith("0o") and State.is_oct(token[2:]):
         return Op(OpType.PUSH_INT, int(token[2:], 8))
 
-    elif (token.startswith("\"") or token.startswith("n\"")) and token.endswith("\""):
-        string = bytes(token[1 + token.startswith("n\""):-1], "raw_unicode_escape").decode("unicode_escape")
+    elif (token.startswith('"') or token.startswith('n"')) and token.endswith('"'):
+        string = bytes(
+            token[1 + token.startswith('n"') : -1], "raw_unicode_escape"
+        ).decode("unicode_escape")
         State.string_data.append(bytes(string, "utf-8"))
-        optype = OpType.PUSH_NULL_STR if token.startswith("n\"") else OpType.PUSH_STR
-        if token.startswith("n\""):
+        optype = OpType.PUSH_NULL_STR if token.startswith('n"') else OpType.PUSH_STR
+        if token.startswith('n"'):
             State.string_data[-1] += bytes("\0", "utf-8")
-        return Op(optype, len(State.string_data)-1)
-    
+        return Op(optype, len(State.string_data) - 1)
+
     elif token.startswith("'") and token.endswith("'") and len(token) == 3:
         return Op(OpType.PUSH_INT, ord(token[1]))
 
@@ -551,9 +646,9 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "else":
         if len(State.block_stack) <= 0:
             State.throw_error("if for else not found")
-        
+
         block = State.block_stack.pop()
-        
+
         if block.type != BlockType.IF:
             State.throw_error("else without if")
 
@@ -569,7 +664,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         cond = evaluate_block(State.loc, error="#if condition")
         State.compile_ifs_opened += 1
         State.false_compile_ifs += bool(State.false_compile_ifs) or not cond
-    
+
     elif token == "#else":
         if not State.compile_ifs_opened:
             State.throw_error("#else without #if")
@@ -601,7 +696,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         size = next(State.tokens)
         if not size[0].isnumeric() and size[0] not in State.constants:
             State.loc = size[1]
-            State.throw_error(f"constant \"{size[0]}\" was not found") 
+            State.throw_error(f'constant "{size[0]}" was not found')
         State.check_name(name, "memory")
         if size[0].isnumeric():
             Memory.new_memory(name[0], int(size[0]))
@@ -625,10 +720,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "sizeoftype":
         _type = parse_type(next(State.tokens), "size", False)
         return Op(OpType.PUSH_INT, sizeof(_type))
-    
+
     elif token == "bind":
         return parse_bind()
-        
+
     elif token == "proc":
         return parse_proc_head()
     elif token == "nproc":
@@ -656,16 +751,16 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
                 break
             if current_token[0] in values:
                 State.loc = f"{State.filename}:{current_token[1]}"
-                State.throw_error(f"enum value \"{current_token[0]}\" is already defined")
+                State.throw_error(f'enum value "{current_token[0]}" is already defined')
             values.append(current_token[0])
 
         State.enums[name[0]] = values
 
     elif token == "asm":
         asm = safe_next_token()[0]
-        if not asm.startswith("\"") or not asm.endswith("\""):
+        if not asm.startswith('"') or not asm.endswith('"'):
             State.throw_error("asm must be followed by a string")
-        
+
         return Op(OpType.ASM, asm[1:-1])
 
     elif token == "type":
@@ -680,7 +775,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         name = next(State.tokens)
         if name[0] not in State.procs:
             State.loc = name[1]
-            State.throw_error(f"procedure \"{name[0]}\" is not defined")
+            State.throw_error(f'procedure "{name[0]}" is not defined')
         return Op(OpType.CALL_LIKE, State.procs[name[0]])
 
     elif token == "[]":
@@ -699,10 +794,15 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
 
-    elif token.startswith("*") and token[1:] in getattr(State.current_proc, "variables", {}):
+    elif token.startswith("*") and token[1:] in getattr(
+        State.current_proc, "variables", {}
+    ):
         return Op(OpType.PUSH_LOCAL_VAR_PTR, token[1:])
-    
-    elif token in getattr(State.current_proc, "memories", {}) and State.current_proc is not None:
+
+    elif (
+        token in getattr(State.current_proc, "memories", {})
+        and State.current_proc is not None
+    ):
         return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
 
     elif token in State.variables:
@@ -743,39 +843,44 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token.startswith("!."):
         return [
             *parse_dot(token[2:], auto_ptr=True),
-            Op(OpType.OPERATOR, Operator.STORE, State.loc)
+            Op(OpType.OPERATOR, Operator.STORE, State.loc),
         ]
 
     elif token.startswith("!"):
         return [
             *parse_dot(token[1:], allow_var=True, auto_ptr=True),
-            Op(OpType.OPERATOR, Operator.STORE, State.loc)
+            Op(OpType.OPERATOR, Operator.STORE, State.loc),
         ]
 
     elif token.startswith("*") and token[1:] in State.procs:
         State.add_proc_use(State.procs[token[1:]].ip)
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
-    elif token.split(".", 1)[0][1:] in State.bind_stack or\
-         token.split(".", 1)[0][1:] in State.variables or\
-         token.split(".", 1)[0][1:] in getattr(State.current_proc, "variables", {}) and\
-         token.split(".", 1)[0].startswith("*"):
+    elif (
+        token.split(".", 1)[0][1:] in State.bind_stack
+        or token.split(".", 1)[0][1:] in State.variables
+        or token.split(".", 1)[0][1:] in getattr(State.current_proc, "variables", {})
+        and token.split(".", 1)[0].startswith("*")
+    ):
         return parse_dot(token[1:], True, True)
 
-    elif token.split(".", 1)[0] in State.bind_stack or token.split(".", 1)[0] in State.variables or\
-         token.split(".", 1)[0] in getattr(State.current_proc, "variables", {}):
+    elif (
+        token.split(".", 1)[0] in State.bind_stack
+        or token.split(".", 1)[0] in State.variables
+        or token.split(".", 1)[0] in getattr(State.current_proc, "variables", {})
+    ):
         return parse_dot(token, True)
 
     elif token.split(".", 1)[0] in State.enums:
         parts = token.split(".", 1)
         if parts[1] not in State.enums[parts[0]]:
-            State.throw_error(f"enum value \"{parts[1]}\" is not defined")
+            State.throw_error(f'enum value "{parts[1]}" is not defined')
         return Op(OpType.PUSH_INT, State.enums[parts[0]].index(parts[1]))
 
     elif token.split(".", 1)[0] in State.structures:
         parts = token.split(".", 1)
         if parts[1] not in State.structures[parts[0]].static_methods:
-            State.throw_error(f"static method \"{parts[1]}\" was not found")
+            State.throw_error(f'static method "{parts[1]}" was not found')
         State.add_proc_use(State.structures[parts[0]].static_methods[parts[1]])
         return Op(OpType.CALL, State.structures[parts[0]].static_methods[parts[1]])
 
@@ -783,14 +888,18 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         State.throw_error(f"unknown token: {token}")
     return []
 
+
 def delete_comments(program: str) -> str:
     while True:
         index = program.find("//")
         if index == -1:
             break
         end_comm = program.find("\n", index)
-        program = program[:index] + program[end_comm if end_comm != -1 else len(program):]
+        program = (
+            program[:index] + program[end_comm if end_comm != -1 else len(program) :]
+        )
     return program
+
 
 def tokens(program: str):
     token = ""
@@ -804,7 +913,7 @@ def tokens(program: str):
                 if token != "":
                     yield (token, f"{i+1}:{j+1}")
                     token = ""
-            elif char == "\"" and not is_escaped:
+            elif char == '"' and not is_escaped:
                 is_string = not is_string
                 token += char
                 if not is_string:
@@ -822,6 +931,7 @@ def tokens(program: str):
             yield (token, f"{i+1}:{j+1}")
             token = ""
 
+
 def parse_until_end() -> List[Op]:
     ops: List[Op] = []
     initial_loc = State.loc
@@ -835,7 +945,7 @@ def parse_until_end() -> List[Op]:
             end = True
         State.loc = f"{State.filename}:{loc}"
         op = parse_token(token, ops)
-        
+
         if isinstance(op, list):
             ops.extend(op)
         elif op is not None:
@@ -848,6 +958,7 @@ def parse_until_end() -> List[Op]:
     State.loc = initial_loc
 
     return ops
+
 
 def parse_to_ops(program: str, dump_tokens: bool = False) -> List[Op]:
     saver = StateSaver()
