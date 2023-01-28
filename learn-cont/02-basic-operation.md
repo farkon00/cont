@@ -1,6 +1,6 @@
 # Basic operations
 
-# Stack
+## Stack
 
 Cont is stack-based language, which means to perform actions we push parameters onto stack and pop them for operations.
 You can read more about stack data structure [here](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)).
@@ -12,7 +12,7 @@ To push a number onto the stack we just write it down.
 -69   // Now you have four numbers: 1, 2, 3 and -69
 ```
 
-# Arithmetics
+## Arithmetics
 Cont uses 2 top values on the stack to get the parameters for the aithmetic operation.
 For example:
 If the stack looks like [1 2 3] and you perform an addition, the stack would become [1 5].
@@ -39,7 +39,7 @@ include std.cn
 // 3 is the 12 / 4 result and 1 is the remainder from 13 / 4
 ```
 
-# Stack operations
+## Stack operations
 Sometimes you need to change order of the elemnts on the stack. You can use following stack operation to do that:
 * dup: `a -> a a`
 * drop: `a -> `
@@ -57,7 +57,7 @@ swap drop // [1 3]
 swap - // [2] 
 ```
 
-# Useful note
+## Useful note
 If you want to test the code out and maybe experement with it you would probably want to see what values are on the stack.
 You could use the `print` procedure from `std.cn` file. It would look something like this.
 ```

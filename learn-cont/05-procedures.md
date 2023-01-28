@@ -35,7 +35,7 @@ end
 hello_world hello_world hello_world // Calling the procedure three times
 ```
 
-# Named procedures
+## Named procedures
 If you want to make the most comfortable argument order for the user of the procedure, sometimes it might be really uncomfortable to use inside the procedure. Or sometimes to not deal with the stack you may find yourself using bind right in the beginning of the procedure. Introducing named procedures, organize your arguments using names. To use named procedures use `nproc` keyword.
 ```
 // Be careful, if you include std.cn the name 2dup would already be taken

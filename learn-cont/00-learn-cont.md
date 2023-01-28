@@ -10,3 +10,4 @@ Don't be afraid of asking questions in issues or dming me on discord. I am farko
 * [Loops And Conditions](https://github.com/farkon00/cont/blob/master/learn-cont/03-loops-and-conditions.md)
 * [Binds](https://github.com/farkon00/cont/blob/master/learn-cont/04-binds.md)
 * [Procedures](https://github.com/farkon00/cont/blob/master/learn-cont/05-procedures.md)
+* [Variables](https://github.com/farkon00/cont/blob/master/learn-cont/06-variables.md)

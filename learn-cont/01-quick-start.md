@@ -15,7 +15,7 @@ $ pytest test.py
 $ python3 cont.py <source_code>.cn -r
 ```
 
-# Hello world
+## Hello world
 
 How let's write your first hello world in cont:
 ```

@@ -37,7 +37,7 @@ end
 You might have saw, that some of the examples could have just used stack operations, that you learn in 
 [lesson 2](https://github.com/farkon00/cont/blob/master/learn-cont/02-basic-operations.md). And yes they could, but if you have more than 4 values on the stack, that you probably shouldn't unless absolutely needed, you can't really access last ones without popping some, also bind can usually produce cleaner code, so it's recomended unless you just need to perform 1-2 stack operations. 
 
-# Examples
+## Examples
 This is the program, that prints 50 first [fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number) using bind inside a while loop
 ```
 include std.cn
