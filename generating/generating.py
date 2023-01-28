@@ -93,7 +93,7 @@ _start:
 
     buf += f"""
 mov rax, 60
-mov rdi, 0
+xor rdi, rdi
 syscall
 segment readable writeable
 {'index_out_of_range_text: db "Index out of range in "' if State.config.re_IOR else ''}
@@ -191,7 +191,11 @@ def generate_op(op: Op):
     comment = generate_op_comment(op)
 
     if op.type == OpType.PUSH_INT:
-        return comment + f"\nmov rax, {op.operand}\npush rax\n"
+        if op.operand == 0:
+            mov = f"xor rax, rax"
+        else:
+            mov = f"mov rax, {op.operand}"
+        return comment + f"\n{mov}\npush rax\n"
     elif op.type == OpType.PUSH_MEMORY:
         return comment + f"push mem+{op.operand}\n"
     elif op.type == OpType.PUSH_VAR:
@@ -397,10 +401,9 @@ pop rbx
 """
             )
         else:
-            buf = (
-                comment
-                + f"""
-mov rdi, 0
+            buf = comment +\
+f"""
+xor rdi, rdi
 mov rax, 12
 syscall
 mov rbx, rax
@@ -481,7 +484,7 @@ push rax
             comment
             + f"""
 pop rbx
-mov rdi, 0
+xor rdi, rdi
 mov rax, 12
 syscall
 mov rdx, rax
@@ -524,7 +527,7 @@ sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
             comment
             + f"""
 ;; loop
-mov rdi, 0
+xor rdi, rdi
 addr_{op.operand[1]}_1:
 cmp rdi, {var.len}
 je addr_{op.operand[1]}_2
@@ -629,8 +632,9 @@ push rdx
     elif op.operand == Operator.OVER:
         return "pop rbx\npop rax\npush rax\npush rbx\npush rax\n"
     elif op.operand in (Operator.LT, Operator.GT, Operator.EQ):
-        return f"""
-mov rcx, 0
+        return \
+f"""
+xor rcx, rcx
 mov rdx, 1
 pop rbx
 pop rax
@@ -639,8 +643,9 @@ cmov{op.operand.name.lower()[0]} rcx, rdx
 push rcx
 """
     elif op.operand in (Operator.LE, Operator.GE, Operator.NE):
-        return f"""
-mov rcx, 0
+        return \
+f"""
+xor rcx, rcx
 mov rdx, 1
 pop rbx
 pop rax

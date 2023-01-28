@@ -38,12 +38,14 @@ include std.cn
 ```
 include std.cn
 
-0 1 50 
+0 print 1 print
+
+0 1 48 
 while dup 0 > do
   bind prev2 prev num:
-    prev
-    prev2 prev +
-    dup print
+    prev // prev
+    prev2 prev + // prev next
+    dup print // prev next
     num 1 -
   end
 end

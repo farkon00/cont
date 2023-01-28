@@ -7,8 +7,12 @@ from typing import List
 
 DIR = "learn-cont"
 MAIN_FILE = "00-learn-cont.md"
-PREFIX = """# Learn cont
-This is the place to learn cont programming language.
+PREFIX = \
+"""# Learn cont
+This is the place to learn cont programming language. Also you could go look at some example code in `tests`, `examples` or
+`std` folders.
+
+Don't be afraid of asking questions in issues or dming me on discord. I am farkon00#0500. 
 
 # Table of contents
 """
