@@ -457,7 +457,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         stack.append(Ptr(ptr.typ.fields[op.operand]))
         return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
     elif op.type == OpType.CALL_LIKE:
-        check_stack(stack, [Addr(), *op.operand.in_stack])
+        check_stack(stack, [*op.operand.in_stack, Addr()])
         stack.extend(op.operand.out_stack)
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         if len(stack) < 1:

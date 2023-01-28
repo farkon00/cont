@@ -852,7 +852,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         ]
 
     elif token.startswith("*") and token[1:] in State.procs:
-        State.add_proc_use(State.procs[token[1:]].ip)
+        State.add_proc_use(State.procs[token[1:]])
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
     elif (
