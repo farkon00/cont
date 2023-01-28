@@ -1,0 +1,35 @@
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install pipenv, pytest
+        run: |
+          python -m pip install --upgrade pipenv wheel
+          python -m pip install pytest
+      - name: Install fasm
+        run: |
+          sudo apt install fasm
+      - id: cache-pipenv
+        uses: actions/cache@v1
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
+          
+      - name: Run tests
+        shell: bash
+        run: |
+          PYTHONPATH="$(pwd)" pytest test.py
