@@ -9,34 +9,34 @@ from .op import *
 from state import *
 
 OPERATORS = {
-    "+": Operator.ADD,
-    "-": Operator.SUB,
-    "*": Operator.MUL,
-    "div": Operator.DIV,
-    "dup": Operator.DUP,
-    "drop": Operator.DROP,
-    "swap": Operator.SWAP,
-    "rot": Operator.ROT,
-    "over": Operator.OVER,
-    "<": Operator.LT,
-    ">": Operator.GT,
-    "<=": Operator.LE,
-    ">=": Operator.GE,
-    "==": Operator.EQ,
-    "!=": Operator.NE,
-    "!": Operator.STORE,
-    "!!": Operator.STRONG_STORE,
-    "!8": Operator.STORE8,
-    "@": Operator.LOAD,
-    "@8": Operator.LOAD8,
+    "+" : Operator.ADD,
+    "-" : Operator.SUB,
+    "*" : Operator.MUL,
+    "div" : Operator.DIV,
+    "dup" : Operator.DUP,
+    "drop" : Operator.DROP,
+    "swap" : Operator.SWAP,
+    "rot" : Operator.ROT,
+    "over" : Operator.OVER,
+    "<" : Operator.LT,
+    ">" : Operator.GT,
+    "<=" : Operator.LE,
+    ">=" : Operator.GE,
+    "==" : Operator.EQ,
+    "!=" : Operator.NE,
+    "!" : Operator.STORE,
+    "!!" : Operator.STRONG_STORE,
+    "!8" : Operator.STORE8,
+    "@" : Operator.LOAD,
+    "@8" : Operator.LOAD8,
 }
 END_TYPES = {
-    BlockType.IF: OpType.ENDIF,
-    BlockType.ELSE: OpType.ENDIF,
-    BlockType.WHILE: OpType.ENDWHILE,
-    BlockType.FOR: OpType.ENDFOR,
-    BlockType.PROC: OpType.ENDPROC,
-    BlockType.BIND: OpType.UNBIND,
+    BlockType.IF : OpType.ENDIF,
+    BlockType.ELSE : OpType.ENDIF,
+    BlockType.WHILE : OpType.ENDWHILE,
+    BlockType.FOR : OpType.ENDFOR,
+    BlockType.PROC : OpType.ENDPROC,
+    BlockType.BIND : OpType.UNBIND,
 }
 
 assert len(Operator) == len(OPERATORS), "Unimplemented operator in parsing.py"
@@ -87,7 +87,7 @@ def parse_proc_head():
         if State.owner is not None:
             State.loc = f"{State.filename}:{first_token[1]}"
             State.throw_error(
-                "cannot explicitly specify method's structure inside structure"
+            "cannot explicitly specify method's owner inside a structure"
             )
 
         name = next(State.tokens)
@@ -125,9 +125,8 @@ def parse_proc_head():
             types = out_types
         else:
             if (
-                proc_token_value.startswith("@")
-                and State.is_named
-                and types is in_types
+                proc_token_value.startswith("@") and\
+                State.is_named and types is in_types
             ):
                 if proc_token_value[1:] not in State.structures:
                     State.throw_error(f"structure {proc_token_value[1:]} was not found")
@@ -165,18 +164,18 @@ def parse_proc_head():
         State.throw_error("constructor cannot have out types")
 
     if (
-        name_value in State.DUNDER_METHODS
-        and owner is not None
-        and not (len(in_types) == 1 and len(out_types) == 1)
+        name_value in State.DUNDER_METHODS and\
+        owner is not None and\
+        not (len(in_types) == 1 and len(out_types) == 1)
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
             f"{name_value} method required to have 1 argument and 1 out type"
         )
     if (
-        name_value == "__div__"
-        and owner is not None
-        and not (len(in_types) == 1 and len(out_types) == 2)
+        name_value == "__div__" and\
+        owner is not None and\
+        not (len(in_types) == 1 and len(out_types) == 2)
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
@@ -187,10 +186,10 @@ def parse_proc_head():
         )
         exit()
     if (
-        name_value in State.DUNDER_METHODS
-        or name_value == "__div__"
-        and owner is not None
-        and name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
+    name_value in State.DUNDER_METHODS or\
+        name_value == "__div__" and\
+        owner is not None and\
+        name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
     ):
         if owner.typ is not in_types[0].typ:
             State.loc = f"{State.filename}:{name[1]}"
@@ -469,7 +468,7 @@ def parse_end():
         State.current_proc = None
         op = Op(OpType.ENDPROC, block)
         if proc.is_named:
-            State.bind_stack = State.bind_stack[: -len(proc.in_stack)]
+            State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
             block.end = State.get_new_ip(op)
             return [Op(OpType.UNBIND, len(proc.in_stack)), op]
     elif block.type == BlockType.WHILE:
@@ -493,8 +492,8 @@ def parse_end():
 
 
 def parse_for():
-    bind = safe_next_token("bind name for for loop was not found")[0]
-    type_ = safe_next_token("separator for for loop was not found")[0]
+    bind         = safe_next_token("bind name for for loop was not found")[0]
+    type_        = safe_next_token("separator for for loop was not found")[0]
     itr, itr_loc = safe_next_token("iterator for for loop was not found")
 
     if type_ not in ("in", "until"):
@@ -622,7 +621,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif (token.startswith('"') or token.startswith('n"')) and token.endswith('"'):
         string = bytes(
-            token[1 + token.startswith('n"') : -1], "raw_unicode_escape"
+            token[1 + token.startswith('n"'):-1], "raw_unicode_escape"
         ).decode("unicode_escape")
         State.string_data.append(bytes(string, "utf-8"))
         optype = OpType.PUSH_NULL_STR if token.startswith('n"') else OpType.PUSH_STR
@@ -800,8 +799,8 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.PUSH_LOCAL_VAR_PTR, token[1:])
 
     elif (
-        token in getattr(State.current_proc, "memories", {})
-        and State.current_proc is not None
+        token in getattr(State.current_proc, "memories", {}) and\
+        State.current_proc is not None
     ):
         return Op(OpType.PUSH_LOCAL_MEM, State.current_proc.memories[token].offset)
 
@@ -857,17 +856,17 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
 
     elif (
-        token.split(".", 1)[0][1:] in State.bind_stack
-        or token.split(".", 1)[0][1:] in State.variables
-        or token.split(".", 1)[0][1:] in getattr(State.current_proc, "variables", {})
-        and token.split(".", 1)[0].startswith("*")
+        token.split(".", 1)[0][1:] in State.bind_stack or\
+        token.split(".", 1)[0][1:] in State.variables or\
+        token.split(".", 1)[0][1:] in getattr(State.current_proc, "variables", {}) and\
+        token.split(".", 1)[0].startswith("*")
     ):
         return parse_dot(token[1:], True, True)
 
     elif (
-        token.split(".", 1)[0] in State.bind_stack
-        or token.split(".", 1)[0] in State.variables
-        or token.split(".", 1)[0] in getattr(State.current_proc, "variables", {})
+        token.split(".", 1)[0] in State.bind_stack or\
+        token.split(".", 1)[0] in State.variables or\
+        token.split(".", 1)[0] in getattr(State.current_proc, "variables", {})
     ):
         return parse_dot(token, True)
 
@@ -896,7 +895,7 @@ def delete_comments(program: str) -> str:
             break
         end_comm = program.find("\n", index)
         program = (
-            program[:index] + program[end_comm if end_comm != -1 else len(program) :]
+            program[:index] + program[end_comm if end_comm != -1 else len(program):]
         )
     return program
 

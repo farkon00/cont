@@ -7,45 +7,45 @@ from typing import List, Tuple, Dict, Any
 
 class Config:
     DESCRIPTIONS: Dict[str, str] = {
-        "program": "The program to compile and optionally run",
-        "run": "Run program after compilation",
-        "dump": "Dump operations without compilation",
-        "dump_tokens": "Dump tokens without parsing or compilating",
-        "dump_tc": "Dump operations after type checking",
-        "out": "The output executable file and name for .asm file",
-        "config": "Config file",
-        "stdout": "File to output stdout of complier and program",
-        "input": "Stdin for program",
-        "error": "Stderr for program",
+        "program" : "The program to compile and optionally run",
+        "run" : "Run program after compilation",
+        "dump" : "Dump operations without compilation",
+        "dump_tokens" : "Dump tokens without parsing or compilating",
+        "dump_tc" : "Dump operations after type checking",
+        "out" : "The output executable file and name for .asm file",
+        "config" : "Config file",
+        "stdout" : "File to output stdout of complier and program",
+        "input" : "Stdin for program",
+        "error" : "Stderr for program",
     }
 
     BOOL_OPTIONS: Dict[str, Tuple[List[str], bool]] = {
-        "run": (["-r", "-run"], False),
-        "dump": (["-d", "-dump"], False),
-        "dump_tokens": (["-dt", "-dump_tokens"], False),
-        "dump_tc": (["-dtc", "-dump_tc"], False),
+        "run" : (["-r", "-run"], False),
+        "dump" : (["-d", "-dump"], False),
+        "dump_tokens" : (["-dt", "-dump_tokens"], False),
+        "dump_tc" : (["-dtc", "-dump_tc"], False),
     }
 
     REGULAR_OPTIONS: Dict[str, List[str]] = {
-        "out": ["-o", "--out"],
-        "stdout": ["-stdo", "--stdout"],
-        "input": ["-i", "--input"],
-        "error": ["-e", "--error"],
+        "out" : ["-o", "--out"],
+        "stdout" : ["-stdo", "--stdout"],
+        "input" : ["-i", "--input"],
+        "error" : ["-e", "--error"],
     }
 
     CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
-        "re_IOR": True,
-        "re_NPD": True,
-        "o_UPR": True,
+        "re_IOR" : True,
+        "re_NPD" : True,
+        "o_UPR" : True,
     }
 
     CONFIG_BOOL_CLEAR_OPTIONS: Dict[str, bool] = {
-        "struct_malloc": True,
+        "struct_malloc" : True,
     }
 
     CONFIG_INT_OPTIONS: Dict[str, int] = {
-        "size_call_stack": 65536,
-        "size_bind_stack": 8192,
+        "size_call_stack" : 65536,
+        "size_bind_stack" : 8192,
     }
 
     CHECK_POSITIVE: List[str] = ["size_call_stack", "size_bind_stack"]
@@ -106,15 +106,13 @@ class Config:
     def define_properties(self):
         for name in self.BOOL_OPTIONS:
             setattr(
-                self.__class__,
-                name,
+                self.__class__, name,
                 property(fget=lambda self, name=name: getattr(self.args, name)),
             )
 
         for name in self.REGULAR_OPTIONS:
             setattr(
-                self.__class__,
-                name,
+                self.__class__, name,
                 property(
                     fget=lambda self, name=name: self.config.get(
                         name, getattr(self.args, name)
@@ -127,8 +125,7 @@ class Config:
             **self.CONFIG_INT_OPTIONS,
         }.items():
             setattr(
-                self.__class__,
-                name,
+                self.__class__, name,
                 property(
                     fget=lambda self, name=name, default=default: self.config.get(
                         name, default
@@ -138,8 +135,7 @@ class Config:
 
         for name, default in self.CONFIG_BOOL_CLEAR_OPTIONS.items():
             setattr(
-                self.__class__,
-                name,
+                self.__class__, name,
                 property(
                     fget=lambda self, name=name, default=default: (
                         name in self.config,

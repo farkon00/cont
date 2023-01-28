@@ -6,12 +6,10 @@ from state import State, Proc
 
 class Type(ABC):
     @abstractmethod
-    def __eq__(self, other) -> bool:
-        ...
+    def __eq__(self, other) -> bool: ...
 
     @abstractmethod
-    def text_repr(self) -> str:
-        ...
+    def text_repr(self) -> str: ...
 
     def __hash__(self) -> int:
         return hash(self.text_repr())
@@ -24,6 +22,7 @@ class Ptr(Type):
     def __eq__(self, other) -> bool:
         if isinstance(other, Ptr):
             return self.typ == other.typ or other.typ is None or self.typ is None
+        
         return False
 
     def text_repr(self) -> str:
@@ -39,11 +38,11 @@ class Array(Type):
         if isinstance(other, Array):
             return (
                 (
-                    self.typ == other.typ
-                    and (self.len == other.len or -1 in (self.len, other.len))
-                )
-                or other.typ is None
-                or self.typ is None
+                    self.typ == other.typ and\
+                    self.len == other.len or -1 in (self.len, other.len)
+                ) or\
+                other.typ is None or\
+                self.typ is None
             )
         return False
 
@@ -92,10 +91,7 @@ class Struct(Type):
     ):
         self.name: str = name
         self.fields: Dict[str, object] = {**fields, **(parent.fields if parent else {})}
-        self.fields_types: List[object] = [
-            *fields_types,
-            *(parent.fields_types if parent else {}),
-        ]
+        self.fields_types: List[object] = [*fields_types, *(parent.fields_types if parent else {})]
         self.is_unpackable: bool = is_unpack
         self.methods: Dict[str, Proc] = {} if parent is None else parent.methods.copy()
         self.parent: Optional["Struct"] = parent
@@ -163,17 +159,15 @@ def parse_type(
     if end is not None:
         if end in name:
             end_index = name.find(end)
-            State.tokens_queue.append((name[end_index + len(end) :], token[1]))
+            State.tokens_queue.append((name[end_index + len(end):], token[1]))
             name = name[:end_index]
             if not name.strip():
                 return None
     if name.startswith("*"):
         return Ptr(
             parse_type(
-                (token[0][1:], token[1]),
-                error,
-                auto_ptr,
-                allow_unpack,
+                (token[0][1:], token[1]), error,
+                auto_ptr, allow_unpack,
                 var_type_scope=var_type_scope,
             )
         )
@@ -208,11 +202,8 @@ def parse_type(
         arr = Array(
             length,
             parse_type(
-                next(State.tokens),
-                error,
-                True,
-                False,
-                end,
+                next(State.tokens), error,
+                True, False, end,
                 var_type_scope=var_type_scope,
             ),
         )

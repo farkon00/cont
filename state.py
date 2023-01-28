@@ -139,52 +139,24 @@ class State:
     dir: str = ""
 
     UNAVAILABLE_NAMES: List[str] = [
-        "if",
-        "else",
-        "end",
-        "while",
-        "proc",
-        "bind",
-        *["syscall" + str(i) for i in range(7)],
-        "+",
-        "-",
-        "*",
-        "div",
-        "dup",
-        "drop",
-        "swap",
-        "rot",
-        "<",
-        ">",
-        "<=",
-        ">=",
-        "==",
-        "!=",
-        "!",
-        "!8",
-        "@",
-        "@8",
+        "if", "else", "end", "while", "proc", "bind", 
+        *["syscall" + str(i) for i in range(7)], 
+        "+", "-", "*", "div", "dup", "drop", "swap", "rot",
+        "<", ">", "<=", ">=", "==", "!=", "!", "!8", "@", 
+        "@8"
     ]
 
     DUNDER_METHODS: List[str] = [
-        "__add__",
-        "__sub__",
-        "__mul__",
-        "__gt__",
-        "__lt__",
-        "__ge__",
-        "__le__",
-        "__eq__",
-        "__ne__",
+        "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__"
     ]
     NOT_SAME_TYPE_DUNDER_METHODS: List[str] = ["__index__", "__index_ptr__"]
 
     TYPE_STRUCTS: List[str] = ["Type", "PtrType", "ArrayType", "Struct"]
     TYPE_IDS: Dict[str, int] = {
-        "int": 0,
-        "ptr": 1,
-        "array": 2,
-        "addr": 3,
+        "int" : 0,
+        "ptr" : 1,
+        "array" : 2,
+        "addr" : 3,
     }
 
     def var_types() -> Dict[str, "VarType"]:  # type: ignore
@@ -198,13 +170,8 @@ class State:
 
     @staticmethod
     def check_name(token: Tuple[str, str], error="procedure"):
-        if (
-            token[0] in State.procs
-            or token[0] in State.memories
-            or token[0] in State.constants
-            or token[0] in State.structures
-            or token[0] in State.enums
-        ):
+        if token[0] in [*State.procs, *State.memories, 
+            *State.constants, *State.structures, *State.enums]:
             State.loc = token[1]
             State.throw_error(f'name for {error} "{token[0]}" is already taken')
         if token[0] in State.UNAVAILABLE_NAMES:
