@@ -47,6 +47,10 @@ def main():
 
     State.compute_used_procs()
 
+    if subprocess.getstatusoutput('fasm -v')[0] == 0:
+        assert "Please install Flat Assembler (Fasm)"
+        exit()
+
     out = file_name if config.out is None else config.out
 
     with open(f"{out}.asm", "w") as f:
