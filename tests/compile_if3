@@ -22,4 +22,4 @@ end
 :
 
 :
-[1;31mError tests/temp/code:19:13:[0m unknown token: Vector3
+[1;31mError tests/temp/code_compile_if3:19:13:[0m unknown token: Vector3
