@@ -615,7 +615,7 @@ push rax
 xor rdx, rdx
 pop rbx
 pop rax
-div rbx
+idiv rbx
 push rax
 push rdx
 """

@@ -11,6 +11,11 @@ include std.cn
 69 42 % print
 2141 654 % print
 12432 654 div print print 
+
+// Negatives
+45 -3 + print
+32 -4 / print
+-4 -3 * print
 :
 3
 349057
@@ -24,3 +29,6 @@ include std.cn
 179
 6
 19
+42
+-8
+12
