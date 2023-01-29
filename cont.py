@@ -3,7 +3,7 @@ import os
 import stat
 import subprocess
 
-from state import State
+from state import State, cont_assert
 from config import Config
 from parsing.parsing import parse_to_ops
 from generating.generating import generate_fasm
@@ -28,9 +28,8 @@ def main():
 
     ops = parse_to_ops(program, config.dump_tokens)
 
-    if State.compile_ifs_opened:
-        State.throw_error("unclosed #if")
-    assert not State.false_compile_ifs, "Something went terribly wrong with #if"
+    assert not State.compile_ifs_opened, "unclosed #if" 
+    cont_assert(not State.false_compile_ifs, "Something went terribly wrong with #if")
 
     if config.dump:
         for op in ops:
@@ -74,4 +73,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except AssertionError as e:
+        State.throw_error(e.args[0])

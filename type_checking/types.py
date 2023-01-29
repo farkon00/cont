@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict, Optional
 
-from state import State, Proc
+from state import State, Proc, cont_assert
 
 
 class Type(ABC):
@@ -47,7 +47,8 @@ class Array(Type):
         return False
 
     def text_repr(self) -> str:
-        assert self.typ is not None
+        cont_assert(self.typ is not None, 
+            "Can't get text representation of an internal array")
         return f"arr_{self.typ.text_repr()}_{self.len}"
 
 
@@ -142,7 +143,7 @@ def type_to_str(_type):
     elif _type is None:
         return "any"
     else:
-        assert False, f"Unimplemented type in type_to_str: {_type}"
+        cont_assert(False, f"Unimplemented type in type_to_str: {_type}")
 
 
 def parse_type(
@@ -184,10 +185,8 @@ def parse_type(
             return State.structures[name]
     elif name.startswith("@") and allow_unpack:
         if name[1:] not in State.structures:
-            if throw_exc:
-                State.throw_error(f'structure "{name[1:]}" was not found')
-            else:
-                return None
+            assert not throw_exc, f'structure "{name[1:]}" was not found'
+            return None
         return State.structures[name[1:]].fields_types
     elif name.startswith("[") and name.endswith("]"):
         if name[1:-1] in State.constants:
@@ -195,10 +194,8 @@ def parse_type(
         elif name[1:-1].isnumeric():
             length = int(name[1:-1])
         else:
-            if throw_exc:
-                State.throw_error(f'constant "{name[1:-1]}" was not found')
-            else:
-                return None
+            assert not throw_exc, f'constant "{name[1:-1]}" was not found'
+            return None
         arr = Array(
             length,
             parse_type(
@@ -208,10 +205,8 @@ def parse_type(
             ),
         )
         if arr is None:
-            if throw_exc:
-                State.throw_error("array type was not defined")
-            else:
-                return None
+            assert not throw_exc, "array type was not defined"
+            return None
         return Ptr(arr) if auto_ptr else arr
     else:
         if name in State.var_types():
@@ -221,8 +216,7 @@ def parse_type(
                 var_type = VarType(name)
                 var_type_scope[name] = var_type
                 return var_type
-            elif throw_exc:
-                State.throw_error(f'Unknown type "{name}" in {error}')
+            assert not throw_exc, f'Unknown type "{name}" in {error}'
 
 
 def sizeof(_type) -> int:
@@ -233,13 +227,11 @@ def sizeof(_type) -> int:
     elif isinstance(_type, Array):
         return _type.len * sizeof(_type.typ)
     elif isinstance(_type, VarType):
-        State.throw_error("Can't get size of type variable")
+        State.throw_error("Can't get size of a type variable")
     elif _type is None:
-        State.throw_error("Cant get size of any")
+        State.throw_error("Can't get size of any")
     else:
-        assert False, f"Unimplemented type in sizeof: {type_to_str(_type)}"
-
-    return 0  # Mypy, shut up!
+        cont_assert(False, f"Unimplemented type in sizeof: {type_to_str(_type)}")
 
 
 def must_ptr(_type) -> bool:

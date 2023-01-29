@@ -8,6 +8,17 @@ from functools import reduce
 from parsing.op import Op
 
 
+class InternalAssertionError(Exception):
+    """
+    Error used in case there is assertion needed in cont
+    """
+    pass
+
+def cont_assert(condition: bool, message: str):
+    if not condition:
+        raise InternalAssertionError(message)
+
+
 class BlockType(Enum):
     IF = auto()
     ELSE = auto()

@@ -146,9 +146,8 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
                 queue.add(typ.typ)
             return addr + f"dq {State.TYPE_IDS['ptr']},8,1,type_{typ.typ.text_repr()}"
     elif isinstance(typ, Array):
-        assert (
-            typ.len != -1 and typ.typ is not None
-        ), "In lang(impossible to create by user) array given to generate_fasm_type"
+        cont_assert(typ.len != -1 and typ.typ is not None, 
+            "In lang(impossible to create by user) array given to generate_fasm_type")
         if typ not in generated_types:
             queue.add(typ.typ)
         return (
@@ -182,7 +181,7 @@ def generate_op_comment(op: Op):
 
 
 def generate_op(op: Op):
-    assert len(OpType) == 40, "Unimplemented type in generate_op"
+    cont_assert(len(OpType) == 40, "Unimplemented type in generate_op")
 
     if not op.compiled:
         return ""
@@ -205,9 +204,8 @@ def generate_op(op: Op):
     elif op.type == OpType.PUSH_VAR_PTR:
         return comment + f"push mem+{State.memories[op.operand].offset}\n"
     elif op.type == OpType.PUSH_LOCAL_MEM:
-        assert (
-            State.current_proc is not None
-        ), "Bug in parsing of local and global memories"
+        cont_assert(State.current_proc is not None, 
+            "Bug in parsing of local and global memories")
         return (
             comment
             + f"""
@@ -218,9 +216,8 @@ push rbx
 """
         )
     elif op.type == OpType.PUSH_LOCAL_VAR:
-        assert (
-            State.current_proc is not None
-        ), "Bug in parsing of local and global memories"
+        cont_assert(State.current_proc is not None, 
+            "Bug in parsing of local and global memories")
         return (
             comment
             + f"""
@@ -232,9 +229,8 @@ push rax
 """
         )
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
-        assert (
-            State.current_proc is not None
-        ), "Bug in parsing of local and global memories"
+        cont_assert(State.current_proc is not None, 
+            "Bug in parsing of local and global memories")
         return (
             comment
             + f"""
@@ -321,7 +317,7 @@ mov [call_stack_ptr], rbx
 """
         )
     elif op.type == OpType.ENDPROC:
-        assert State.current_proc is not None, "Bug in parsing of procedures"
+        cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
         asm = (
             comment
             + f"""
@@ -379,7 +375,7 @@ push rax
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"
     elif op.type == OpType.TYPED_LOAD:
-        assert not isinstance(op.operand, Struct), "Bug in parsing of structure types"
+        cont_assert(not isinstance(op.operand, Struct), "Bug in parsing of structure types")
         return (
             comment
             + """
@@ -518,9 +514,6 @@ sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
             var: Array = State.variables[op.operand[0].name]  # type: ignore
         else:
             var: Array = State.current_proc.variables[op.operand[0].name]  # type: ignore
-        assert hasattr(var.typ, "typ")
-        assert var.typ is not None
-        assert var.typ.typ is not None
         return (
             comment
             + f"""
@@ -589,12 +582,12 @@ push rbx
     elif op.type == OpType.CAST:
         return ""  # Casts are type checking thing
     else:
-        assert False, f"Generation isnt implemented for op type: {op.type.name}"
+        cons_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
 
 
 def generate_operator(op: Op):
-    assert len(Operator) == 20, "Unimplemented operator in generate_operator"
-    assert op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}"
+    cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator")
+    cont_assert(op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}")
 
     if op.operand in (Operator.ADD, Operator.SUB):
         return f"""
@@ -700,4 +693,4 @@ mov bl, [rax]
 push rbx
 """
     else:
-        assert False, f"Generation isnt implemented for operator: {op.operand.name}"
+        cont_assert(False, f"Generation isnt implemented for operator: {op.operand.name}")
