@@ -160,7 +160,9 @@ class State:
     }
 
     def var_types() -> Dict[str, "VarType"]:  # type: ignore
-        return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
+        if State.var_type_scopes:
+            return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
+        return {}
 
     @staticmethod
     def get_new_ip(op: Op):

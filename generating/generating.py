@@ -392,14 +392,12 @@ push rbx
         struct = State.structures[op.operand]
         size = sizeof(struct)
         if State.config.struct_malloc[1]:
-            buf = (
-                comment
-                + f"""
+            buf = comment +\
+f"""
 push {size}
 call addr_{State.procs["malloc"].ip}
 pop rbx
 """
-            )
         else:
             buf = comment +\
 f"""

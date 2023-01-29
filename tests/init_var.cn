@@ -1,0 +1,60 @@
+include std.cn
+include io.cn
+include vector.cn
+
+init var vec IntVector
+init var vec2 IntVector
+
+69  vec2.push
+420 vec2.push
+1   vec2.push
+12  vec2.push
+
+84 vec.push
+vec2 vec.extend_vec
+
+*print vec.iter
+
+nproc read_file @str -> @str:
+  O_RDONLY len data // Arguments for open
+  init var file File
+
+  file.read_all
+end
+
+"tests/init_var.cn" read_file 
+swap drop 20 swap // Get a slice 20 characters long 
+println
+
+// Arrays
+struct Vector2
+  int x
+  int y
+
+  nproc print:
+    "(" puts
+    self.x int_to_str puts
+    ", " puts
+    self.y int_to_str puts
+    ")" println
+  end
+end
+
+init var arr [69] Vector2
+
+45 arr [] .*x 69 swap !
+68 arr [] .*y 42 swap !
+45 arr [] .*y 12 swap !
+
+45 arr [] .print
+68 arr [] .print
+:
+84
+69
+420
+1
+12
+include std.cn
+incl
+(69, 12)
+(0, 42)

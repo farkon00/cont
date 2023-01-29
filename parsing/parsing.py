@@ -405,7 +405,7 @@ def parse_var():
     _type = parse_type(safe_next_token("Expected variable type"), "variable", False)
     State.check_name(name, "variable")
     mem = Memory.new_memory(name[0], sizeof(_type))
-    if State.is_init and _type != Array(typ=Ptr()):
+    if State.is_init and _type != Array(typ=Ptr()) and not isinstance(_type, Struct):
         State.throw_error(f"cannot auto init variable with type {type_to_str(_type)}")
     if State.current_proc is not None:
         State.current_proc.variables[name[0]] = _type
@@ -426,8 +426,7 @@ def parse_var():
                     OpType.PUSH_VAR_PTR
                     if State.current_proc is None
                     else OpType.PUSH_LOCAL_VAR_PTR,
-                    name[0],
-                    State.loc,
+                    name[0], State.loc
                 ),
                 Op(OpType.OPERATOR, Operator.STORE, State.loc),
             ]
@@ -437,6 +436,20 @@ def parse_var():
         pass
 
     if is_init:
+        if isinstance(_type, Struct):
+            if "__init__" not in _type.methods:
+                State.throw_error(f"Structure to init does not have an __init__ method")
+            State.add_proc_use(_type.methods["__init__"])
+            return [
+                Op(
+                    OpType.PUSH_VAR
+                    if State.current_proc is None
+                    else OpType.PUSH_LOCAL_VAR,
+                    name[0]
+                ),
+                Op(OpType.CALL, _type.methods["__init__"])
+            ]
+        # if the type is an array
         if State.current_proc is None:
             Memory.global_offset += sizeof(_type.typ.typ) * _type.len
         else:
