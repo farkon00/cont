@@ -8,6 +8,9 @@ proc IntVectorIterPredicate int:
   drop
 end
 
+proc IntVectorMapPredicate int -> int:
+end
+
 struct IntVector
   int capacity
   int len
@@ -79,6 +82,7 @@ struct IntVector
   end
 
   nproc iter addr predicate:
+    self.check_innitted
     0
     while dup self.len < do
       dup self.data []
@@ -86,7 +90,28 @@ struct IntVector
       call_like IntVectorIterPredicate
       1 +
     end drop
-  end 
+  end
+
+  nproc map addr predicate -> IntVector:
+    self.check_innitted
+    sizeoftype IntVector malloc (IntVector)
+    bind new:
+      new.__init__
+      self.capacity new.capacity -
+      if dup 0 > do
+        dup new.allocate
+      end drop
+      0
+      while dup self.len < do
+        dup self.data []
+        predicate
+        call_like IntVectorMapPredicate
+        new.push
+        1 +
+      end drop
+      new
+    end
+  end
 
   nproc __index_ptr__ int index -> *int:
     self.check_innitted
