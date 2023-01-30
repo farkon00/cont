@@ -456,10 +456,12 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
 
         return Op(OpType.PUSH_INT, sizeof(_type))
     elif op.type == OpType.PUSH_TYPE:
-        if isinstance(op.operand, (Int, Addr)):
+        if isinstance(op.operand, Int):
             stack.append(Ptr(State.structures["Type"]))
         elif isinstance(op.operand, Ptr):
             stack.append(Ptr(State.structures["PtrType"]))
+        elif isinstance(op.operand, Addr):
+            stack.append(Ptr(State.structures["AddrType"]))
         elif isinstance(op.operand, Array):
             stack.append(Ptr(State.structures["ArrayType"]))
     elif op.type == OpType.SYSCALL:
