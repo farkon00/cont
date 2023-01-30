@@ -1,7 +1,5 @@
 include std.cn
 
-const Struct_FIELDS_SIZE 0x7FFFFFFFFFFFFFFF ;
-
 const Type.INT_ID 0 ;
 const Type.PTR_ID 1 ;
 const Type.ARRAY_ID 2 ;
@@ -32,9 +30,35 @@ struct Type
         self 32 ptr+ @
         typ 32 ptr+ @
         == and
+      else if self.id Type.ADDR_ID == do
+        // TODO: Start using a cast in here when compiler will allow
+        self 24 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type typ 24 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type 
+        self 32 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type typ 32 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type 
+        bind self.in_types typ.in_types self.out_types typ.out_types:
+          self.in_types array_length typ.in_types array_length !=
+          self.out_types array_length typ.out_types  array_length !=
+          or if
+            0
+          else
+            // Check if self.in_types and typ.in_types are equal
+            1 0 while dup self.in_types [] (int) bind cond index val: cond index cond val and end do
+              swap drop // Drop the previous cond
+              dup self.in_types [] over typ.in_types [] ==
+              swap 1 +
+            end drop
+
+            // Check if self.out_types and typ.out_types are equal
+            1 0 while dup self.out_types [] (int) bind cond index val: cond index cond val and end do
+              swap drop // Drop the previous cond
+              dup self.out_types [] over typ.out_types [] ==
+              swap 1 +
+            end drop
+            and // And the the last cont of both loops
+          end
+        end
       else
         1
-      end end
+      end end end
     else
       0
     end
@@ -50,9 +74,14 @@ struct (Type) ArrayType
   int len
 end
 
+struct (Type) AddrType
+  [DYNAMIC_ARRAY_SIZE] Type in_types
+  [DYNAMIC_ARRAY_SIZE] Type out_types
+end
+
 struct (Type) Struct
   Struct parent
-  [Struct_FIELDS_SIZE] Type fields
+  [DYNAMIC_ARRAY_SIZE] Type fields
 end
 
 nproc print_type Type typ:
@@ -68,6 +97,24 @@ nproc print_type Type typ:
     else
       "void " puts 
     end
+  end
+  if typ.id Type.ADDR_ID == do
+    "(" puts
+
+    0 while dup typ (AddrType) .in_types [] (int) do
+      dup typ (AddrType) .in_types [] print_type
+      1 +
+    end drop
+
+    "->" puts
+
+    0 while dup typ (AddrType) .out_types [] (int) do
+      " " puts
+      dup typ (AddrType) .out_types [] print_type
+      1 +
+    end drop
+
+    ")" puts
   end
   if typ.id Type.ARRAY_ID == do
     "len: " puts 

@@ -241,7 +241,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
     elif op.type == OpType.PUSH_NULL_STR:
         stack.append(Ptr())
     elif op.type == OpType.PUSH_PROC:
-        stack.append(Addr())
+        stack.append(Addr(op.operand.in_stack, op.operand.out_stack))
     elif op.type == OpType.CAST:
         check_stack(stack, [None])
         stack.append(op.operand)
@@ -417,9 +417,12 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
             offset += sizeof(j)
         stack.append(Ptr(ptr.typ.fields[op.operand]))
         return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
-    elif op.type == OpType.CALL_LIKE:
-        check_stack(stack, [*op.operand.in_stack, Addr()])
-        stack.extend(op.operand.out_stack)
+    elif op.type == OpType.CALL_ADDR:
+        assert len(stack) >= 1, "The stack is too short"
+        predicate = stack.pop()
+        assert isinstance(predicate, Addr), f"Predicate must be an addr, but it's {type_to_str(predicate)}"
+        check_stack(stack, predicate.in_types.copy())
+        stack.extend(predicate.out_types)
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         assert len(stack) >= 1, "stack is too short"
         arr = stack[-1]

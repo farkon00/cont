@@ -33,7 +33,7 @@ class OpType(Enum):
     PUSH_FIELD_PTR = auto()
     MOVE_STRUCT = auto()
     UPCAST = auto()
-    CALL_LIKE = auto()
+    CALL_ADDR = auto()
     INDEX = auto()
     INDEX_PTR = auto()
     AUTO_INIT = auto()

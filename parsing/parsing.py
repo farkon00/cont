@@ -132,7 +132,7 @@ def parse_proc_head():
                 continue
 
             res = parse_type(
-                (proc_token_value, proc_token[1]),
+                (proc_token_value, f"{State.filename}:{proc_token[1]}"),
                 "procedure contaract",
                 allow_unpack=True,
                 end=":",
@@ -322,7 +322,7 @@ def parse_struct() -> Union[Op, List[Op]]:
             if started_proc or static_started:
                 State.loc = f"{State.filename}:{current_token[1]}"
                 State.throw_error("field defenition in non-field segment")
-            field_type = parse_type(current_token, "structure definition")
+            field_type = parse_type((current_token[0], f"{State.filename}:{current_token[1]}"), "structure definition")
         else:
             if current_token[0] in struct.fields:
                 State.loc = f"{State.filename}:{current_token[1]}"
@@ -392,7 +392,8 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> Li
 
 def parse_var():
     name = safe_next_token("Expected variable name")
-    _type = parse_type(safe_next_token("Expected variable type"), "variable", False)
+    type_tok = safe_next_token("Expected variable type")
+    _type = parse_type((type_tok[0], f"{State.filename}:{type_tok[1]}"), "variable", False)
     State.check_name(name, "variable")
     mem = Memory.new_memory(name[0], sizeof(_type))
     assert not State.is_init or _type == Array(typ=Ptr()) or isinstance(_type, Struct),\
@@ -707,7 +708,8 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         State.constants[name[0]] = evaluate_block(State.loc)
 
     elif token == "sizeoftype":
-        _type = parse_type(next(State.tokens), "size", False)
+        type_tok = safe_next_token("Expected type to get a size of")
+        _type = parse_type((type_tok[0], f"{State.filename}:{type_tok[1]}"), "size", False)
         return Op(OpType.PUSH_INT, sizeof(_type))
 
     elif token == "bind":
@@ -752,19 +754,16 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.ASM, asm[1:-1])
 
     elif token == "type":
-        typ = parse_type(safe_next_token(), "type")
+        type_tok = safe_next_token("Expected a type")
+        typ = parse_type((type_tok[0], f"{State.filename}:{type_tok[1]}"), "type")
         State.runtimed_types.add(typ)
         return Op(OpType.PUSH_TYPE, typ, token[1])
 
     elif token == "include":
         return include_file()
 
-    elif token == "call_like":
-        name = next(State.tokens)
-        if name[0] not in State.procs:
-            State.loc = name[1]
-            State.throw_error(f'procedure "{name[0]}" is not defined')
-        return Op(OpType.CALL_LIKE, State.procs[name[0]])
+    elif token == "call":
+        return Op(OpType.CALL_ADDR, None)
 
     elif token == "[]":
         return Op(OpType.INDEX)
@@ -842,7 +841,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token.startswith("*") and token[1:] in State.procs:
         State.add_proc_use(State.procs[token[1:]])
-        return Op(OpType.PUSH_PROC, State.procs[token[1:]].ip)
+        return Op(OpType.PUSH_PROC, State.procs[token[1:]])
 
     elif (
         token.split(".", 1)[0][1:] in State.bind_stack or\

@@ -212,13 +212,19 @@ proc print_malloc_list:
   end drop
 end
 
-proc null_str_len ptr -> int:
-  0 swap
-  dup @8 0 !=
-  while
-    swap 1 +
-    dup rot dup rot ptr+ @8 0 !=
-  end drop
+nproc null_str_len ptr nstr -> int:
+  nstr
+  while dup @8 do
+    1 ptr+
+  end
+  nstr (int) ptr- (int)
+end
+
+proc array_length [DYNAMIC_ARRAY_SIZE] T -> int:
+  ([DYNAMIC_ARRAY_SIZE]) int 0 
+  while 2dup swap [] do
+    1 +
+  end swap drop
 end
 
 proc nstr_to_str ptr -> @str:

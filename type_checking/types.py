@@ -5,14 +5,14 @@ from state import State, Proc, cont_assert
 
 
 class Type(ABC):
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
     @abstractmethod
     def __eq__(self, other) -> bool: ...
 
     @abstractmethod
     def text_repr(self) -> str: ...
-
-    def __hash__(self) -> int:
-        return hash(self.text_repr())
 
 
 class Ptr(Type):
@@ -27,6 +27,9 @@ class Ptr(Type):
 
     def text_repr(self) -> str:
         return f"ptr{'_' + self.typ.text_repr() if self.typ is not None else ''}"
+    
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
 
 
 class Array(Type):
@@ -51,6 +54,9 @@ class Array(Type):
             "Can't get text representation of an internal array")
         return f"arr_{self.typ.text_repr()}_{self.len}"
 
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 
 class Int(Type):
     def __eq__(self, other) -> bool:
@@ -59,13 +65,27 @@ class Int(Type):
     def text_repr(self) -> str:
         return f"int"
 
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 
 class Addr(Type):
+    def __init__(self, in_types: List[Type], out_types: List[Type]):
+        self.in_types = in_types
+        self.out_types = out_types
+
     def __eq__(self, other) -> bool:
-        return isinstance(other, Addr) or other is None
+        if other is None: return True
+        if not isinstance(other, Addr): return False
+        return self.in_types == self.in_types and self.out_types == other.out_types
 
     def text_repr(self) -> str:
-        return f"addr"
+        in_types = '__'.join([i.text_repr() for i in self.in_types])
+        out_types = '__'.join([i.text_repr() for i in self.out_types])
+        return f"addr_{len(self.in_types)}_{len(self.out_types)}__{in_types}___{out_types}"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
 
 
 class VarType(Type):
@@ -78,6 +98,9 @@ class VarType(Type):
     def text_repr(self) -> str:
         State.throw_error("Can't get variable type runtime representation")
         return "unreachable"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
 
 
 class Struct(Type):
@@ -120,6 +143,9 @@ class Struct(Type):
     def text_repr(self) -> str:
         return f"struct_{id(self)}"
 
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
 
 def type_to_str(_type):
     """
@@ -128,7 +154,9 @@ def type_to_str(_type):
     if isinstance(_type, Int):
         return "int"
     elif isinstance(_type, Addr):
-        return "addr"
+        in_types = " ".join([type_to_str(i) for i in _type.in_types])
+        out_types = " ".join([type_to_str(i) for i in _type.out_types])
+        return f"addr ({in_types} -> {out_types})"
     elif isinstance(_type, Ptr):
         if _type.typ is not None:
             return "*" + type_to_str(_type.typ)
@@ -155,7 +183,7 @@ def parse_type(
     throw_exc: bool = True,
     var_type_scope: Optional[Dict[str, VarType]] = None,
 ):
-    State.loc = f"{State.filename}:{token[1]}"
+    State.loc = token[1]
     name = token[0]
     if end is not None:
         if end in name:
@@ -177,7 +205,13 @@ def parse_type(
     elif name == "ptr":
         return Ptr()
     elif name == "addr":
-        return Addr()
+        try:
+            name, _ = next(State.tokens)
+        except StopIteration:
+            State.throw_exception("Unexpected EOF")
+        assert name in State.procs, f"Procedure {name} was not found"
+        proc = State.procs[name]
+        return Addr(proc.in_stack, proc.out_stack)
     elif name in State.structures:
         if auto_ptr:
             return Ptr(State.structures[name])
@@ -196,10 +230,14 @@ def parse_type(
         else:
             assert not throw_exc, f'constant "{name[1:-1]}" was not found'
             return None
+        try:
+            arr_type = next(State.tokens)
+        except StopIteration:
+            State.throw_error("Expected array type")
         arr = Array(
             length,
             parse_type(
-                next(State.tokens), error,
+                arr_type, error,
                 True, False, end,
                 var_type_scope=var_type_scope,
             ),

@@ -2,7 +2,6 @@ include std.cn
 
 const VEC_INIT_CAPACITY 10 ;
 const VEC_CAPACITY_STEP 10 ;
-const VEC_MAX_CAPACITY 0x7FFFFFFFFFFFFFFF ;
 
 proc IntVectorIterPredicate int:
   drop
@@ -14,7 +13,7 @@ end
 struct IntVector
   int capacity
   int len
-  [VEC_MAX_CAPACITY] int data
+  [DYNAMIC_ARRAY_SIZE] int data
 
   nproc __init__:
     VEC_INIT_CAPACITY !self.capacity
@@ -81,18 +80,17 @@ struct IntVector
     *self.len dec
   end
 
-  nproc iter addr predicate:
+  nproc iter addr IntVectorIterPredicate predicate:
     self.check_innitted
     0
     while dup self.len < do
       dup self.data []
-      predicate
-      call_like IntVectorIterPredicate
+      predicate call
       1 +
     end drop
   end
 
-  nproc map addr predicate -> IntVector:
+  nproc map addr IntVectorMapPredicate predicate -> IntVector:
     self.check_innitted
     sizeoftype IntVector malloc (IntVector)
     bind new:
@@ -104,8 +102,7 @@ struct IntVector
       0
       while dup self.len < do
         dup self.data []
-        predicate
-        call_like IntVectorMapPredicate
+        predicate call
         new.push
         1 +
       end drop

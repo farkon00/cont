@@ -75,6 +75,8 @@ proc !32 int ptr:
   asm "mov [rbx], ecx"
 end
 
+const DYNAMIC_ARRAY_SIZE 0x7FFFFFFFFFFFFFFF ;
+
 
 proc boolify int -> int: 0 != end
 

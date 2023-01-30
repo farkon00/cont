@@ -137,7 +137,17 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
     if isinstance(typ, Int):
         return addr + f"dq {State.TYPE_IDS['int']},8,1"
     elif isinstance(typ, Addr):
-        return addr + f"dq {State.TYPE_IDS['addr']},8,1"
+        buf = addr + f"dq {State.TYPE_IDS['addr']},8,1,$+16,$+{8 + (len(typ.in_types) + 1) * 8}"
+        for field in typ.in_types:
+            if typ not in generated_types:
+                queue.add(field)
+            buf += f",type_{field.text_repr()}"
+        buf += ",0"
+        for field in typ.out_types:
+            if typ not in generated_types:
+                queue.add(field)
+            buf += f",type_{field.text_repr()}"
+        return buf + ",0"
     elif isinstance(typ, Ptr):
         if typ.typ is None:
             return addr + f"dq {State.TYPE_IDS['ptr']},8,1,0"
@@ -165,7 +175,7 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
         for field in typ.fields_types:
             if typ not in generated_types:
                 queue.add(field)
-            buf += f",type_{field.text_repr()}"  # type: ignore
+            buf += f",type_{field.text_repr()}"
         return buf + ",0"  # Null for the end of fields
 
 
@@ -248,7 +258,7 @@ push rbx
     elif op.type == OpType.PUSH_NULL_STR:
         return comment + f"push str_{op.operand}\n"
     elif op.type == OpType.PUSH_PROC:
-        return comment + f"push addr_{op.operand}\n"
+        return comment + f"push addr_{op.operand.ip}\n"
     elif op.type == OpType.OPERATOR:
         return comment + generate_operator(op)
     elif op.type == OpType.SYSCALL:
@@ -547,14 +557,12 @@ jmp addr_{op.operand[1]}_1
 addr_{op.operand[1]}_2:
 """
         )
-    elif op.type == OpType.CALL_LIKE:
-        return (
-            comment
-            + f"""
+    elif op.type == OpType.CALL_ADDR:
+        return comment +\
+f"""
 pop rax
 call rax
 """
-        )
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         code = f"""
 pop r11
