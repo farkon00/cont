@@ -1,0 +1,62 @@
+include std.cn
+include type.cn
+include vector.cn
+
+type int              print_type "" println
+type addr print       print_type "" println
+type addr <<          print_type "" println
+type *int             print_type "" println
+type **ptr            print_type "" println
+type IntVector        print_type "" println
+type *IntVector       print_type "" println
+type [12] str   print_type "" println
+type [3] *int         print_type "" println
+
+type int               type int          == print
+type *int              type *int         == print
+type *int              type **int        == print
+type **int             type *int         == print
+type *int              type *ptr         == print
+type ptr               type *int         == print
+type *ptr              type ptr          == print
+type IntVector         type *int         == print
+type *IntVector        type int          == print
+type IntVector         type str          == print
+type [69] int          type [45] int     == print
+type [69] int          type [69] int     == print
+type [12] ptr          type [45] int     == print
+type [69] *int         type [69] ptr     == print
+type addr print        type addr shadowi == print
+type addr print        type addr print   == print
+type addr print        type addr shadowp == print
+type addr null_str_len type addr memcpy  == print
+type addr ptr+         type addr ptr-    == print
+:
+0 8 primitive 
+3 8 primitive (0 8 primitive ->)
+3 8 primitive (0 8 primitive 0 8 primitive -> 0 8 primitive )
+1 8 primitive to: 0 8 primitive 
+1 8 primitive to: 1 8 primitive to: 1 8 primitive to: void 
+1 8 primitive to: 5 24 fields: 0 8 primitive  0 8 primitive  1 8 primitive to: 2 8 primitive len: 9223372036854775807 of: 0 8 primitive  
+1 8 primitive to: 1 8 primitive to: 5 24 fields: 0 8 primitive  0 8 primitive  1 8 primitive to: 2 8 primitive len: 9223372036854775807 of: 0 8 primitive  
+1 8 primitive to: 2 8 primitive len: 12 of: 1 8 primitive to: 4 16 fields: 0 8 primitive  1 8 primitive to: void  
+1 8 primitive to: 2 8 primitive len: 3 of: 1 8 primitive to: 0 8 primitive 
+1
+1
+0
+0
+0
+1
+1
+0
+0
+0
+0
+1
+0
+1
+1
+1
+0
+0
+1

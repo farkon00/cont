@@ -756,7 +756,9 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "type":
         type_tok = safe_next_token("Expected a type")
         typ = parse_type((type_tok[0], f"{State.filename}:{type_tok[1]}"), "type")
-        State.runtimed_types.add(typ)
+        if typ not in State.runtimed_types_set:
+            State.runtimed_types_set.add(typ)
+            State.runtimed_types_list.append(typ)
         return Op(OpType.PUSH_TYPE, typ, token[1])
 
     elif token == "include":

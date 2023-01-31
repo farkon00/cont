@@ -124,7 +124,8 @@ class State:
 
     used_procs: Set[Proc] = set()
     included_files: List[str] = []
-    runtimed_types: Set["Type"] = set()  # type: ignore
+    runtimed_types_set: Set["Type"] = set()  # type: ignore
+    runtimed_types_list: List["Type"] = []  # type: ignore
     curr_type_id: int = 3
 
     string_data: List[bytes] = []
@@ -162,7 +163,7 @@ class State:
     ]
     NOT_SAME_TYPE_DUNDER_METHODS: List[str] = ["__index__", "__index_ptr__"]
 
-    TYPE_STRUCTS: List[str] = ["Type", "PtrType", "ArrayType", "Struct"]
+    TYPE_STRUCTS: List[str] = ["Type", "PtrType", "ArrayType", "AddrType", "Struct"]
     TYPE_IDS: Dict[str, int] = {
         "int" : 0,
         "ptr" : 1,

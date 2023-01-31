@@ -121,18 +121,20 @@ call_stack: rb {State.config.size_call_stack}
 
 def generate_fasm_types():
     buf = ""
-    queue = State.runtimed_types.copy()
+    queue_set = State.runtimed_types_set.copy()
+    queue_list = State.runtimed_types_list.copy()
     generated_types: Set[object] = set()
-    while queue:
-        typ = queue.pop()
+    while queue_list:
+        typ = queue_list.pop()
+        queue_set.remove(typ)
         if typ.text_repr() in generated_types:
             continue
         generated_types.add(typ.text_repr())
-        buf += generate_fasm_type(typ, queue, generated_types) + "\n"
+        buf += generate_fasm_type(typ, queue_set, queue_list, generated_types) + "\n"
     return buf
 
 
-def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
+def generate_fasm_type(typ, queue_set: Set[Type], queue_list: List[Type], generated_types: Set[str]):
     addr = f"type_{typ.text_repr()}: "
     if isinstance(typ, Int):
         return addr + f"dq {State.TYPE_IDS['int']},8,1"
@@ -140,12 +142,16 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
         buf = addr + f"dq {State.TYPE_IDS['addr']},8,1,$+16,$+{8 + (len(typ.in_types) + 1) * 8}"
         for field in typ.in_types:
             if typ not in generated_types:
-                queue.add(field)
+                if field not in queue_set:
+                    queue_set.add(field)
+                    queue_list.append(field)
             buf += f",type_{field.text_repr()}"
         buf += ",0"
         for field in typ.out_types:
             if typ not in generated_types:
-                queue.add(field)
+                if field not in queue_set:
+                    queue_set.add(field)
+                    queue_list.append(field)
             buf += f",type_{field.text_repr()}"
         return buf + ",0"
     elif isinstance(typ, Ptr):
@@ -153,13 +159,17 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
             return addr + f"dq {State.TYPE_IDS['ptr']},8,1,0"
         else:
             if typ not in generated_types:
-                queue.add(typ.typ)
+                if typ.typ not in queue_set:
+                    queue_set.add(typ.typ)
+                    queue_list.append(typ.typ)
             return addr + f"dq {State.TYPE_IDS['ptr']},8,1,type_{typ.typ.text_repr()}"
     elif isinstance(typ, Array):
         cont_assert(typ.len != -1 and typ.typ is not None, 
             "In lang(impossible to create by user) array given to generate_fasm_type")
         if typ not in generated_types:
-            queue.add(typ.typ)
+            if typ.typ not in queue_set:
+                queue_set.add(typ.typ)
+                queue_list.append(typ.typ)
         return (
             addr
             + f"dq {State.TYPE_IDS['array']},8,1,type_{typ.typ.text_repr()},{typ.len}"
@@ -174,7 +184,9 @@ def generate_fasm_type(typ, queue: Set[object], generated_types: Set[object]):
         buf += ",$+8"
         for field in typ.fields_types:
             if typ not in generated_types:
-                queue.add(field)
+                if field not in queue_set:
+                    queue_set.add(field)
+                    queue_list.append(field)
             buf += f",type_{field.text_repr()}"
         return buf + ",0"  # Null for the end of fields
 

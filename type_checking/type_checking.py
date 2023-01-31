@@ -78,7 +78,7 @@ def type_check(ops: List[Op], is_main: bool = False):
         if State.config.struct_malloc[1]:
             State.add_proc_use(proc)
 
-    if is_main and len(State.runtimed_types):
+    if is_main and len(State.runtimed_types_list):
         State.loc = ""
         for struct in State.TYPE_STRUCTS:
             assert struct in State.structures,\
