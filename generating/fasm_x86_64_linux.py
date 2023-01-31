@@ -9,17 +9,17 @@ from type_checking.types import Array, sizeof
 from state import *
 from type_checking.types import *
 
-assert len(Operator) == 20, "Unimplemented operator in generating.py"
-assert len(OpType) == 40, "Unimplemented type in generating.py"
+assert len(Operator) == 20, "Unimplemented operator in fasm_x86_64_linux.py"
+assert len(OpType) == 40, "Unimplemented type in fasm_x86_64_linux.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
 
 def compile_ops_fasm_x86_64_linux(ops: List[Op]):
-    if subprocess.getstatusoutput("fasm -v")[0] == 0:
+    if subprocess.getstatusoutput("fasm")[0] == 127:
         print("Please install Flat Assembler (Fasm).")
         print("Use sudo apt install fasm if you are using Debian/Ubuntu")
-        exit()
+        exit(1)
 
     out = State.filename if State.config.out is None else State.config.out
 
