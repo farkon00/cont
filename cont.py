@@ -1,12 +1,10 @@
 import sys
 import os
-import stat
-import subprocess
 
 from state import State, cont_assert
 from config import Config
 from parsing.parsing import parse_to_ops
-from generating.generating import generate
+from generating.generating import compile_ops
 from type_checking.type_checking import type_check
 
 
@@ -51,25 +49,7 @@ def main():
 
     State.compute_used_procs()
 
-    if subprocess.getstatusoutput("fasm -v")[0] == 0:
-        print("Please install Flat Assembler (Fasm).")
-        print("Use sudo apt install fasm if you are using Debian/Ubuntu")
-        exit()
-
-    out = file_name if config.out is None else config.out
-
-    with open(f"{out}.asm", "w") as f:
-        f.write(generate(ops))
-
-    subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
-    os.chmod(
-        out, os.stat(out).st_mode | stat.S_IEXEC
-    )  # Give execution permission to the file
-
-    if config.run:
-        subprocess.run(
-            [f"./{out}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr
-        )
+    compile_ops(ops)
 
 
 if __name__ == "__main__":

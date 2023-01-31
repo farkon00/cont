@@ -1,4 +1,9 @@
+import subprocess
+import os
+import stat
+
 from typing import List, Set
+
 from parsing.op import *
 from type_checking.types import Array, sizeof
 from state import *
@@ -8,6 +13,28 @@ assert len(Operator) == 20, "Unimplemented operator in generating.py"
 assert len(OpType) == 40, "Unimplemented type in generating.py"
 
 SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
+
+
+def compile_ops_fasm_x86_64_linux(ops: List[Op]):
+    if subprocess.getstatusoutput("fasm -v")[0] == 0:
+        print("Please install Flat Assembler (Fasm).")
+        print("Use sudo apt install fasm if you are using Debian/Ubuntu")
+        exit()
+
+    out = State.filename if State.config.out is None else State.config.out
+
+    with open(f"{out}.asm", "w") as f:
+        f.write(generate_fasm_x86_64_linux(ops))
+
+    subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
+    os.chmod(
+        out, os.stat(out).st_mode | stat.S_IEXEC
+    )  # Give execution permission to the file
+
+    if State.config.run:
+        subprocess.run(
+            [f"./{out}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr
+        )
 
 
 def generate_fasm_x86_64_linux(ops: List[Op]):
