@@ -9,7 +9,7 @@ type *int             print_type "" println
 type **ptr            print_type "" println
 type IntVector        print_type "" println
 type *IntVector       print_type "" println
-type [12] str   print_type "" println
+type [12] str         print_type "" println
 type [3] *int         print_type "" println
 
 type int               type int          == print
