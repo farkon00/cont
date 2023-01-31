@@ -653,7 +653,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return op
 
     elif token == "#if":
-        cond = evaluate_block(State.loc, error="#if condition")
+        cond = evaluate_block(State.loc, "#if condition")
         State.compile_ifs_opened += 1
         State.false_compile_ifs += bool(State.false_compile_ifs) or not cond
 
@@ -699,13 +699,13 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "memo":
         name = next(State.tokens)
         State.check_name(name, "memory")
-        size = evaluate_block(State.loc)
+        size = evaluate_block(State.loc, "memo")
         Memory.new_memory(name[0], size)
 
     elif token == "const":
         name = next(State.tokens)
         State.check_name(name)
-        State.constants[name[0]] = evaluate_block(State.loc)
+        State.constants[name[0]] = evaluate_block(State.loc, "const")
 
     elif token == "sizeoftype":
         type_tok = safe_next_token("Expected type to get a size of")

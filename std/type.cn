@@ -1,10 +1,10 @@
 include std.cn
 
-const Type.INT_ID 0 ;
-const Type.PTR_ID 1 ;
-const Type.ARRAY_ID 2 ;
-const Type.ADDR_ID 3 ;
-const Type.CUSTOM_TYPES_MIN_ID Type.ADDR_ID 1 + ;
+const Type.INT_ID 0;
+const Type.PTR_ID 1;
+const Type.ARRAY_ID 2;
+const Type.ADDR_ID 3;
+const Type.CUSTOM_TYPES_MIN_ID Type.ADDR_ID 1 +;
 
 struct Type
   int id

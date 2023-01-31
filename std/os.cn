@@ -71,35 +71,35 @@ const O_DSYNC     65536   end
 const O_RSYNC     131072  end
 
 // Socket flags
-const SO_DEBUG	     0x0001 ;
-const SO_ACCEPTCONN	 0x0002 ;
-const SO_REUSEADDR	 0x0004 ;
-const SO_KEEPALIVE	 0x0008 ;
-const SO_DONTROUTE	 0x0010 ;
-const SO_BROADCAST	 0x0020 ;
-const SO_USELOOPBACK 0x0040 ;
-const SO_LINGER	     0x0080 ;
-const SO_OOBINLINE	 0x0100 ;
-const SO_REUSEPORT	 0x0200 ;
-const SO_TIMESTAMP	 0x0800 ;
-const SO_BINDANY	   0x1000 ;
-const SO_ZEROIZE	   0x2000 ;
-const SO_SNDBUF	     0x1001 ;
-const SO_RCVBUF	     0x1002 ;
-const SO_SNDLOWAT	   0x1003 ;
-const SO_RCVLOWAT	   0x1004 ;
-const SO_SNDTIMEO	   0x1005 ;
-const SO_RCVTIMEO	   0x1006 ;
-const SO_ERROR	     0x1007 ;
-const SO_TYPE		     0x1008 ;
-const SO_NETPROC	   0x1020 ;
-const SO_RTABLE	     0x1021 ;
-const SO_PEERCRED	   0x1022 ;
-const SO_SPLICE	     0x1023 ;
-const SO_DOMAIN	     0x1024 ;
-const SO_PROTOCOL	   0x1025 ;
+const SO_DEBUG	     0x0001;
+const SO_ACCEPTCONN	 0x0002;
+const SO_REUSEADDR	 0x0004;
+const SO_KEEPALIVE	 0x0008;
+const SO_DONTROUTE	 0x0010;
+const SO_BROADCAST	 0x0020;
+const SO_USELOOPBACK 0x0040;
+const SO_LINGER	     0x0080;
+const SO_OOBINLINE	 0x0100;
+const SO_REUSEPORT	 0x0200;
+const SO_TIMESTAMP	 0x0800;
+const SO_BINDANY	   0x1000;
+const SO_ZEROIZE	   0x2000;
+const SO_SNDBUF	     0x1001;
+const SO_RCVBUF	     0x1002;
+const SO_SNDLOWAT	   0x1003;
+const SO_RCVLOWAT	   0x1004;
+const SO_SNDTIMEO	   0x1005;
+const SO_RCVTIMEO	   0x1006;
+const SO_ERROR	     0x1007;
+const SO_TYPE		     0x1008;
+const SO_NETPROC	   0x1020;
+const SO_RTABLE	     0x1021;
+const SO_PEERCRED	   0x1022;
+const SO_SPLICE	     0x1023;
+const SO_DOMAIN	     0x1024;
+const SO_PROTOCOL	   0x1025;
 
-const SOL_SOCKET 0xffff ;
+const SOL_SOCKET 0xffff;
 
 const AF_INET 2 end
 const SOCK_STREAM 1 end

@@ -66,17 +66,21 @@ def evaluate_token(token: str, stack: list):
         )
 
 
-def evaluate_block(orig_loc: str, error: str = "memo"):
+def evaluate_block(orig_loc: str, error: str):
     stack: List[int] = []
     while True:
         try:
             token = next(State.tokens)
         except StopIteration:
             break
+
         State.loc = token[1]
-        if token[0] in ("end", ";"):
+        if token[0] in ("end", ";") or token[0].endswith(";"):
+            if token[0].endswith(";") and token[0] != ";":
+                evaluate_token(token[0][:-1], stack)
             assert len(stack) == 1, f"{error} block ended with {len(stack)} elements on the stack"
             return stack[0]
+
         evaluate_token(token[0], stack)
 
     State.loc = orig_loc
