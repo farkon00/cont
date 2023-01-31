@@ -6,7 +6,7 @@ import subprocess
 from state import State, cont_assert
 from config import Config
 from parsing.parsing import parse_to_ops
-from generating.generating import generate_fasm
+from generating.generating import generate
 from type_checking.type_checking import type_check
 
 
@@ -59,7 +59,7 @@ def main():
     out = file_name if config.out is None else config.out
 
     with open(f"{out}.asm", "w") as f:
-        f.write(generate_fasm(ops))
+        f.write(generate(ops))
 
     subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
     os.chmod(

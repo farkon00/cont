@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 
+from generating.generating import TARGETS
+
 from typing import List, Tuple, Dict, Any
 
 
@@ -12,7 +14,8 @@ class Config:
         "dump" : "Dump operations without compilation",
         "dump_tokens" : "Dump tokens without parsing or compilating",
         "dump_tc" : "Dump operations after type checking",
-        "out" : "The output executable file and name for .asm file",
+        "out" : "The name for output file(s)",
+        "target" : "A taget to compile to",
         "config" : "Config file",
         "stdout" : "File to output stdout of complier and program",
         "input" : "Stdin for program",
@@ -27,10 +30,11 @@ class Config:
     }
 
     REGULAR_OPTIONS: Dict[str, List[str]] = {
-        "out" : ["-o", "--out"],
-        "stdout" : ["-stdo", "--stdout"],
-        "input" : ["-i", "--input"],
-        "error" : ["-e", "--error"],
+        "out" : (["-o", "--out"], None),
+        "target" : (["-t", "--target"], "fasm_x86_64_linux"),
+        "stdout" : (["-stdo", "--stdout"], None),
+        "input" : (["-i", "--input"], None),
+        "error" : (["-e", "--error"], None),
     }
 
     CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
@@ -56,6 +60,7 @@ class Config:
         self.define_properties()
         if config_file:
             self._validate(config_file)
+        self._validate_target()
 
     def setup_args_parser(self) -> argparse.ArgumentParser:
         args_parser = argparse.ArgumentParser()
@@ -80,18 +85,21 @@ class Config:
 
         for name, args in self.REGULAR_OPTIONS.items():
             args_parser.add_argument(
-                *args, default=None, dest=name, help=self.DESCRIPTIONS[name]
+                *args[0], default=None, dest=name, help=self.DESCRIPTIONS[name]
             )
 
         return args_parser
 
+    def _validate_target(self):
+        if self.target not in TARGETS:
+            print(f"\033[1;31mError\033[0m: target not found: {self.target}")
+            exit(1)
+
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
         return (
-            *self.REGULAR_OPTIONS,
-            *self.CONFIG_BOOL_OPTIONS,
-            *self.CONFIG_INT_OPTIONS,
-            *self.CONFIG_BOOL_CLEAR_OPTIONS,
+            *self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
+            *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS,
         )
 
     def load_config(self, config_file) -> Tuple[Dict[str, Any], str]:
@@ -115,15 +123,13 @@ class Config:
                 self.__class__, name,
                 property(
                     fget=lambda self, name=name: self.config.get(
-                        name, getattr(self.args, name)
-                    )
-                ),
+                        name, getattr(self.args, name) 
+                        if getattr(self.args, name) is not None 
+                        else self.REGULAR_OPTIONS[name][1])
+                )
             )
 
-        for name, default in {
-            **self.CONFIG_BOOL_OPTIONS,
-            **self.CONFIG_INT_OPTIONS,
-        }.items():
+        for name, default in {**self.CONFIG_BOOL_OPTIONS, **self.CONFIG_INT_OPTIONS}.items():
             setattr(
                 self.__class__, name,
                 property(

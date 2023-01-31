@@ -38,6 +38,7 @@ def test(test_name):
     subprocess.run(
         [
             "python", "cont.py", f"tests/temp/code_{test_name}.cn",
+            "-t", "fasm_x86_64_linux",
             "-i", f"tests/temp/stdin_{test_name}",
             "-e", f"tests/results/{test_name}_stderr",
             "--stdout", f"tests/results/{test_name}_stdout",
