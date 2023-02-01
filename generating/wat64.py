@@ -7,8 +7,10 @@ from state import *
 assert len(Operator) == 20, "Unimplemented operator in wat64.py"
 assert len(OpType) == 40, "Unimplemented type in wat64.py"
 
+# TODO: make an import syntax
 WAT64_HEADER =\
 """
+(import "console" "log" (func $__js_log (param i64)))
 (func $div (param i64 i64) (result i64 i64)
     (local.get 0)
     (local.get 1)
@@ -57,7 +59,7 @@ def generate_wat64(ops: List[Op]):
                     State.current_proc = None
                 continue
         
-        if State.current_proc is not None:
+        if State.current_proc is not None or op.type == OpType.DEFPROC:
             buf += generate_op_wat64(op)
         else:
             main_buf += generate_op_wat64(op)
@@ -104,9 +106,18 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.ENDWHILE:
         cont_assert(False, "Not implemented op: ENDWHILE")
     elif op.type == OpType.DEFPROC:
-        cont_assert(False, "Not implemented op: DEFPROC")
+        State.current_proc = op.operand
+        if op.operand not in State.used_procs and State.config.o_UPR:
+            return ""
+        params = "i64 " * len(op.operand.in_stack)
+        results = "i64 " * len(op.operand.out_stack)
+        args = "".join([f"(local.get {i})" 
+            for i in range(len(op.operand.in_stack))])
+        return f"(func $addr_{op.operand.ip} (param {params}) (result {results}) {args}"
     elif op.type == OpType.ENDPROC:
-        cont_assert(False, "Not implemented op: ENDPROC")
+        cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
+        State.current_proc = None
+        return ")"
     elif op.type == OpType.BIND:
         cont_assert(False, "Not implemented op: BIND")
     elif op.type == OpType.UNBIND:
@@ -114,7 +125,7 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.PUSH_BIND_STACK:
         cont_assert(False, "Not implemented op: PUSH_BIND_STACK")
     elif op.type == OpType.CALL:
-        cont_assert(False, "Not implemented op: CALL")
+        return f"(call $addr_{op.operand.ip})"
     elif op.type == OpType.TYPED_LOAD:
         cont_assert(False, "Not implemented op: TYPED_LOAD")
     elif op.type == OpType.PACK:
