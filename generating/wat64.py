@@ -7,6 +7,31 @@ from state import *
 assert len(Operator) == 20, "Unimplemented operator in wat64.py"
 assert len(OpType) == 40, "Unimplemented type in wat64.py"
 
+WAT64_HEADER =\
+"""
+(func $div (param i64 i64) (result i64 i64)
+    (local.get 0)
+    (local.get 1)
+    (i64.div_s)
+    (local.get 0)
+    (local.get 1)
+    (i64.rem_s))
+(func $dup (param i64) (result i64 i64)
+    (local.get 0)
+    (local.get 0))
+(func $swap (param i64 i64) (result i64 i64)
+    (local.get 1)
+    (local.get 0))
+(func $rot (param i64 i64 i64) (result i64 i64 i64)
+    (local.get 2)
+    (local.get 1)
+    (local.get 0))
+(func $over (param i64 i64) (result i64 i64 i64)
+    (local.get 0)
+    (local.get 1)
+    (local.get 0))
+""".replace("\n", "").replace("    ", "")
+
 def compile_ops_wat64(ops: List[Op]):
     if State.config.run:
         print("Can't use run flag for this target")
@@ -23,12 +48,111 @@ def compile_ops_wat64(ops: List[Op]):
     subprocess.run(["wat2wasm", f"{out}.wat"], stdin=sys.stdin, stderr=sys.stderr)
 
 def generate_wat64(ops: List[Op]):
-    return \
-        """
-        (module
-        (func (export "main") (param i64 i64) (result i64)
-            local.get 0
-            local.get 1
-            i64.add))
-        """ # Test code 
-    cont_assert(False, "Not implemented")
+    buf = "(module " + WAT64_HEADER
+    main_buf = '(func (export "main") '
+    for op in ops:
+        if State.current_proc is not None and State.config.o_UPR:
+            if State.current_proc not in State.used_procs:
+                if op.type == OpType.ENDPROC:
+                    State.current_proc = None
+                continue
+        
+        if State.current_proc is not None:
+            buf += generate_op_wat64(op)
+        else:
+            main_buf += generate_op_wat64(op)
+    
+    main_buf += ")"
+    buf += main_buf + ")"
+
+    return buf
+        
+
+def generate_op_wat64(op: Op):
+    if op.type == OpType.PUSH_INT:
+        return f"(i64.const {op.operand})"
+    elif op.type == OpType.PUSH_MEMORY:
+        cont_assert(False, "Not implemented op: PUSH_MEMORY")
+    elif op.type == OpType.PUSH_VAR:
+        cont_assert(False, "Not implemented op: PUSH_VAR")
+    elif op.type == OpType.PUSH_VAR_PTR:
+        cont_assert(False, "Not implemented op: PUSH_VAR_PTR")
+    elif op.type == OpType.PUSH_LOCAL_MEM:
+        cont_assert(False, "Not implemented op: PUSH_LOCAL_MEM")
+    elif op.type == OpType.PUSH_LOCAL_VAR:
+        cont_assert(False, "Not implemented op: PUSH_LOCAL_VAR")
+    elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
+        cont_assert(False, "Not implemented op: PUSH_LOCAL_VAR_PTR")
+    elif op.type == OpType.PUSH_STR:
+        cont_assert(False, "Not implemented op: PUSH_STR")
+    elif op.type == OpType.PUSH_NULL_STR:
+        cont_assert(False, "Not implemented op: PUSH_NULL_STR")
+    elif op.type == OpType.PUSH_PROC:
+        cont_assert(False, "Not implemented op: PUSH_PROC")
+    elif op.type == OpType.OPERATOR:
+        return generate_operator_wat64(op)
+    elif op.type == OpType.SYSCALL:
+        cont_assert(False, "Not implemented op: SYSCALL")
+    elif op.type == OpType.IF:
+        cont_assert(False, "Not implemented op: IF")
+    elif op.type == OpType.ELSE:
+        cont_assert(False, "Not implemented op: ELSE")
+    elif op.type == OpType.ENDIF:
+        cont_assert(False, "Not implemented op: ENDIF")
+    elif op.type == OpType.WHILE:
+        cont_assert(False, "Not implemented op: WHILE")
+    elif op.type == OpType.ENDWHILE:
+        cont_assert(False, "Not implemented op: ENDWHILE")
+    elif op.type == OpType.DEFPROC:
+        cont_assert(False, "Not implemented op: DEFPROC")
+    elif op.type == OpType.ENDPROC:
+        cont_assert(False, "Not implemented op: ENDPROC")
+    elif op.type == OpType.BIND:
+        cont_assert(False, "Not implemented op: BIND")
+    elif op.type == OpType.UNBIND:
+        cont_assert(False, "Not implemented op: UNBIND")
+    elif op.type == OpType.PUSH_BIND_STACK:
+        cont_assert(False, "Not implemented op: PUSH_BIND_STACK")
+    elif op.type == OpType.CALL:
+        cont_assert(False, "Not implemented op: CALL")
+    elif op.type == OpType.TYPED_LOAD:
+        cont_assert(False, "Not implemented op: TYPED_LOAD")
+    elif op.type == OpType.PACK:
+        cont_assert(False, "Not implemented op: PACK")
+    elif op.type == OpType.UNPACK:
+        cont_assert(False, "Not implemented op: UNPACK")
+    elif op.type == OpType.MOVE_STRUCT:
+        cont_assert(False, "Not implemented op: MOVE_STRUCT")
+    elif op.type == OpType.PUSH_FIELD:
+        cont_assert(False, "Not implemented op: PUSH_FIELD")
+    elif op.type == OpType.PUSH_FIELD_PTR:
+        cont_assert(False, "Not implemented op: PUSH_FIELD_PTR")
+    elif op.type == OpType.UPCAST:
+        cont_assert(False, "Not implemented op: UPCAST")
+    elif op.type == OpType.AUTO_INIT:
+        cont_assert(False, "Not implemented op: AUTO_INIT")
+    elif op.type == OpType.CALL_ADDR:
+        cont_assert(False, "Not implemented op: CALL_ADDR")
+    elif op.type == OpType.ASM:
+        return "(" + op.operand + ")"
+    elif op.type == OpType.PUSH_TYPE:
+        cont_assert(False, "Not implemented op: PUSH_TYPE")
+    elif op.type == OpType.CAST:
+        return ""  # Casts are type checking thing
+    else:
+        cont_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
+
+def generate_operator_wat64(op: Op):
+    cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_wat64")
+    cont_assert(op.type == OpType.OPERATOR, f"generate_operator_wat64 cant generate {op.type.name}")
+
+    if op.operand in (Operator.ADD, Operator.SUB, Operator.MUL):
+        return f"(i64.{op.operand.name.lower()})"
+    elif op.operand in (Operator.NE, Operator.EQ):
+        return f"(i64.{op.operand.name.lower()})(i64.extend_i32_s)"
+    elif op.operand in (Operator.LE, Operator.GE, Operator.LT, Operator.GT):
+        return f"(i64.{op.operand.name.lower()}_s)(i64.extend_i32_s)"
+    elif op.operand == Operator.DROP:
+        return f"(drop)"
+    else:
+        return f"(call ${op.operand.name.lower()})"

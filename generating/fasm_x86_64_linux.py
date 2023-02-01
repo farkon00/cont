@@ -632,8 +632,8 @@ push rbx
 
 
 def generate_operator_fasm_x86_64_linux(op: Op):
-    cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator")
-    cont_assert(op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}")
+    cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_fasm_x86_64_linux")
+    cont_assert(op.type == OpType.OPERATOR, f"generate_operator_fasm_x86_64_linux cant generate {op.type.name}")
 
     if op.operand in (Operator.ADD, Operator.SUB):
         return f"""
