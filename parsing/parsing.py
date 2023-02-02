@@ -746,6 +746,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
             values.append(current_token[0])
 
         State.enums[name[0]] = values
+        if name[0] == "Platform":
+            assert "platform" not in State.constants, "Defined enum Platform and constant platform is already defined"
+            assert State.config.target in values, "Enum Platform does not have a current platform defined"
+            State.constants["platform"] = values.index(State.config.target)
 
     elif token == "asm":
         asm = safe_next_token()[0]
