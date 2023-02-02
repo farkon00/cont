@@ -1,4 +1,6 @@
 import subprocess
+import math
+
 from typing import List
 
 from parsing.op import *
@@ -11,6 +13,8 @@ assert len(OpType) == 40, "Unimplemented type in wat64.py"
 WAT64_HEADER =\
 """
 (import "console" "log" (func $__js_log (param i64)))
+(memory $static_memory {})
+(export "static_memory" (memory $static_memory))
 (func $div (param i64 i64) (result i64 i64)
     (local.get 0)
     (local.get 1)
@@ -32,7 +36,13 @@ WAT64_HEADER =\
     (local.get 0)
     (local.get 1)
     (local.get 0))
+(func $prepare_store (param i64 i64) (result i32 i64)
+    (local.get 1)
+    (i32.wrap_i64)
+    (local.get 0))
 """.replace("\n", "").replace("    ", "")
+LOAD_CODE = "(i32.wrap_i64) (i64.load)"
+MEMORY_PAGE_SIZE = 65536 
 
 def compile_ops_wat64(ops: List[Op]):
     if State.config.run:
@@ -50,7 +60,9 @@ def compile_ops_wat64(ops: List[Op]):
     subprocess.run(["wat2wasm", f"{out}.wat"], stdin=sys.stdin, stderr=sys.stderr)
 
 def generate_wat64(ops: List[Op]):
-    buf = "(module " + WAT64_HEADER
+    buf = "(module " + WAT64_HEADER.format(
+        math.ceil((Memory.global_offset + 1) / MEMORY_PAGE_SIZE)
+    )
     main_buf = '(func (export "main") '
     for op in ops:
         if not op.compiled: continue
@@ -80,11 +92,11 @@ def generate_op_wat64(op: Op):
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
-        cont_assert(False, "Not implemented op: PUSH_MEMORY")
+        return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_VAR:
-        cont_assert(False, "Not implemented op: PUSH_VAR")
+        return f"(i32.const {State.memories[op.operand].offset + 1}) (i64.load)"
     elif op.type == OpType.PUSH_VAR_PTR:
-        cont_assert(False, "Not implemented op: PUSH_VAR_PTR")
+        return f"(i64.const {State.memories[op.operand].offset + 1})"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         cont_assert(False, "Not implemented op: PUSH_LOCAL_MEM")
     elif op.type == OpType.PUSH_LOCAL_VAR:
@@ -138,7 +150,7 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.CALL:
         return f"(call $addr_{op.operand.ip})"
     elif op.type == OpType.TYPED_LOAD:
-        cont_assert(False, "Not implemented op: TYPED_LOAD")
+        return LOAD_CODE
     elif op.type == OpType.PACK:
         cont_assert(False, "Not implemented op: PACK")
     elif op.type == OpType.UNPACK:
@@ -176,5 +188,11 @@ def generate_operator_wat64(op: Op):
         return f"(i64.{op.operand.name.lower()}_s)(i64.extend_i32_s)"
     elif op.operand == Operator.DROP:
         return f"(drop)"
+    elif op.operand == Operator.LOAD:
+        return LOAD_CODE
+    elif op.operand == Operator.LOAD8:
+        return f"(i32.wrap_i64) (i64.load8_u)"
+    elif op.operand in (Operator.STORE, Operator.STORE8):
+        return f"(call $prepare_store) (i64.{op.operand.name.lower()})"
     else:
         return f"(call ${op.operand.name.lower()})"
