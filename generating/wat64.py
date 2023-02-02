@@ -13,6 +13,7 @@ assert len(OpType) == 40, "Unimplemented type in wat64.py"
 WAT64_HEADER =\
 """
 (import "console" "log" (func $__js_log (param i64)))
+(import "console" "puts" (func $__js_puts (param i64 i64)))
 (memory $static_memory {})
 (export "static_memory" (memory $static_memory))
 (func $div (param i64 i64) (result i64 i64)
@@ -59,10 +60,23 @@ def compile_ops_wat64(ops: List[Op]):
 
     subprocess.run(["wat2wasm", f"{out}.wat"], stdin=sys.stdin, stderr=sys.stderr)
 
+def generate_data() -> Tuple[int, str, Dict[str, int]]:
+    data_table = {}
+    buf = ""
+    offset = 1
+    for index, string in enumerate(State.string_data):
+        string_data = "".join([f"\\{hex(i)[2:] if i >= 16 else '0' + hex(i)[2:]}" for i in string])
+        buf += f'(data (i32.const {offset}) "{string_data}")'
+        data_table[f"str_{index}"] = offset
+        offset += len(string)
+
+    return (offset, buf, data_table)
+
 def generate_wat64(ops: List[Op]):
+    offset, data, data_table = generate_data()
     buf = "(module " + WAT64_HEADER.format(
-        math.ceil((Memory.global_offset + 1) / MEMORY_PAGE_SIZE)
-    )
+        math.ceil((Memory.global_offset + offset) / MEMORY_PAGE_SIZE)
+    ) + data
     main_buf = '(func (export "main") '
     for op in ops:
         if not op.compiled: continue
@@ -73,9 +87,9 @@ def generate_wat64(ops: List[Op]):
                 continue
         
         if State.current_proc is not None or op.type == OpType.DEFPROC:
-            buf += generate_op_wat64(op)
+            buf += generate_op_wat64(op, offset, data_table)
         else:
-            main_buf += generate_op_wat64(op)
+            main_buf += generate_op_wat64(op, offset, data_table)
     
     main_buf += ")"
     buf += main_buf + ")"
@@ -88,15 +102,15 @@ def generate_block_type_info(block : Block) -> str:
     return f"(param{' i64' * block.stack_effect[0]}) (result{' i64' * block.stack_effect[1]})"
 
 
-def generate_op_wat64(op: Op):
+def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]):
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
-        return f"(i64.const {op.operand})"
+        return f"(i64.const {offset + op.operand})"
     elif op.type == OpType.PUSH_VAR:
-        return f"(i32.const {State.memories[op.operand].offset + 1}) (i64.load)"
+        return f"(i32.const {offset + State.memories[op.operand].offset}) (i64.load)"
     elif op.type == OpType.PUSH_VAR_PTR:
-        return f"(i64.const {State.memories[op.operand].offset + 1})"
+        return f"(i64.const {offset + State.memories[op.operand].offset})"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         cont_assert(False, "Not implemented op: PUSH_LOCAL_MEM")
     elif op.type == OpType.PUSH_LOCAL_VAR:
@@ -104,9 +118,10 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         cont_assert(False, "Not implemented op: PUSH_LOCAL_VAR_PTR")
     elif op.type == OpType.PUSH_STR:
-        cont_assert(False, "Not implemented op: PUSH_STR")
+        return \
+            f"(i64.const {len(State.string_data[op.operand])}) (i64.const {data_table[f'str_{op.operand}']})"
     elif op.type == OpType.PUSH_NULL_STR:
-        cont_assert(False, "Not implemented op: PUSH_NULL_STR")
+        return f"(i64.const {data_table[f'str_{op.operand}']})"
     elif op.type == OpType.PUSH_PROC:
         cont_assert(False, "Not implemented op: PUSH_PROC")
     elif op.type == OpType.OPERATOR:
