@@ -53,6 +53,7 @@ def generate_wat64(ops: List[Op]):
     buf = "(module " + WAT64_HEADER
     main_buf = '(func (export "main") '
     for op in ops:
+        if not op.compiled: continue
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
                 if op.type == OpType.ENDPROC:
@@ -68,7 +69,15 @@ def generate_wat64(ops: List[Op]):
     buf += main_buf + ")"
 
     return buf
-        
+
+def generate_block_type_info(block : Block) -> str:
+    if not block.stack_effect: return ""
+
+    if block.stack_effect > 0:
+        return f"(result{' i64' * block.stack_effect})"
+    elif block.stack_effect < 0:
+        return f"(params{' i64' * -block.stack_effect})"
+
 
 def generate_op_wat64(op: Op):
     if op.type == OpType.PUSH_INT:
@@ -96,11 +105,15 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.SYSCALL:
         cont_assert(False, "Not implemented op: SYSCALL")
     elif op.type == OpType.IF:
-        cont_assert(False, "Not implemented op: IF")
+        if State.ops_by_ips[op.operand.end].type == OpType.ELSE:
+            type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand)
+        else:
+            type_info = generate_block_type_info(op.operand)
+        return f"(i64.const 0) (i64.ne) (if {type_info} (then"
     elif op.type == OpType.ELSE:
-        cont_assert(False, "Not implemented op: ELSE")
+        return f") (else"
     elif op.type == OpType.ENDIF:
-        cont_assert(False, "Not implemented op: ENDIF")
+        return "))"
     elif op.type == OpType.WHILE:
         cont_assert(False, "Not implemented op: WHILE")
     elif op.type == OpType.ENDWHILE:
@@ -109,11 +122,11 @@ def generate_op_wat64(op: Op):
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:
             return ""
-        params = "i64 " * len(op.operand.in_stack)
-        results = "i64 " * len(op.operand.out_stack)
+        params = " i64" * len(op.operand.in_stack)
+        results = " i64" * len(op.operand.out_stack)
         args = "".join([f"(local.get {i})" 
             for i in range(len(op.operand.in_stack))])
-        return f"(func $addr_{op.operand.ip} (param {params}) (result {results}) {args}"
+        return f"(func $addr_{op.operand.ip} (param{params}) (result{results}) {args}"
     elif op.type == OpType.ENDPROC:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
         State.current_proc = None

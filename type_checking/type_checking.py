@@ -273,6 +273,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         State.route_stack.append(("if-end", stack.copy()))
     elif op.type == OpType.ELSE:
         original_stack = State.route_stack.pop()[1]
+        op.operand.stack_effect = len(stack) - len(original_stack)
         State.route_stack.append(("if-else", stack.copy()))
         stack.clear()
         stack.extend(original_stack)
@@ -280,6 +281,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         route_stack = State.route_stack.pop()
         if route_stack[0] == "if-end":
             check_route_stack(stack, route_stack[1])
+            op.operand.stack_effect = 0
         else:
             check_route_stack(stack, route_stack[1], "in different routes of if-else")
     elif op.type == OpType.WHILE:

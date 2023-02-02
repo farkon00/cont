@@ -33,7 +33,7 @@ class Block:
     type: BlockType
     start: int
     end: int = -1
-
+    stack_effect: Optional[int] = None
 
 @dataclass
 class Memory:
