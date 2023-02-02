@@ -73,10 +73,7 @@ def generate_wat64(ops: List[Op]):
 def generate_block_type_info(block : Block) -> str:
     if not block.stack_effect: return ""
 
-    if block.stack_effect > 0:
-        return f"(result{' i64' * block.stack_effect})"
-    elif block.stack_effect < 0:
-        return f"(params{' i64' * -block.stack_effect})"
+    return f"(param{' i64' * block.stack_effect[0]}) (result{' i64' * block.stack_effect[1]})"
 
 
 def generate_op_wat64(op: Op):
@@ -115,9 +112,10 @@ def generate_op_wat64(op: Op):
     elif op.type == OpType.ENDIF:
         return "))"
     elif op.type == OpType.WHILE:
-        cont_assert(False, "Not implemented op: WHILE")
+        type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand)
+        return f"(i64.const 0) (i64.ne) (if {type_info} (then (loop $addr_{op.operand.start} {type_info}"
     elif op.type == OpType.ENDWHILE:
-        cont_assert(False, "Not implemented op: ENDWHILE")
+        return f"(i64.const 0) (i64.ne) (br_if $addr_{op.operand.start}))))"
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:

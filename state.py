@@ -33,7 +33,7 @@ class Block:
     type: BlockType
     start: int
     end: int = -1
-    stack_effect: Optional[int] = None
+    stack_effect: Optional[Tuple[int, int]] = None
 
 @dataclass
 class Memory:

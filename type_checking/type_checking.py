@@ -114,7 +114,7 @@ def process_for_in(op: Op, stack: List[Type], iter_stack: list) -> list:
     return [
         Op(OpType.PUSH_INT, 0, loc=op.loc),
         Op(OpType.PUSH_INT, 1, loc=op.loc),
-        Op(OpType.WHILE, op.operand[0], loc=op.loc),
+        Op(OpType.WHILE, op.operand[0], loc=op.loc), # TODO:
         Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
         *op.operand[2],
         Op(
@@ -273,15 +273,15 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         State.route_stack.append(("if-end", stack.copy()))
     elif op.type == OpType.ELSE:
         original_stack = State.route_stack.pop()[1]
-        op.operand.stack_effect = len(stack) - len(original_stack)
+        op.operand.stack_effect = (len(original_stack), len(stack))
         State.route_stack.append(("if-else", stack.copy()))
         stack.clear()
         stack.extend(original_stack)
     elif op.type == OpType.ENDIF:
         route_stack = State.route_stack.pop()
         if route_stack[0] == "if-end":
+            op.operand.stack_effect = (len(stack), len(stack))
             check_route_stack(stack, route_stack[1])
-            op.operand.stack_effect = 0
         else:
             check_route_stack(stack, route_stack[1], "in different routes of if-else")
     elif op.type == OpType.WHILE:
@@ -290,6 +290,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
     elif op.type == OpType.ENDWHILE:
         check_stack(stack, [Int()])
         pre_while_stack = State.route_stack.pop()[1]
+        op.operand.stack_effect = (len(pre_while_stack), len(stack))
         check_route_stack(stack, pre_while_stack, "in different routes of while")
     elif op.type == OpType.FOR:
         iter_stack = type_check(op.operand[2])
@@ -308,6 +309,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 return []
             pre_for_stack = State.route_stack.pop()[1]
             check_route_stack(stack, pre_for_stack, "in different routes of for")
+            end_while = Op(OpType.ENDWHILE, op.operand[0], loc=op.loc)
+            State.ops_by_ips[op.operand[0].end] = end_while
             return [
                 Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
@@ -316,7 +319,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 Op(OpType.PUSH_INT, op.operand[2].len, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.LT, loc=op.loc),
                 Op(OpType.UNBIND, 2, loc=op.loc),
-                Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
+                end_while,
                 Op(OpType.OPERATOR, Operator.DROP, loc=op.loc),
             ]
         elif op.operand[1] == "until":
@@ -325,7 +328,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
 
             if State.config.re_NPD:
                 State.locs_to_include.append(op.loc)
-
+            end_while = Op(OpType.ENDWHILE, op.operand[0], loc=op.loc)
+            State.ops_by_ips[op.operand[0].end] = end_while
             return [
                 Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
@@ -341,7 +345,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 Op(OpType.PUSH_INT, 0, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
                 Op(OpType.UNBIND, 2, loc=op.loc),
-                Op(OpType.ENDWHILE, op.operand[0], loc=op.loc),
+                end_while,
             ]
     elif op.type == OpType.BIND:
         assert len(stack) >= op.operand, "stack is too short for bind"
