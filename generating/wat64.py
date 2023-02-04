@@ -14,8 +14,8 @@ WAT64_HEADER =\
 """
 (import "console" "log" (func $__js_log (param i64)))
 (import "console" "puts" (func $__js_puts (param i64 i64)))
-(memory $static_memory {})
-(export "static_memory" (memory $static_memory))
+(memory $memory {})
+(export "memory" (memory $memory))
 (func $div (param i64 i64) (result i64 i64)
     (local.get 0)
     (local.get 1)
@@ -41,6 +41,12 @@ WAT64_HEADER =\
     (local.get 1)
     (i32.wrap_i64)
     (local.get 0))
+(func $bind (param i64 i32)
+    (global.get $bind_stack_ptr)
+    (local.get 1)
+    (i32.add)
+    (local.get 0)
+    (i64.store))
 """.replace("\n", "").replace("    ", "")
 LOAD_CODE = "(i32.wrap_i64) (i64.load)"
 MEMORY_PAGE_SIZE = 65536 
@@ -72,11 +78,23 @@ def generate_data() -> Tuple[int, str, Dict[str, int]]:
 
     return (offset, buf, data_table)
 
-def generate_wat64(ops: List[Op]):
+def get_static_size(data_offset: int) -> int:
+    return data_offset + Memory.global_offset +\
+        State.config.size_call_stack + State.config.size_bind_stack
+
+def generate_globals(data_offset: int) -> str:
+    call_stack_offset = data_offset + Memory.global_offset
+    bind_stack_offset = call_stack_offset + State.config.size_call_stack
+    call_stack = f"(global $call_stack_ptr (mut i32) (i32.const {call_stack_offset}))"
+    bind_stack = f"(global $bind_stack_ptr (mut i32) (i32.const {bind_stack_offset}))"
+
+    return call_stack + bind_stack
+
+def generate_wat64(ops: List[Op]) -> str:
     offset, data, data_table = generate_data()
     buf = "(module " + WAT64_HEADER.format(
-        math.ceil((Memory.global_offset + offset) / MEMORY_PAGE_SIZE)
-    ) + data
+        math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE)
+    ) + generate_globals(offset) + data
     main_buf = '(func (export "main") '
     for op in ops:
         if not op.compiled: continue
@@ -102,7 +120,7 @@ def generate_block_type_info(block : Block) -> str:
     return f"(param{' i64' * block.stack_effect[0]}) (result{' i64' * block.stack_effect[1]})"
 
 
-def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]):
+def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
@@ -157,11 +175,19 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]):
         State.current_proc = None
         return ")"
     elif op.type == OpType.BIND:
-        cont_assert(False, "Not implemented op: BIND")
+        buf = ""
+        State.bind_stack_size += op.operand
+        for i in range(op.operand):
+            buf += f"(i32.const {(op.operand - i - 1) * 8}) (call $bind)"
+        buf += f"(global.get $bind_stack_ptr) (i32.const {op.operand * 8}) "
+        buf += "(i32.add) (global.set $bind_stack_ptr)"
+        return buf
     elif op.type == OpType.UNBIND:
-        cont_assert(False, "Not implemented op: UNBIND")
+        return \
+            f"(global.get $bind_stack_ptr) (i32.const {op.operand * 8}) (i32.sub) (global.set $bind_stack_ptr)"
     elif op.type == OpType.PUSH_BIND_STACK:
-        cont_assert(False, "Not implemented op: PUSH_BIND_STACK")
+        return \
+            f"(global.get $bind_stack_ptr) (i32.const {(State.bind_stack_size - op.operand) * 8}) (i32.sub) (i64.load)"
     elif op.type == OpType.CALL:
         return f"(call $addr_{op.operand.ip})"
     elif op.type == OpType.TYPED_LOAD:
@@ -194,7 +220,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]):
     else:
         cont_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
 
-def generate_operator_wat64(op: Op):
+def generate_operator_wat64(op: Op) -> str:
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_wat64")
     cont_assert(op.type == OpType.OPERATOR, f"generate_operator_wat64 cant generate {op.type.name}")
 
