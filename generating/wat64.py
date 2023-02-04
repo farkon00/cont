@@ -169,13 +169,16 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]):
     elif op.type == OpType.PACK:
         cont_assert(False, "Not implemented op: PACK")
     elif op.type == OpType.UNPACK:
-        cont_assert(False, "Not implemented op: UNPACK")
+        buf = ""
+        for _ in range(op.operand // 8):
+            buf += f"(call $dup) {LOAD_CODE} (call $swap) (i64.const 8) (i64.add) "
+        return buf + "(drop)"
     elif op.type == OpType.MOVE_STRUCT:
         cont_assert(False, "Not implemented op: MOVE_STRUCT")
     elif op.type == OpType.PUSH_FIELD:
-        cont_assert(False, "Not implemented op: PUSH_FIELD")
+        return f"(i64.const {op.operand}) (i64.add) {LOAD_CODE}"
     elif op.type == OpType.PUSH_FIELD_PTR:
-        cont_assert(False, "Not implemented op: PUSH_FIELD_PTR")
+        return f"(i64.const {op.operand}) (i64.add)"
     elif op.type == OpType.UPCAST:
         cont_assert(False, "Not implemented op: UPCAST")
     elif op.type == OpType.AUTO_INIT:
