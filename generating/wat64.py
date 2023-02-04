@@ -130,11 +130,15 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
     elif op.type == OpType.PUSH_VAR_PTR:
         return f"(i64.const {offset + State.memories[op.operand].offset})"
     elif op.type == OpType.PUSH_LOCAL_MEM:
-        cont_assert(False, "Not implemented op: PUSH_LOCAL_MEM")
+        return "(global.get $call_stack_ptr) (i64.extend_i32_u) (i64.const " +\
+            f"{State.current_proc.memory_size + op.operand + 8}) (i64.sub)"
     elif op.type == OpType.PUSH_LOCAL_VAR:
-        cont_assert(False, "Not implemented op: PUSH_LOCAL_VAR")
+        var_offset = State.current_proc.memory_size - State.current_proc.memories[op.operand].offset
+        return "(global.get $call_stack_ptr)" +\
+            f"(i32.const {var_offset}) (i32.sub) (i64.load)"
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
-        cont_assert(False, "Not implemented op: PUSH_LOCAL_VAR_PTR")
+        var_offset = State.current_proc.memory_size - State.current_proc.memories[op.operand].offset
+        return f"(global.get $call_stack_ptr) (i64.extend_i32_u) (i64.const {var_offset}) (i64.sub)"
     elif op.type == OpType.PUSH_STR:
         return \
             f"(i64.const {len(State.string_data[op.operand])}) (i64.const {data_table[f'str_{op.operand}']})"
@@ -167,13 +171,17 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
             return ""
         params = " i64" * len(op.operand.in_stack)
         results = " i64" * len(op.operand.out_stack)
-        args = "".join([f"(local.get {i})" 
+        allocation = f"(global.get $call_stack_ptr) (i32.const {op.operand.memory_size}) "
+        allocation += "(i32.add) (global.set $call_stack_ptr)"
+        args = "".join([f"(local.get {i})"
             for i in range(len(op.operand.in_stack))])
-        return f"(func $addr_{op.operand.ip} (param{params}) (result{results}) {args}"
+        return f"(func $addr_{op.operand.ip} (param{params}) (result{results}) {allocation} {args}"
     elif op.type == OpType.ENDPROC:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
         State.current_proc = None
-        return ")"
+        memory_size = State.ops_by_ips[op.operand.start].operand.memory_size
+        return f"(global.get $call_stack_ptr) (i32.const {memory_size})" +\
+            "(i32.sub) (global.set $call_stack_ptr))"
     elif op.type == OpType.BIND:
         buf = ""
         State.bind_stack_size += op.operand
@@ -200,7 +208,12 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
             buf += f"(call $dup) {LOAD_CODE} (call $swap) (i64.const 8) (i64.add) "
         return buf + "(drop)"
     elif op.type == OpType.MOVE_STRUCT:
-        cont_assert(False, "Not implemented op: MOVE_STRUCT")
+        buf = ""
+        for _ in range(op.operand // 8):
+            buf += f"(call $over) {LOAD_CODE} (call $over) "
+            buf += "(call $prepare_store) (i64.store) "
+            buf += "(call $swap) (i64.const 8) (i64.add) " * 2
+        return buf + "(drop) (drop)"
     elif op.type == OpType.PUSH_FIELD:
         return f"(i64.const {op.operand}) (i64.add) {LOAD_CODE}"
     elif op.type == OpType.PUSH_FIELD_PTR:
