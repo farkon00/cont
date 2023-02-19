@@ -24,7 +24,7 @@ def main():
     sys.stdin = open(config.input, "r") if config.input else sys.stdin
 
     State.filename = file_name
-    State.dir = "."  # os.path.dirname(__file__)
+    State.dir = os.path.dirname(__file__)
 
     ops = parse_to_ops(program, config.dump_tokens)
 

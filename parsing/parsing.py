@@ -567,7 +567,7 @@ def include_file():
     elif os.path.exists(std_path):
         path = std_path
     else:
-        State.loc = name[1]
+        State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(f'include file "{name[0]}" not found')
 
     if os.path.abspath(path) in State.included_files:
