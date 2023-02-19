@@ -177,6 +177,16 @@ proc print int:
   int_to_str dup rot swap println free
 end
 
+nproc check_fail int res @str:
+  res 0 < if
+    "Error code: " puts
+    0 res - print
+    len data puts
+    " failed" println
+    1 exit
+  end
+end
+
 nproc str_to_int @str -> int:
   var res int
   0 !res

@@ -61,7 +61,7 @@ struct File
       if 0 < do
         "Fstat syscall failed" self.print_error
       end
-      osstatget_st_size
+      dup osstatget_st_size swap free
       self.read
     else
       if size 0 < do

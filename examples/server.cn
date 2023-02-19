@@ -1,20 +1,6 @@
 include std.cn
 include io.cn
 
-proc err @str:
-  println
-  1 exit
-end
-
-nproc check_fail int res @str:
-  res 0 < if
-    "Error code: " puts
-    0 res - print
-    len data puts
-    " failed" err
-  end
-end
-
 proc init_address -> ptr:
   16 malloc
   bind address:
