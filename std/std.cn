@@ -80,9 +80,9 @@ var malloc_last *MallocBlockMeta
 
 nproc malloc int size -> ptr:
   malloc_base dup NULL ptr!= while  
-    bind curr_block:    
-      if curr_block.is_free curr_block.size size >= and do           
-        if curr_block.size size - sizeoftype MallocBlockMeta > do      
+    bind curr_block:
+      if curr_block.is_free curr_block.size size >= and do 
+        if curr_block.size size - sizeoftype MallocBlockMeta > do
           curr_block sizeoftype MallocBlockMeta ptr+ size ptr+ (MallocBlockMeta)        
           bind new_block:
             curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
@@ -95,13 +95,37 @@ nproc malloc int size -> ptr:
             size !curr_block.size
           end
         end
+        if curr_block NULL ptr!= do
+        else
+        end
         0 !curr_block.is_free
         curr_block sizeoftype MallocBlockMeta ptr+ 0
-      else      
-        if curr_block.next NULL ptr== do
-          NULL 0
+      else
+        if 
+          curr_block curr_block.size sizeoftype MallocBlockMeta +
+          ptr+ NULL brk ptr==
+        do // The last block
+          if curr_block.is_free do
+            size curr_block.size - sbrk
+            if NULL ptr== do // Sbrk failed
+              NULL
+            else
+              size !curr_block.size
+              0 !curr_block.is_free
+              curr_block sizeoftype MallocBlockMeta ptr+
+            end
+            0
+          else
+            NULL 0
+          end
         else
-          curr_block.next 1
+          if curr_block.next NULL ptr== do
+            NULL 0
+          else
+            curr_block.next 1
+            if curr_block.next (int) 0x0 <= do
+            end
+          end
         end
       end
     end
@@ -109,9 +133,9 @@ nproc malloc int size -> ptr:
   if dup NULL ptr== do  
     drop
     size sizeoftype MallocBlockMeta +
-    sbrk (MallocBlockMeta) 
-    dup NULL ptr!= if // Sbrk failed
-      dup    
+    sbrk (MallocBlockMeta)
+    if dup NULL ptr!= do // If sbrk didn't fail 
+      dup
       size swap !.size    
       if malloc_last NULL ptr!= do      
         dup malloc_last !.next
