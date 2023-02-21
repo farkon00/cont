@@ -79,7 +79,7 @@ var malloc_base *MallocBlockMeta
 var malloc_last *MallocBlockMeta
 
 nproc malloc int size -> ptr:
-  malloc_base dup NULL ptr!= while  
+  malloc_base dup NULL ptr!= while
     bind curr_block:
       if curr_block.is_free curr_block.size size >= and do 
         if curr_block.size size - sizeoftype MallocBlockMeta > do
@@ -94,9 +94,6 @@ nproc malloc int size -> ptr:
             new_block !curr_block.next
             size !curr_block.size
           end
-        end
-        if curr_block NULL ptr!= do
-        else
         end
         0 !curr_block.is_free
         curr_block sizeoftype MallocBlockMeta ptr+ 0
@@ -123,20 +120,17 @@ nproc malloc int size -> ptr:
             NULL 0
           else
             curr_block.next 1
-            if curr_block.next (int) 0x0 <= do
-            end
           end
         end
       end
     end
   end
-  if dup NULL ptr== do  
+  if dup NULL ptr== do
     drop
     size sizeoftype MallocBlockMeta +
     sbrk (MallocBlockMeta)
     if dup NULL ptr!= do // If sbrk didn't fail 
-      dup
-      size swap !.size    
+      size over !.size    
       if malloc_last NULL ptr!= do      
         dup malloc_last !.next
       end    
@@ -201,6 +195,33 @@ proc print int:
   int_to_str dup rot swap println free
 end
 
+// Will extend the block if possible and return the same pointer, if not possible allocates a new block and returns it 
+nproc extend_alloc int delta ptr block' -> ptr:
+  block' sizeoftype MallocBlockMeta ptr- (MallocBlockMeta)
+  bind block:
+    if 
+      block block.size sizeoftype MallocBlockMeta +
+      ptr+ NULL brk ptr==
+    do
+      delta sbrk
+      if NULL ptr== do // Sbrk failed
+        NULL
+      else
+        *block.size delta incby
+        block'
+      end
+    else
+      NULL
+    end
+    if dup NULL ptr== do
+      drop
+      block.size delta + malloc
+      block.size over block' memcpy
+      block' free
+    end
+  end 
+end
+
 nproc check_fail int res @str:
   res 0 < if
     "Error code: " puts
@@ -237,7 +258,12 @@ proc print_malloc_list:
   while
     dup NULL ptr!= if 
       dup .size u_to_str dup rot swap puts free
-      " -> " puts
+      "(" puts dup (int) u_to_str dup rot swap puts free
+      ") " puts
+      if dup (MallocBlockMeta) .is_free do
+        "free " puts
+      end 
+      "-> " puts
       (MallocBlockMeta) .next 1
     else
       "NULL" println
