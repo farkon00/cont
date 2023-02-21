@@ -491,6 +491,8 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
             stack.append(Int())
         elif type1 == Ptr() and type2 == Ptr():
             if isinstance(type1.typ, Struct):
+                assert type2.typ is not None,\
+                    "can't perform an operation on void pointer"
                 assert type1.typ == type2.typ or type2.typ == type1.typ,\
                     f"cant perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
                 assert f"__{op.operand.name.lower()}__" in type1.typ.methods,\
@@ -502,6 +504,8 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
                     Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
                     Op(OpType.CALL, method, loc=op.loc),
                 ]
+            else:
+                State.throw_error(f"can't perform an operation on {type_to_str(type1)} and {type_to_str(type2)}")
         else:
             State.throw_error(f"incompatible types for {op.operand.name.lower()}")
     elif op.operand == Operator.DIV:
