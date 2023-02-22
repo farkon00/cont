@@ -216,10 +216,15 @@ nproc extend_alloc int delta ptr block' -> ptr:
     if dup NULL ptr== do
       drop
       block.size delta + malloc
-      block.size over block' memcpy
+      block.size over block' swap memcpy
       block' free
     end
   end 
+end
+
+nproc mem_extend int delta *ptr mem:
+  delta mem @ extend_alloc
+  mem !
 end
 
 nproc check_fail int res @str:
