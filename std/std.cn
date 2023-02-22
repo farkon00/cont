@@ -75,6 +75,10 @@ proc get_malloc_meta ptr -> MallocBlockMeta:
   sizeoftype MallocBlockMeta ptr- (MallocBlockMeta)
 end
 
+proc get_block_size ptr -> int:
+  get_malloc_meta .size
+end
+
 var malloc_base *MallocBlockMeta
 var malloc_last *MallocBlockMeta
 
@@ -197,7 +201,7 @@ end
 
 // Will extend the block if possible and return the same pointer, if not possible allocates a new block and returns it 
 nproc extend_alloc int delta ptr block' -> ptr:
-  block' sizeoftype MallocBlockMeta ptr- (MallocBlockMeta)
+  block' get_malloc_meta
   bind block:
     if 
       block block.size sizeoftype MallocBlockMeta +

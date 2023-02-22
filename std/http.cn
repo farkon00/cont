@@ -1,0 +1,70 @@
+include std.cn
+include os.cn
+include io.cn
+
+proc ServerListener @str File: drop drop drop end
+
+const HTTPServer.BUF_SIZE 2048;
+struct HTTPServer
+  int fd
+  ptr address
+
+  nproc _init_address int port:
+    16 malloc !self.address
+    AF_INET    self.address        !16
+    port htons self.address 2 ptr+ !16
+    0          self.address 4 ptr+ !32
+  end
+
+  nproc _init_socket:
+    0 SOCK_STREAM AF_INET socket dup !self.fd
+    "Socket syscall" check_fail
+    16 self.address self.fd bind_sock
+    "Bind syscall" check_fail
+    10 self.fd listen
+    "Listen syscall" check_fail
+  end
+
+  nproc __init__ int port:
+    port self._init_address
+    self._init_socket 
+  end
+
+  nproc _read_conn int fd -> @str:
+    memory temp_buf HTTPServer.BUF_SIZE
+    var buf ptr
+    1 while
+      HTTPServer.BUF_SIZE temp_buf fd read
+      dup "Read syscall" check_fail
+      if buf NULL ptr== do
+        dup malloc !buf 0
+      else
+        buf get_block_size
+        over *buf mem_extend
+      end
+      bind size offset:
+        size temp_buf buf offset ptr+ memcpy
+        size HTTPServer.BUF_SIZE ==
+      end
+    end
+    buf get_block_size buf
+  end
+
+  nproc run addr ServerListener listener:
+    var conn File
+    var sizeof(addr) int = 16;
+    while 1 do
+      *sizeof(addr) self.address self.fd accept
+      dup "Accept" check_fail
+      bind conn_fd:
+        conn_fd self._read_conn
+        conn_fd !conn.fd
+        conn listener call
+        conn_fd close
+        "Closing connection" check_fail
+      end
+    end
+    self.fd close
+    "Closing socket" check_fail
+  end
+end
