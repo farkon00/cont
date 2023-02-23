@@ -245,7 +245,7 @@ push rbx
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
 mov rax, [rbx]
 push rax
 """
@@ -258,7 +258,7 @@ push rax
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
 push rbx
 """
         )
