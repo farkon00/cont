@@ -71,6 +71,7 @@ class Proc:
 
         self.name: str = name
         self.ip: int = ip
+        self.owner: "Struct" = None if owner is None else owner.typ
         self.in_stack: List[object] = in_stack + ([owner] if owner is not None else [])
         self.out_stack: List[object] = out_stack
         self.block: Block = block
@@ -84,6 +85,9 @@ class Proc:
 
         if owner is not None:
             owner.typ.add_method(self)
+
+    def __str__(self) -> str:
+        return f"Proc({self.name}, {None if self.owner is None else self.owner.name})"
 
     def __hash__(self) -> int:
         return id(self)

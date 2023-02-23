@@ -10,6 +10,7 @@ class Config:
         "program" : "The program to compile and optionally run",
         "run" : "Run program after compilation",
         "dump" : "Dump operations without compilation",
+        "dump_proc" : "Dump operations of a specific procedure",
         "dump_tokens" : "Dump tokens without parsing or compilating",
         "dump_tc" : "Dump operations after type checking",
         "out" : "The output executable file and name for .asm file",
@@ -27,6 +28,7 @@ class Config:
     }
 
     REGULAR_OPTIONS: Dict[str, List[str]] = {
+        "dump_proc" : ["-dp", "--dump_proc"],
         "out" : ["-o", "--out"],
         "stdout" : ["-stdo", "--stdout"],
         "input" : ["-i", "--input"],
