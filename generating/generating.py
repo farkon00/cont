@@ -83,13 +83,14 @@ if State.config.re_NPD else ''
 _start:
 """
 
-    for op in ops:
+    for counter, op in enumerate(ops):
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
                 if op.type == OpType.ENDPROC:
                     State.current_proc = None
                 continue
         buf += generate_op(op)
+        buf += f"\npush {counter}\npop r15\n"
 
     buf += f"""
 mov rax, 60
@@ -233,7 +234,7 @@ def generate_op(op: Op):
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + op.operand + 8}\n
+sub rbx, {State.current_proc.memory_size + 8 - op.operand}\n
 push rbx
 """
         )
