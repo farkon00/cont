@@ -83,14 +83,13 @@ if State.config.re_NPD else ''
 _start:
 """
 
-    for counter, op in enumerate(ops):
+    for op in ops:
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
                 if op.type == OpType.ENDPROC:
                     State.current_proc = None
                 continue
         buf += generate_op(op)
-        buf += f"\npush {counter}\npop r15\n"
 
     buf += f"""
 mov rax, 60
