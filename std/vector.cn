@@ -32,7 +32,7 @@ struct IntVector
     self.check_innitted
     self.capacity capacity_delta + sizeoftype int * malloc
     bind new_data:
-      self.len self.data new_data cpy_buf
+      self.len sizeoftype int * self.data new_data cpy_buf
       self.data free
       *self.capacity capacity_delta incby
       new_data !self.data
@@ -112,6 +112,11 @@ struct IntVector
 
   nproc __index_ptr__ int index -> *int:
     self.check_innitted
+    if index self.len >= index 0 < or do
+      "Index out of range for vector: " puts
+      index print
+      1 exit
+    end
     index self.data *[]
   end
 

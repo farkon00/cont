@@ -148,8 +148,7 @@ nproc malloc int size -> ptr:
 end
 
 proc free ptr: 
-  dup
-  1 swap get_malloc_meta !.is_free
+  1 over get_malloc_meta !.is_free
   dup get_malloc_meta .size swap clear_buf
 end
 
@@ -334,6 +333,92 @@ proc streq @str @str -> int:
     end 
   end
 end
+
+proc str_find @str @str -> int:
+  bind len1 data1 len2 data2:
+    0 
+    len1 0 != len1 len2 >= and while
+      if len2 over data1 +ptr len2 data2 streq do
+        0
+      else
+        1 +
+        dup len1 len2 - <=
+      end
+    end
+    if dup len1 len2 - 1 + == do
+      drop -1
+    end
+  end
+end
+
+proc str_count @str @str -> int:
+  var counter int
+  bind len1 data1 len2 data2:
+    0 
+    len1 0 != len1 len2 >= and while
+      if len2 over data1 +ptr len2 data2 streq do
+        *counter inc
+        len2 +
+      else
+        1 +
+      end
+      dup len1 len2 - <=
+    end
+  end drop
+  counter
+end
+
+nproc str_slice1 int start @str -> @str:
+  if start len >= start 0 < or do
+    "Index out of range for the start of the slice: " puts
+    start print
+    1 exit
+  end
+  len start - data start ptr+
+end
+
+nproc str_slice2 int start int _end @str -> @str:
+  if start len >= start 0 < or do
+    "Index out of range for the start of the string slice: " puts
+    start print
+    1 exit
+  end
+  if _end len > _end 0 < or do
+    "Index out of range for the end of the string slice: " puts
+    _end print
+    1 exit
+  end
+  _end start - data start ptr+
+end
+
+struct CursoredString
+  str data
+  int cursor
+  
+  nproc __init__ @str:
+    len data str !self.data
+    0 !self.cursor
+  end
+
+  nproc rest -> @str:
+    self.data.len self.cursor - self.data.data self.cursor ptr+
+  end
+
+  // Jumps to the CHARACTER AFTER the sub-string
+  // Returns a bool
+  // true - jumped
+  // false - no next line found
+  nproc jump_to @str -> int:
+    self.rest len data str_find
+    bind offset:
+      offset -1 != offset len + self.data.len != and
+      dup if
+        *self.cursor offset len + incby
+      end
+    end
+  end
+end
+
 
 nproc exec_cmd ptr argv ptr exec:
   var wstatus int
