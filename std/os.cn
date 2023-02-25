@@ -99,6 +99,11 @@ const SO_SPLICE	     0x1023;
 const SO_DOMAIN	     0x1024;
 const SO_PROTOCOL	   0x1025;
 
+const R_OK 4;
+const W_OK 2;
+const X_OK 1;
+const F_OK 0;
+
 const SOL_SOCKET 0xffff;
 
 const AF_INET 2 end
@@ -138,6 +143,7 @@ proc write int ptr int -> int: SYSCALL.WRITE syscall3 end
 proc open int int ptr -> int: SYSCALL.OPEN syscall3 end
 proc open2 int ptr -> int: SYSCALL.OPEN syscall2 end
 proc fstat ptr int -> int: SYSCALL.FSTAT syscall2 end 
+proc access int ptr -> int: SYSCALL.ACCESS syscall2 end
 proc close int -> int: SYSCALL.CLOSE syscall1 end
 
 proc fork -> int: SYSCALL.FORK syscall0 end  

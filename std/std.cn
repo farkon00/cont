@@ -336,17 +336,39 @@ end
 
 proc str_find @str @str -> int:
   bind len1 data1 len2 data2:
-    0 
-    len1 0 != len1 len2 >= and while
-      if len2 over data1 +ptr len2 data2 streq do
-        0
-      else
-        1 +
-        dup len1 len2 - <=
+    if len2 0 > len1 len2 >= and do
+      0
+      1 while
+        if len2 over data1 +ptr len2 data2 streq do
+          0
+        else
+          1 +
+          dup len1 len2 - <=
+        end
       end
+      if dup len1 len2 - 1 + == do
+        drop -1
+      end
+    else
+      -1
     end
-    if dup len1 len2 - 1 + == do
-      drop -1
+  end
+end
+
+proc str_rfind @str @str -> int:
+  bind len1 data1 len2 data2:
+    if len2 0 > len1 len2 >= and do
+      len1 len2 -
+      1 while
+        if len2 over data1 +ptr len2 data2 streq do
+          0
+        else
+          1 -
+          dup 0 >=
+        end
+      end
+    else
+      -1
     end
   end
 end
