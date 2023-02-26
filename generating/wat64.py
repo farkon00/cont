@@ -13,7 +13,7 @@ assert len(OpType) == 40, "Unimplemented type in wat64.py"
 WAT64_HEADER =\
 """
 (import "console" "log" (func $__js_log (param i64)))
-(import "console" "puts" (func $__js_puts (param i64 i64)))
+(import "console" "println" (func $__js_println (param i64 i64)))
 (memory $memory {})
 (export "memory" (memory $memory))
 (func $div (param i64 i64) (result i64 i64)
@@ -131,7 +131,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
         return f"(i64.const {offset + State.memories[op.operand].offset})"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         return "(global.get $call_stack_ptr) (i64.extend_i32_u) (i64.const " +\
-            f"{State.current_proc.memory_size + op.operand + 8}) (i64.sub)"
+            f"{State.current_proc.memory_size + 8 - op.operand}) (i64.sub)"
     elif op.type == OpType.PUSH_LOCAL_VAR:
         var_offset = State.current_proc.memory_size - State.current_proc.memories[op.operand].offset
         return "(global.get $call_stack_ptr)" +\
