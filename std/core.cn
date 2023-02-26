@@ -1,3 +1,4 @@
+include platform.cn
 include stack.cn
 
 proc / int int -> int: div drop end
@@ -42,37 +43,75 @@ end
 
 
 proc @16 ptr -> int:
-  shadowp
-  asm "xor rax, rax"
-  asm "pop rbx"
-  asm "mov ax, [rbx]"
-  asm "push rax"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowp
+    asm "xor rax, rax"
+    asm "pop rbx"
+    asm "mov ax, [rbx]"
+    asm "push rax"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    (int)
+    asm "i32.wrap_i64"
+    asm "i64.load16_u"
+  #endif
 end
  
 proc !16 int ptr:
-  shadowp
-  shadowi
-  asm "pop rbx"
-  asm "pop rcx"
-  asm "mov [rbx], cx"
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowp
+    shadowi
+    asm "pop rbx"
+    asm "pop rcx"
+    asm "mov [rbx], cx"
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.const 0"
+    drop
+
+    asm "call $prepare_store"
+    asm "i64.store16"
+  #endif
 end
 
 proc @32 ptr -> int:
-  shadowp
-  asm "xor rax, rax"
-  asm "pop rbx"
-  asm "mov eax, [rbx]"
-  asm "push rax"
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowp
+    asm "xor rax, rax"
+    asm "pop rbx"
+    asm "mov eax, [rbx]"
+    asm "push rax"
   unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    (int)
+    asm "i32.wrap_i64"
+    asm "i64.load32_u"
+  #endif
 end
  
 proc !32 int ptr:
-  shadowp
-  shadowi
-  asm "pop rbx"
-  asm "pop rcx"
-  asm "mov [rbx], ecx"
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowp
+    shadowi
+    asm "pop rbx"
+    asm "pop rcx"
+    asm "mov [rbx], ecx"
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.const 0"
+    drop
+
+    asm "call $prepare_store"
+    asm "i64.store32"
+  #endif
 end
 
 const DYNAMIC_ARRAY_SIZE 0x7FFFFFFFFFFFFFFF;
@@ -87,55 +126,98 @@ proc xor int int -> int: boolify swap boolify + 1 == end
 
 
 proc & int int -> int: 
-  shadowi shadowi
-  asm "pop rax"
-  asm "pop rbx"
-  asm "and rax, rbx"
-  asm "push rax"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowi shadowi
+    asm "pop rax"
+    asm "pop rbx"
+    asm "and rax, rbx"
+    asm "push rax"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.and"
+  #endif
 end
 
 proc | int int -> int: 
-  shadowi shadowi
-  asm "pop rax"
-  asm "pop rbx"
-  asm "or rax, rbx"
-  asm "push rax"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowi shadowi
+    asm "pop rax"
+    asm "pop rbx"
+    asm "or rax, rbx"
+    asm "push rax"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.or"
+  #endif
 end
 
-proc bnot int int -> int: 
-  shadowi shadowi
-  asm "pop rax"
-  asm "pop rbx"
-  asm "not rax, rbx"
-  asm "push rax"
-  unshadowi
+proc bnot int -> int: 
+  #if platform Platform.fasm_x86_64_linux ==;
+    asm "pop rax"
+    asm "not rax"
+    asm "push rax"
+  #endif
+  #if platform Platform.wat64 ==;
+    asm "i64.const -1"
+    asm "i64.xor"
+  #endif
 end
 
 proc ^ int int -> int: 
-  shadowi shadowi
-  asm "pop rax"
-  asm "pop rbx"
-  asm "xor rax, rbx"
-  asm "push rax"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadowi shadowi
+    asm "pop rax"
+    asm "pop rbx"
+    asm "xor rax, rbx"
+    asm "push rax"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.xor"
+  #endif
 end
 
 proc >> int int -> int:
-  shadow shadow
-  asm "pop rcx"
-  asm "pop rbx"
-  asm "shr rbx, cl"
-  asm "push rbx"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadow shadow
+    asm "pop rcx"
+    asm "pop rbx"
+    asm "shr rbx, cl"
+    asm "push rbx"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.shr_u"
+  #endif
 end
 
 proc << int int -> int:
-  shadow shadow
-  asm "pop rcx"
-  asm "pop rbx"
-  asm "shl rbx, cl"
-  asm "push rbx"
-  unshadowi
+  #if platform Platform.fasm_x86_64_linux ==;
+    shadow shadow
+    asm "pop rcx"
+    asm "pop rbx"
+    asm "shl rbx, cl"
+    asm "push rbx"
+    unshadowi
+  #endif
+  #if platform Platform.wat64 ==;
+    // Type checking
+    asm "i64.const 0"
+    drop
+    asm "i64.shl"
+  #endif
 end
