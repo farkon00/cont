@@ -149,7 +149,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
     elif op.type == OpType.OPERATOR:
         return generate_operator_wat64(op)
     elif op.type == OpType.SYSCALL:
-        cont_assert(False, "Not implemented op: SYSCALL")
+        State.throw_error("Syscalls are not supported for target wat64")
     elif op.type == OpType.IF:
         if State.ops_by_ips[op.operand.end].type == OpType.ELSE:
             type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand)
@@ -169,13 +169,16 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:
             return ""
+        name = f"$addr_{op.operand.ip}"
+        if op.operand.is_export:
+            name += f'(export "{op.operand.name}")'
         params = " i64" * len(op.operand.in_stack)
         results = " i64" * len(op.operand.out_stack)
         allocation = f"(global.get $call_stack_ptr) (i32.const {op.operand.memory_size}) "
         allocation += "(i32.add) (global.set $call_stack_ptr)"
         args = "".join([f"(local.get {i})"
             for i in range(len(op.operand.in_stack))])
-        return f"(func $addr_{op.operand.ip} (param{params}) (result{results}) {allocation} {args}"
+        return f"(func {name} (param{params}) (result{results}) {allocation} {args}"
     elif op.type == OpType.ENDPROC:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
         State.current_proc = None

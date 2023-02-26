@@ -771,6 +771,12 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "call":
         return Op(OpType.CALL_ADDR, None)
 
+    elif token == "#export":
+        name = safe_next_token("Expected a procedure name")[0]
+        assert name in State.procs, f'Procedure "{name}" not found'
+        State.used_procs.add(State.procs[name])
+        State.procs[name].is_export = True
+
     elif token == "[]":
         return Op(OpType.INDEX)
 

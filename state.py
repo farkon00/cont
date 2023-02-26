@@ -82,6 +82,8 @@ class Proc:
 
         self.used_procs: Set[Proc] = set()
 
+        self.is_exported: bool = False
+
         if owner is not None:
             owner.typ.add_method(self)
 
