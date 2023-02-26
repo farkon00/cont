@@ -704,7 +704,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token == "const":
         name = next(State.tokens)
-        State.check_name(name)
+        State.check_name(name, "constant")
         State.constants[name[0]] = evaluate_block(State.loc, "const")
 
     elif token == "sizeoftype":
