@@ -436,6 +436,7 @@ push rbx
         struct = State.structures[op.operand]
         size = sizeof(struct)
         if State.config.struct_malloc[1]:
+            assert not State.procs["malloc"].is_imported, "Cannot import malloc in fasm_x86_64_linux target"
             buf = comment +\
 f"""
 push {size}

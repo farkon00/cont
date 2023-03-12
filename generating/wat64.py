@@ -9,11 +9,8 @@ from state import *
 assert len(Operator) == 20, "Unimplemented operator in wat64.py"
 assert len(OpType) == 40, "Unimplemented type in wat64.py"
 
-# TODO: make an import syntax
 WAT64_HEADER =\
 """
-(import "console" "log" (func $__js_log (param i64)))
-(import "console" "println" (func $__js_println (param i64 i64)))
 (memory $memory {})
 (export "memory" (memory $memory))
 (func $div (param i64 i64) (result i64 i64)
@@ -90,9 +87,22 @@ def generate_globals(data_offset: int) -> str:
 
     return call_stack + bind_stack
 
+def generate_imports() -> str:
+    buf = ""
+
+    for name, path in State.imported_procs:
+        path = " ".join(
+            map(lambda x: f'"{x}"',
+            path.split(".")))
+        param = f"(param{' i64' * len(State.procs[name].in_stack)})"
+        result = f"(result{' i64' * len(State.procs[name].out_stack)})"
+        buf += f"(import {path} (func ${name} {param} {result}))"
+
+    return buf
+
 def generate_wat64(ops: List[Op]) -> str:
     offset, data, data_table = generate_data()
-    buf = "(module " + WAT64_HEADER.format(
+    buf = "(module " + generate_imports() + WAT64_HEADER.format(
         math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE)
     ) + generate_globals(offset) + data
     main_buf = '(func (export "main") '
@@ -170,7 +180,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
         if op.operand not in State.used_procs and State.config.o_UPR:
             return ""
         name = f"$addr_{op.operand.ip}"
-        if op.operand.is_export:
+        if op.operand.is_exported:
             name += f'(export "{op.operand.name}")'
         params = " i64" * len(op.operand.in_stack)
         results = " i64" * len(op.operand.out_stack)
@@ -200,7 +210,10 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
         return \
             f"(global.get $bind_stack_ptr) (i32.const {(State.bind_stack_size - op.operand) * 8}) (i32.sub) (i64.load)"
     elif op.type == OpType.CALL:
-        return f"(call $addr_{op.operand.ip})"
+        if op.operand.is_imported:
+            return f"(call ${op.operand.name})"
+        else:
+            return f"(call $addr_{op.operand.ip})"
     elif op.type == OpType.TYPED_LOAD:
         return LOAD_CODE
     elif op.type == OpType.PACK:

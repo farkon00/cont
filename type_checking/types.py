@@ -188,7 +188,8 @@ def parse_type(
     if end is not None:
         if end in name:
             end_index = name.find(end)
-            State.tokens_queue.append((name[end_index + len(end):], token[1]))
+            if name[end_index + len(end):]:
+                State.tokens_queue.append((name[end_index + len(end):], token[1]))
             name = name[:end_index]
             if not name.strip():
                 return None

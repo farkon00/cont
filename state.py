@@ -59,22 +59,18 @@ class Memory:
 
 class Proc:
     def __init__(
-        self,
-        name: str,
-        ip: int,
-        in_stack: List[object],
-        out_stack: List[object],
-        block: Block,
-        is_named: bool,
-        owner=None,
+        self, name: str, ip: int, in_stack: List["Type"],
+        out_stack: List["Type"], block: Block, is_named: bool, owner=None,
     ):
-
-        self.name: str = name
-        self.ip: int = ip
-        self.in_stack: List[object] = in_stack + ([owner] if owner is not None else [])
-        self.out_stack: List[object] = out_stack
+        self.name = name
+        self.ip = ip
+        self.in_stack = in_stack + ([owner] if owner is not None else [])
+        self.out_stack = out_stack
         self.block: Block = block
-        self.is_named = is_named
+        
+        self.is_named: bool = is_named
+        self.is_imported: bool = False
+        self.is_exported: bool = False
 
         self.memories: Dict[str, Memory] = {}
         self.memory_size: int = 0
@@ -82,10 +78,30 @@ class Proc:
 
         self.used_procs: Set[Proc] = set()
 
-        self.is_exported: bool = False
-
         if owner is not None:
             owner.typ.add_method(self)
+
+    @classmethod
+    def create_imported(cls, name: str, in_stack: List["Type"], out_stack: List["Type"]) -> "Proc":
+        self = cls.__new__(cls)
+
+        self.name = name
+        self.ip = -1
+        self.in_stack = in_stack
+        self.out_stack = out_stack
+        self.block: Block = None
+        
+        self.is_exported: bool = False
+        self.is_named: bool = False
+        self.is_imported: bool = True
+
+        self.memories: Dict[str, Memory] = {}
+        self.memory_size: int = 0
+        self.variables: Dict[str, "Type"] = {}  # type: ignore
+
+        self.used_procs: Set[Proc] = set()
+
+        return self
 
     def __hash__(self) -> int:
         return id(self)
@@ -119,6 +135,7 @@ class State:
     memories: Dict[str, Memory] = {}
     variables: Dict[str, "Type"] = {}  # type: ignore
     procs: Dict[str, Proc] = {}
+    imported_procs: List[Tuple[str, str]] = []
     structures: Dict[str, "Struct"] = {}  # type: ignore
     constants: Dict[str, int] = {}
     enums: Dict[str, List[str]] = {}
