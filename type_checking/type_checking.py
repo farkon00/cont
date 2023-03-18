@@ -307,7 +307,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
             pre_for_stack = State.route_stack.pop()[1]
             check_route_stack(stack, pre_for_stack, "in different routes of for")
             return [
-                Op(OpType.PUSH_BIND_STACK, (len(State.bind_stack), ""), loc=op.loc),
+                Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
@@ -325,7 +325,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 State.locs_to_include.append(op.loc)
 
             return [
-                Op(OpType.PUSH_BIND_STACK, (len(State.bind_stack), ""), loc=op.loc),
+                Op(OpType.PUSH_BIND_STACK, len(State.bind_stack), loc=op.loc),
                 Op(OpType.PUSH_INT, 1, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.ADD, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
