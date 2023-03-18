@@ -602,12 +602,12 @@ push rbx
     elif op.type == OpType.CAST:
         return ""  # Casts are type checking thing
     else:
-        cons_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
+        cont_assert(False, f"Generation isn't implemented for op type: {op.type.name}")
 
 
 def generate_operator(op: Op):
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator")
-    cont_assert(op.type == OpType.OPERATOR, f"generate_operator cant generate {op.type.name}")
+    cont_assert(op.type == OpType.OPERATOR, f"generate_operator can't generate {op.type.name}")
 
     if op.operand in (Operator.ADD, Operator.SUB):
         return f"""
@@ -713,4 +713,4 @@ mov bl, [rax]
 push rbx
 """
     else:
-        cont_assert(False, f"Generation isnt implemented for operator: {op.operand.name}")
+        cont_assert(False, f"Generation isn't implemented for operator: {op.operand.name}")

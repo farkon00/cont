@@ -229,7 +229,7 @@ def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
     State.check_name(name, "structure")
     if name[0].endswith(":"):
         sys.stderr.write(
-            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesnt need :\n"
+            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesn't need :\n"
         )
 
     return parent, name
@@ -376,9 +376,12 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> Li
             parts = parts[1:]
         elif parts[0] in State.bind_stack:
             res.append(
-                Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc)
+                Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index(parts[0]), parts[0]), State.loc)
             )
             parts = parts[1:]
+        elif parts[0] == "base":
+            assert "self" in State.bind_stack, "You must have a binded value self to use base"
+            return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base"))
         else:
             State.throw_error(f'name "{parts[0]}" is not defined')
     for i in parts:
@@ -778,7 +781,11 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.SIZEOF, len(token) - 6)
 
     elif token in State.bind_stack:
-        return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
+        return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index(token), token))
+
+    elif token == "base":
+        assert "self" in State.bind_stack, "You must have a binded value self to use base"
+        return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base"))
 
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
@@ -854,6 +861,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return parse_dot(token[1:], True, True)
 
     elif (
+        token.split(".", 1)[0] == "base" or\
         token.split(".", 1)[0] in State.bind_stack or\
         token.split(".", 1)[0] in State.variables or\
         token.split(".", 1)[0] in getattr(State.current_proc, "variables", {})
