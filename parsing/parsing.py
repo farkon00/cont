@@ -431,17 +431,20 @@ def parse_var():
 
     if is_init:
         if isinstance(_type, Struct):
-            assert "__init__" in _type.methods, f"Structure to init does not have an __init__ method"
-            State.add_proc_use(_type.methods["__init__"])
+            if "__init__" in _type.methods:
+                State.add_proc_use(_type.methods["__init__"])
             return [
                 Op(
                     OpType.PUSH_VAR
                     if State.current_proc is None
                     else OpType.PUSH_LOCAL_VAR,
-                    name[0]
+                    name[0],
+                    loc=State.loc
                 ),
-                Op(OpType.CALL, _type.methods["__init__"])
+                Op(OpType.PACK, (_type.name, False), loc=State.loc),
+                Op(OpType.OPERATOR, Operator.DROP, loc=State.loc)
             ]
+
         # if the type is an array
         if State.current_proc is None:
             Memory.global_offset += sizeof(_type.typ.typ) * _type.len
@@ -811,7 +814,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
 
     elif token in State.structures:
-        return Op(OpType.PACK, token)
+        return Op(OpType.PACK, (token, True))
 
     elif token in State.procs:
         State.add_proc_use(State.procs[token])

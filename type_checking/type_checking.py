@@ -379,7 +379,9 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         check_stack(stack, [Ptr(op.operand)])
         stack.append(op.operand)
     elif op.type == OpType.PACK:
-        struct = State.structures[op.operand]
+        struct = State.structures[op.operand[0]]
+        if not op.operand[1]:
+            cont_assert(stack.pop().typ == struct, "Probably a user now has more control over PACK (_, False)")
         if "__init__" in struct.methods:
             args = struct.methods["__init__"].in_stack.copy()[:-1]
             State.add_proc_use(struct.methods["__init__"])

@@ -407,17 +407,18 @@ push rbx
 """
         )
     elif op.type == OpType.PACK:
-        struct = State.structures[op.operand]
+        struct = State.structures[op.operand[0]]
         size = sizeof(struct)
-        if State.config.struct_malloc[1]:
-            buf = comment +\
+        if op.operand[1]:
+            if State.config.struct_malloc[1]:
+                buf = comment +\
 f"""
 push {size}
 call addr_{State.procs["malloc"].ip}
 pop rbx
 """
-        else:
-            buf = comment +\
+            else:
+                buf = comment +\
 f"""
 xor rdi, rdi
 mov rax, 12
@@ -428,6 +429,8 @@ mov rdi, rax
 mov rax, 12
 syscall
 """
+        else:
+            buf = comment + "\npop rbx"
 
         buf += """
 mov rcx, [bind_stack_ptr]
