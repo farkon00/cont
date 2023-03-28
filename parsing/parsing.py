@@ -63,10 +63,13 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
     except StopIteration:
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error("proc contract was not closed")
-    proc_token_value = proc_token[0].split(":")[0].strip()
+    parts = proc_token[0].split(":", 1)
+    if len(parts) > 1:
+        if  parts[1].strip():
+            State.tokens_queue.append((parts[1].strip(), proc_token[1]))
     State.loc = proc_token[1]
 
-    return proc_token, proc_token_value
+    return proc_token, parts[0].strip()
 
 
 def parse_proc_head():
@@ -145,8 +148,9 @@ def parse_proc_head():
             else:
                 types.append(res)
                 if State.is_named and types is in_types:
+                    assert ":" not in proc_token[0], "Name for argument was not specified"
                     proc_token, proc_token_value = next_proc_contract_token(name)
-                    assert proc_token_value, "name for argument was not specified"
+                    assert proc_token_value, "Name for argument was not specified"
                     names.append(proc_token_value)
 
     if has_contaract and ":" in proc_token:
