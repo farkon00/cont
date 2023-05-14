@@ -5,6 +5,7 @@ from typing import List
 
 from parsing.op import *
 from state import *
+from type_checking.types import Type
 
 assert len(Operator) == 20, "Unimplemented operator in wat64.py"
 assert len(OpType) == 40, "Unimplemented type in wat64.py"
@@ -75,6 +76,15 @@ def generate_data() -> Tuple[int, str, Dict[str, int]]:
 
     return (offset, buf, data_table)
 
+def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
+    buf = f"(table {len(State.referenced_procs)} funcref) "
+    buf += "(elem (i32.const 0)"
+    procs_table = {}
+    for index, proc in enumerate(State.referenced_procs):
+        procs_table[proc] = index
+        buf += f" $addr_{proc.ip}"
+    return procs_table, buf + ")"
+
 def get_static_size(data_offset: int) -> int:
     return data_offset + Memory.global_offset +\
         State.config.size_call_stack + State.config.size_bind_stack
@@ -100,11 +110,19 @@ def generate_imports() -> str:
 
     return buf
 
+def generate_call_types(call_types: List[str]):
+    buf = ""
+    for index, signature in enumerate(call_types):
+        buf += f" (type $call_type_{index} {signature})"
+    return buf
+
 def generate_wat64(ops: List[Op]) -> str:
     offset, data, data_table = generate_data()
+    procs_table, procs_table_wat = generate_proc_table()
     buf = "(module " + generate_imports() + WAT64_HEADER.format(
         math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE)
-    ) + generate_globals(offset) + data
+    ) + generate_globals(offset) + data + procs_table_wat
+    call_types: List[str] = []
     main_buf = '(func (export "main") '
     for op in ops:
         if not op.compiled: continue
@@ -115,22 +133,23 @@ def generate_wat64(ops: List[Op]) -> str:
                 continue
         
         if State.current_proc is not None or op.type == OpType.DEFPROC:
-            buf += generate_op_wat64(op, offset, data_table)
+            buf += generate_op_wat64(op, offset, data_table, procs_table, call_types)
         else:
-            main_buf += generate_op_wat64(op, offset, data_table)
-    
+            main_buf += generate_op_wat64(op, offset, data_table, procs_table, call_types)
+    buf += generate_call_types(call_types)
     main_buf += ")"
     buf += main_buf + ")"
 
     return buf
 
-def generate_block_type_info(block : Block) -> str:
+def generate_block_type_info(block: Block) -> str:
     if not block.stack_effect: return ""
 
     return f"(param{' i64' * block.stack_effect[0]}) (result{' i64' * block.stack_effect[1]})"
 
 
-def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
+def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
+                      procs_table: Dict[Proc, int], call_types: List[str]) -> str:
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
@@ -155,7 +174,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
     elif op.type == OpType.PUSH_NULL_STR:
         return f"(i64.const {data_table[f'str_{op.operand}']})"
     elif op.type == OpType.PUSH_PROC:
-        cont_assert(False, "Not implemented op: PUSH_PROC")
+        return f"(i64.const {procs_table[op.operand]})"
     elif op.type == OpType.OPERATOR:
         return generate_operator_wat64(op)
     elif op.type == OpType.SYSCALL:
@@ -204,6 +223,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
         buf += "(i32.add) (global.set $bind_stack_ptr)"
         return buf
     elif op.type == OpType.UNBIND:
+        State.bind_stack_size -= op.operand
         return \
             f"(global.get $bind_stack_ptr) (i32.const {op.operand * 8}) (i32.sub) (global.set $bind_stack_ptr)"
     elif op.type == OpType.PUSH_BIND_STACK:
@@ -239,7 +259,13 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int]) -> str:
     elif op.type == OpType.AUTO_INIT:
         cont_assert(False, "Not implemented op: AUTO_INIT")
     elif op.type == OpType.CALL_ADDR:
-        cont_assert(False, "Not implemented op: CALL_ADDR")
+        params = f"(param {' i64' * len(op.operand.in_types)})"
+        results = f"(result {'i64' * len(op.operand.out_types)})"
+        call_types.append(f"(func {params} {results})")
+        return (
+            "(i32.wrap_i64) "
+            f"(call_indirect (type $call_type_{len(call_types) - 1}))"
+        )
     elif op.type == OpType.ASM:
         return "(" + op.operand + ")"
     elif op.type == OpType.PUSH_TYPE:

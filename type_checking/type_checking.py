@@ -429,6 +429,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         assert isinstance(predicate, Addr), f"Predicate must be an addr, but it's {type_to_str(predicate)}"
         check_stack(stack, predicate.in_types.copy())
         stack.extend(predicate.out_types)
+        return Op(OpType.CALL_ADDR, predicate)
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
         assert len(stack) >= 1, "stack is too short"
         arr = stack[-1]

@@ -878,8 +878,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         ]
 
     elif token.startswith("*") and token[1:] in State.procs:
-        State.add_proc_use(State.procs[token[1:]])
-        return Op(OpType.PUSH_PROC, State.procs[token[1:]])
+        proc = State.procs[token[1:]]
+        State.add_proc_use(proc)
+        State.referenced_procs.add(proc)
+        return Op(OpType.PUSH_PROC, proc)
 
     elif (
         token.split(".", 1)[0][1:] in State.bind_stack or\

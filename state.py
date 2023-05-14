@@ -136,6 +136,7 @@ class State:
     variables: Dict[str, "Type"] = {}  # type: ignore
     procs: Dict[str, Proc] = {}
     imported_procs: List[Tuple[str, str]] = []
+    referenced_procs: Set[Proc] = set() # The procedures, which were used for proc pointers
     structures: Dict[str, "Struct"] = {}  # type: ignore
     constants: Dict[str, int] = {}
     enums: Dict[str, List[str]] = {}
