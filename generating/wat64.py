@@ -1,11 +1,11 @@
 import subprocess
 import math
 
-from typing import List
+from typing import List, Set, Union
 
 from parsing.op import *
 from state import *
-from type_checking.types import Type
+from type_checking.types import *
 
 assert len(Operator) == 20, "Unimplemented operator in wat64.py"
 assert len(OpType) == 40, "Unimplemented type in wat64.py"
@@ -64,12 +64,99 @@ def compile_ops_wat64(ops: List[Op]):
 
     subprocess.run(["wat2wasm", f"{out}.wat"], stdin=sys.stdin, stderr=sys.stderr)
 
+def byte_to_hex_code(byte: int):
+    """This can only accept positive integers below 265"""
+    return f"\\" + (hex(byte)[2:] if byte >= 16 else '0' + hex(byte)[2:])
+
+def generate_type(t: Type, offset: int, buf: List[Union[int, Type]],
+                  queue_set: Set[Type], queue_list: List[Type],
+                  types_table: Dict[Type, int]) -> int:
+    """Returns new offset"""
+    if isinstance(t, Int):
+        buf += [State.TYPE_IDS["int"], 8, 1]
+        offset += 24
+    elif isinstance(t, Ptr):
+        if t.typ is None:
+            buf += [State.TYPE_IDS["ptr"], 8, 1, 0]
+        else:
+            if not (t.typ in types_table or t.typ in queue_set):
+                queue_set.add(t.typ)
+                queue_list.append(t.typ)
+            buf += [State.TYPE_IDS["ptr"], 8, 1, t.typ]
+        offset += 32
+    elif isinstance(t, Array):
+        cont_assert(t.len != -1 and t.typ is not None, 
+            "In lang(impossible to create by user) array needs to be generated")
+        if not (t.typ in types_table or t.typ in queue_set):
+            queue_set.add(t.typ)
+            queue_list.append(t.typ)
+        buf += [State.TYPE_IDS["array"], 8, 1, t.typ, t.len]
+        offset += 40
+    elif isinstance(t, Addr):
+        buf += [State.TYPE_IDS["addr"], 8, 1, offset + 40, offset + 48 + len(t.in_types) * 8]
+        for in_type in t.in_types:
+            if not (in_type in types_table or in_type in queue_set):
+                queue_set.add(in_type)
+                queue_list.append(in_type)
+            buf.append(in_type)
+        buf.append(0)
+        for out_type in t.out_types:
+            if not (out_type in types_table or out_type in queue_set):
+                queue_set.add(out_type)
+                queue_list.append(out_type)
+            buf.append(out_type)
+        buf.append(0)
+        offset += 56 + (len(t.in_types) + len(t.out_types)) * 8
+    elif isinstance(t, Struct):
+        State.curr_type_id += 1
+        buf += [State.curr_type_id, sizeof(t), 0]
+        if t.parent is not None:
+            if not (t.parent in types_table or t.parent in queue_set):
+                queue_set.add(t.parent)
+                queue_list.append(t.parent)
+            buf.append(t.parent)
+        else:
+            buf.append(0)
+        buf.append(offset+40)
+        for field in t.fields_types:
+            if not (field in types_table or field in queue_set):
+                queue_set.add(field)
+                queue_list.append(field)
+            buf.append(field)
+        buf.append(0)
+        offset += 48 + len(t.fields_types) * 8
+    elif isinstance(t, VarType):
+        State.throw_error("Can't get variable type runtime representation")
+    return offset
+
+def generate_types(offset: int) -> Tuple[int, str, Dict[Type, int]]:
+    initial_offset = offset
+    types_table: Dict[Type, int] = {}
+    buf: List[Union[int, Type]] = []
+    queue_set = State.runtimed_types_set.copy()
+    queue_list = State.runtimed_types_list.copy()
+    
+    while queue_list:
+        t = queue_list.pop()
+        queue_set.remove(t)
+        types_table[t] = offset
+        offset = generate_type(t, offset, buf, queue_set, queue_list, types_table)
+
+    text_buf = f"(data (i32.const {initial_offset}) \""
+    for byte in buf:
+        if isinstance(byte, Type):
+            byte = types_table[byte]
+        text_buf += "".join(map(byte_to_hex_code, byte.to_bytes(8, "little")))
+    text_buf += '")'
+
+    return offset, text_buf, types_table
+
 def generate_data() -> Tuple[int, str, Dict[str, int]]:
     data_table = {}
     buf = ""
     offset = 1
     for index, string in enumerate(State.string_data):
-        string_data = "".join([f"\\{hex(i)[2:] if i >= 16 else '0' + hex(i)[2:]}" for i in string])
+        string_data = "".join(map(byte_to_hex_code, string))
         buf += f'(data (i32.const {offset}) "{string_data}")'
         data_table[f"str_{index}"] = offset
         offset += len(string)
@@ -119,9 +206,10 @@ def generate_call_types(call_types: List[str]):
 def generate_wat64(ops: List[Op]) -> str:
     offset, data, data_table = generate_data()
     procs_table, procs_table_wat = generate_proc_table()
+    offset, types_wat, types_table = generate_types(offset)
     buf = "(module " + generate_imports() + WAT64_HEADER.format(
         math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE)
-    ) + generate_globals(offset) + data + procs_table_wat
+    ) + generate_globals(offset) + data + procs_table_wat + types_wat
     call_types: List[str] = []
     main_buf = '(func (export "main") '
     for op in ops:
@@ -133,9 +221,9 @@ def generate_wat64(ops: List[Op]) -> str:
                 continue
         
         if State.current_proc is not None or op.type == OpType.DEFPROC:
-            buf += generate_op_wat64(op, offset, data_table, procs_table, call_types)
+            buf += generate_op_wat64(op, offset, data_table, procs_table, call_types, types_table)
         else:
-            main_buf += generate_op_wat64(op, offset, data_table, procs_table, call_types)
+            main_buf += generate_op_wat64(op, offset, data_table, procs_table, call_types, types_table)
     buf += generate_call_types(call_types)
     main_buf += ")"
     buf += main_buf + ")"
@@ -149,7 +237,8 @@ def generate_block_type_info(block: Block) -> str:
 
 
 def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
-                      procs_table: Dict[Proc, int], call_types: List[str]) -> str:
+                      procs_table: Dict[Proc, int], call_types: List[str],
+                      types_table: Dict[Type, int]) -> str:
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
@@ -250,6 +339,11 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
             buf += "(call $prepare_store) (i64.store) "
             buf += "(call $swap) (i64.const 8) (i64.add) " * 2
         return buf + "(drop) (drop)"
+    elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
+        return (
+            f"(call $swap) (i64.const {op.operand[0]}) (i64.mul) (i64.add) "
+            f"{LOAD_CODE if op.type == OpType.INDEX else ''}"
+        )
     elif op.type == OpType.PUSH_FIELD:
         return f"(i64.const {op.operand}) (i64.add) {LOAD_CODE}"
     elif op.type == OpType.PUSH_FIELD_PTR:
@@ -267,9 +361,9 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
             f"(call_indirect (type $call_type_{len(call_types) - 1}))"
         )
     elif op.type == OpType.ASM:
-        return "(" + op.operand + ")"
+        return f"({op.operand})"
     elif op.type == OpType.PUSH_TYPE:
-        cont_assert(False, "Not implemented op: PUSH_TYPE")
+        return f"(i64.const {types_table[op.operand]})"
     elif op.type == OpType.CAST:
         return ""  # Casts are type checking thing
     else:
