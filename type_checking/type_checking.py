@@ -498,6 +498,8 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
             stack.append(Int())
         elif type1 == Ptr() and type2 == Ptr():
             if isinstance(type1.typ, Struct):
+                assert type1.typ is not None and type2.typ is not None,\
+                    f"incompatible types for {op.operand.name.lower()}"
                 assert type1.typ == type2.typ or type2.typ == type1.typ,\
                     f"cant perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
                 assert f"__{op.operand.name.lower()}__" in type1.typ.methods,\
