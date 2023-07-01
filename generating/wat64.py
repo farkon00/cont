@@ -79,7 +79,7 @@ def compile_ops_wat64(ops: List[Op]):
     with open(f"{out}.wat", "w") as f:
         f.write(generate_wat64(ops))
 
-    subprocess.run(["wat2wasm", f"{out}.wat"], stdin=sys.stdin, stderr=sys.stderr)
+    subprocess.run(["wat2wasm", f"{out}.wat", "-o", f"{out}.wasm"], stdin=sys.stdin, stderr=sys.stderr)
 
 def byte_to_hex_code(byte: int):
     """This can only accept positive integers below 265"""
@@ -347,6 +347,13 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
     elif op.type == OpType.TYPED_LOAD:
         return LOAD_CODE
     elif op.type == OpType.PACK:
+        """
+        (i64.const 16) (call $addr_116) (call $dup)
+        (i32.const 0) (call $bind) (global.get $bind_stack_ptr)
+        (i32.const 8) (i32.add) (global.set $bind_stack_ptr) (call $addr_211)
+        (global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (call $dup)
+        (global.set $bind_stack_ptr) (i64.load) (i64.const 8) (i64.add) (i32.wrap_i64) (i64.load)
+        """
         assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
         struct = State.structures[op.operand]
         size = sizeof(struct)
@@ -359,8 +366,8 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         buf += "(i32.const 8) (i32.add) (global.set $bind_stack_ptr) "
         if "__init__" in struct.methods:
             buf += f"(call $addr_{struct.methods['__init__'].ip}) "
-            buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) "
-            buf += "(call $dup) (global.set $bind_stack_ptr) (i64.load) "
+            buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (i64.extend_i32_s) "
+            buf += "(call $dup) (i32.wrap_i64) (global.set $bind_stack_ptr) (i32.wrap_i64) (i64.load) "
         else:
             offset = 0
             for index, field in list(enumerate(struct.fields_types))[::-1]:

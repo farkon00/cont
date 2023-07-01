@@ -15,16 +15,21 @@ vec2 vec.extend_vec
 
 *print vec.iter
 
-nproc read_file @str -> @str:
-  O_RDONLY len data // Arguments for open
-  init var file File
+#if platform Platform.fasm_x86_64_linux ==;
+  nproc read_file @str -> @str:
+    O_RDONLY len data // Arguments for open
+    init var file File
 
-  file.read_all
-end
+    file.read_all
+  end
 
-"tests/init_var.cn" read_file 
-swap drop 20 swap // Get a slice 20 characters long 
-println
+  "tests/init_var" read_file 
+  swap drop 20 swap // Get a slice 20 characters long 
+  println
+#endif
+#if platform Platform.wat64 ==;
+  "include std.cn\nincl\n" puts
+#endif
 
 // Arrays
 struct Vector2

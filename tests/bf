@@ -1,4 +1,5 @@
 include std.cn
+include platform.cn
 
 memory file 2049
 
@@ -38,8 +39,14 @@ while *i @8 0 != do
       else if i '.' == do
         1 head tape *[] puts
       else if i ',' == do
-        1 *inp STDOUT read drop
-        inp head tape *[] !
+        #if platform Platform.fasm_x86_64_linux ==;
+          1 *inp STDOUT read drop
+          inp head tape *[] !
+        #endif
+        #if platform Platform.wat64 ==;
+          "Cannot use input in wasm version" println
+          1 exit
+        #endif
       else if i '[' == do
         if head tape [] do
           *i loop_ptr loop_stack *[] !
