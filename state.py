@@ -86,7 +86,7 @@ class Proc:
         self = cls.__new__(cls)
 
         self.name = name
-        self.ip = -1
+        self.ip = State.get_new_ip(None)
         self.in_stack = in_stack
         self.out_stack = out_stack
         self.block: Block = None

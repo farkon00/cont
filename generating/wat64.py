@@ -186,10 +186,7 @@ def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
     procs_table = {}
     for index, proc in enumerate(State.referenced_procs):
         procs_table[proc] = index
-        if proc.is_imported:
-            buf += f" ${proc.name}"
-        else:
-            buf += f" $addr_{proc.ip}"
+        buf += f" $addr_{proc.ip}"
     return procs_table, buf + ")"
 
 def get_static_size(data_offset: int) -> int:
@@ -213,7 +210,7 @@ def generate_imports() -> str:
             path.split(".")))
         param = f"(param{' i64' * len(State.procs[name].in_stack)})"
         result = f"(result{' i64' * len(State.procs[name].out_stack)})"
-        buf += f"(import {path} (func ${name} {param} {result}))"
+        buf += f"(import {path} (func $addr_{State.procs[name].ip} {param} {result}))"
 
     return buf
 
@@ -340,10 +337,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         return \
             f"(global.get $bind_stack_ptr) (i32.const {(State.bind_stack_size - op.operand) * 8}) (i32.sub) (i64.load)"
     elif op.type == OpType.CALL:
-        if op.operand.is_imported:
-            return f"(call ${op.operand.name})"
-        else:
-            return f"(call $addr_{op.operand.ip})"
+        return f"(call $addr_{op.operand.ip})"
     elif op.type == OpType.TYPED_LOAD:
         return LOAD_CODE
     elif op.type == OpType.PACK:
@@ -358,10 +352,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         struct = State.structures[op.operand]
         size = sizeof(struct)
         buf = f"(i64.const {size}) "
-        if State.procs["malloc"].is_imported:
-            buf += f"(call ${State.procs['malloc'].name}) "
-        else:
-            buf += f"(call $addr_{State.procs['malloc'].ip}) "
+        buf += f"(call $addr_{State.procs['malloc'].ip}) "
         buf += "(call $dup) (i32.const 0) (call $bind) (global.get $bind_stack_ptr) "
         buf += "(i32.const 8) (i32.add) (global.set $bind_stack_ptr) "
         if "__init__" in struct.methods:
@@ -404,10 +395,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
     elif op.type == OpType.UPCAST:
         assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
         buf = f"(i64.const {op.operand[0]}) "
-        if State.procs["malloc"].is_imported:
-            buf += f"(call ${State.procs['malloc'].name}) "
-        else:
-            buf += f"(call $addr_{State.procs['malloc'].ip}) "
+        buf += f"(call $addr_{State.procs['malloc'].ip}) "
         for i in range(op.operand[2] // 8):
             buf += f"(i64.const {i*8}) (call $upcast_move) "
         buf += "(call $swap) (drop)"
