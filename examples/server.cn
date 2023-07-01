@@ -1,67 +1,59 @@
 include std.cn
 include io.cn
+include http.cn
 
-proc err @str:
-  println
-  1 exit
+const PORT 6969;
+
+nproc check_exists str route -> int:
+  1 route @ str_slice1 str_to_nstr
+  R_OK over access
+  swap free
 end
 
-nproc check_fail int res @str:
-  res 0 < if
-    "Error code: " puts
-    0 res - print
-    len data puts
-    " failed" err
+nproc get_extension str route -> @str:
+  route @ "." str_rfind
+  if dup -1 == do
+    drop ""
+  else
+    1 + route @ str_slice1
   end
 end
 
-proc init_address -> ptr:
-  16 malloc
-  bind address:
-    AF_INET    address        !16
-    6969 htons address 2 ptr+ !16
-    0          address 4 ptr+ !32
-    address
-  end
-end
-
-nproc init_socket ptr address -> int:
-  0 SOCK_STREAM AF_INET socket
-  bind fd:
-    fd "Socket syscall" check_fail
-    16 address fd bind_sock
-    "Bind" check_fail
-    10 fd listen
-    "Listen" check_fail
-    fd
-  end
-end
-
-nproc respond int fd:
-  "HTTP/1.0\ncontent-type: text/html; charset=utf-8 200 OK\n\n" fd write
-  "Write" check_fail
-  "<h1>Hello world!</h1>" fd write
-  "Write" check_fail
-end
-
-var sizeof(addr) int
-16 !sizeof(addr)
-memory buf 2048
-init_address
-dup init_socket
-bind address sockfd:
-  while 1 do
-  *sizeof(addr) address sockfd accept
-  dup "Accept" check_fail
-    bind fd:
-      2048 buf fd read
-      dup "Read" check_fail
-      buf println
-      fd respond
-      fd close
-      "Closing connection" check_fail
+nproc handler HTTPRequest req:
+  var file File
+  if req.route check_exists 0 == do
+    O_RDONLY 1 req.route @ str_slice1 file.__init__
+    file.read_all
+    bind len data:
+      req.route get_extension
+      bind ext_len ext_data:
+        if ext_len ext_data "html" streq do
+          "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: " req.conn.write
+        else
+          if ext_len ext_data "wasm" streq do
+            "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: application/wasm\r\nContent-Length: " req.conn.write
+          else
+            "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/plain\r\nContent-Length: " req.conn.write
+          end
+        end
+      end
+      len u_to_str
+      bind length_len length_data: 
+        length_len length_data req.conn.write
+        length_data free
+      end
+      "\r\n\r\n" req.conn.write
+      len data req.conn.write
+      data free
     end
+  else
+    // One string for performance to minimize number of syscalls 
+    "HTTP/1.1 404 Not found\r\nConnection: keep-alive\r\nContent-Length: 18\r\nContent-Type: text/html\r\n\r\n<h1>Not found</h1>" 
+    req.conn.write
   end
-  sockfd close
-  "Closing socket" check_fail
 end
+
+PORT
+init var server HTTPServer
+
+*handler server.run

@@ -259,7 +259,7 @@ def generate_op_fasm_x86_64_linux(op: Op):
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + op.operand + 8}\n
+sub rbx, {State.current_proc.memory_size + 8 - op.operand}\n
 push rbx
 """
         )
@@ -271,7 +271,7 @@ push rbx
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
 mov rax, [rbx]
 push rax
 """
@@ -284,7 +284,7 @@ push rax
             + f"""
 mov rbx, [call_stack_ptr]
 add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + State.current_proc.memories[op.operand].offset + 8}
+sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
 push rbx
 """
         )
@@ -433,18 +433,19 @@ push rbx
 """
         )
     elif op.type == OpType.PACK:
-        struct = State.structures[op.operand]
+        struct = State.structures[op.operand[0]]
         size = sizeof(struct)
-        if State.config.struct_malloc[1]:
-            assert not State.procs["malloc"].is_imported, "Cannot import malloc in fasm_x86_64_linux target"
-            buf = comment +\
+        if op.operand[1]:
+            if State.config.struct_malloc[1]:
+                assert not State.procs["malloc"].is_imported, "Cannot import malloc in fasm_x86_64_linux target"
+                buf = comment +\
 f"""
 push {size}
 call addr_{State.procs["malloc"].ip}
 pop rbx
 """
-        else:
-            buf = comment +\
+            else:
+                buf = comment +\
 f"""
 xor rdi, rdi
 mov rax, 12
@@ -455,6 +456,8 @@ mov rdi, rax
 mov rax, 12
 syscall
 """
+        else:
+            buf = comment + "\npop rbx"
 
         buf += """
 mov rcx, [bind_stack_ptr]
@@ -629,7 +632,7 @@ push rbx
     elif op.type == OpType.CAST:
         return ""  # Casts are type checking thing
     else:
-        cont_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
+        cont_assert(False, f"Generation isn't implemented for op type: {op.type.name}")
 
 
 def generate_operator_fasm_x86_64_linux(op: Op):
@@ -740,4 +743,4 @@ mov bl, [rax]
 push rbx
 """
     else:
-        cont_assert(False, f"Generation isnt implemented for operator: {op.operand.name}")
+        cont_assert(False, f"Generation isn't implemented for operator: {op.operand.name}")

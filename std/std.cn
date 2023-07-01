@@ -80,14 +80,18 @@ proc get_malloc_meta ptr -> MallocBlockMeta:
   sizeoftype MallocBlockMeta ptr- (MallocBlockMeta)
 end
 
+proc get_block_size ptr -> int:
+  get_malloc_meta .size
+end
+
 var malloc_base *MallocBlockMeta
 var malloc_last *MallocBlockMeta
 
 nproc malloc int size -> ptr:
-  malloc_base dup NULL ptr!= while  
-    bind curr_block:    
-      if curr_block.is_free curr_block.size size >= and do           
-        if curr_block.size size - sizeoftype MallocBlockMeta > do      
+  malloc_base dup NULL ptr!= while
+    bind curr_block:
+      if curr_block.is_free curr_block.size size >= and do 
+        if curr_block.size size - sizeoftype MallocBlockMeta > do
           curr_block sizeoftype MallocBlockMeta ptr+ size ptr+ (MallocBlockMeta)        
           bind new_block:
             curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
@@ -102,22 +106,40 @@ nproc malloc int size -> ptr:
         end
         0 !curr_block.is_free
         curr_block sizeoftype MallocBlockMeta ptr+ 0
-      else      
-        if curr_block.next NULL ptr== do
-          NULL 0
+      else
+        if 
+          curr_block curr_block.size sizeoftype MallocBlockMeta +
+          ptr+ NULL brk ptr==
+        do // The last block
+          if curr_block.is_free do
+            size curr_block.size - sbrk
+            if NULL ptr== do // Sbrk failed
+              NULL
+            else
+              size !curr_block.size
+              0 !curr_block.is_free
+              curr_block sizeoftype MallocBlockMeta ptr+
+            end
+            0
+          else
+            NULL 0
+          end
         else
-          curr_block.next 1
+          if curr_block.next NULL ptr== do
+            NULL 0
+          else
+            curr_block.next 1
+          end
         end
       end
     end
   end
-  if dup NULL ptr== do  
+  if dup NULL ptr== do
     drop
     size sizeoftype MallocBlockMeta +
-    sbrk (MallocBlockMeta) 
-    dup NULL ptr!= if // Sbrk failed
-      dup    
-      size swap !.size    
+    sbrk (MallocBlockMeta)
+    if dup NULL ptr!= do // If sbrk didn't fail 
+      size over !.size    
       if malloc_last NULL ptr!= do      
         dup malloc_last !.next
       end    
@@ -131,8 +153,7 @@ nproc malloc int size -> ptr:
 end
 
 proc free ptr: 
-  dup
-  1 swap get_malloc_meta !.is_free
+  1 over get_malloc_meta !.is_free
   dup get_malloc_meta .size swap clear_buf
 end
 
@@ -182,6 +203,48 @@ proc print int:
   int_to_str dup rot swap println free
 end
 
+// Will extend the block if possible and return the same pointer, if not possible allocates a new block and returns it 
+nproc extend_alloc int delta ptr block' -> ptr:
+  block' get_malloc_meta
+  bind block:
+    if 
+      block block.size sizeoftype MallocBlockMeta +
+      ptr+ NULL brk ptr==
+    do
+      delta sbrk
+      if NULL ptr== do // Sbrk failed
+        NULL
+      else
+        *block.size delta incby
+        block'
+      end
+    else
+      NULL
+    end
+    if dup NULL ptr== do
+      drop
+      block.size delta + malloc
+      block.size over block' swap memcpy
+      block' free
+    end
+  end 
+end
+
+nproc mem_extend int delta *ptr mem:
+  delta mem @ extend_alloc
+  mem !
+end
+
+nproc check_fail int res @str:
+  res 0 < if
+    "Error code: " puts
+    0 res - print
+    len data puts
+    " failed" println
+    1 exit
+  end
+end
+
 nproc str_to_int @str -> int:
   var res int
   0 !res
@@ -208,7 +271,12 @@ proc print_malloc_list:
   while
     dup NULL ptr!= if 
       dup .size u_to_str dup rot swap puts free
-      " -> " puts
+      "(" puts dup (int) u_to_str dup rot swap puts free
+      ") " puts
+      if dup (MallocBlockMeta) .is_free do
+        "free " puts
+      end 
+      "-> " puts
       (MallocBlockMeta) .next 1
     else
       "NULL" println
@@ -294,3 +362,110 @@ end
     end
   end
 #endif
+
+proc str_find @str @str -> int:
+  bind len1 data1 len2 data2:
+    if len2 0 > len1 len2 >= and do
+      0
+      1 while
+        if len2 over data1 +ptr len2 data2 streq do
+          0
+        else
+          1 +
+          dup len1 len2 - <=
+        end
+      end
+      if dup len1 len2 - 1 + == do
+        drop -1
+      end
+    else
+      -1
+    end
+  end
+end
+
+proc str_rfind @str @str -> int:
+  bind len1 data1 len2 data2:
+    if len2 0 > len1 len2 >= and do
+      len1 len2 -
+      1 while
+        if len2 over data1 +ptr len2 data2 streq do
+          0
+        else
+          1 -
+          dup 0 >=
+        end
+      end
+    else
+      -1
+    end
+  end
+end
+
+proc str_count @str @str -> int:
+  var counter int
+  bind len1 data1 len2 data2:
+    0 
+    len1 0 != len1 len2 >= and while
+      if len2 over data1 +ptr len2 data2 streq do
+        *counter inc
+        len2 +
+      else
+        1 +
+      end
+      dup len1 len2 - <=
+    end
+  end drop
+  counter
+end
+
+nproc str_slice1 int start @str -> @str:
+  if start len >= start 0 < or do
+    "Index out of range for the start of the slice: " puts
+    start print
+    1 exit
+  end
+  len start - data start ptr+
+end
+
+nproc str_slice2 int start int _end @str -> @str:
+  if start len >= start 0 < or do
+    "Index out of range for the start of the string slice: " puts
+    start print
+    1 exit
+  end
+  if _end len > _end 0 < or do
+    "Index out of range for the end of the string slice: " puts
+    _end print
+    1 exit
+  end
+  _end start - data start ptr+
+end
+
+struct CursoredString
+  str data
+  int cursor
+  
+  nproc __init__ @str:
+    len data str !self.data
+    0 !self.cursor
+  end
+
+  nproc rest -> @str:
+    self.data.len self.cursor - self.data.data self.cursor ptr+
+  end
+
+  // Jumps to the CHARACTER AFTER the sub-string
+  // Returns a bool
+  // true - jumped
+  // false - no next line found
+  nproc jump_to @str -> int:
+    self.rest len data str_find
+    bind offset:
+      offset -1 != offset len + self.data.len != and
+      dup if
+        *self.cursor offset len + incby
+      end
+    end
+  end
+end

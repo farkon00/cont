@@ -62,10 +62,12 @@ class Proc:
         self, name: str, ip: int, in_stack: List["Type"],
         out_stack: List["Type"], block: Block, is_named: bool, owner=None,
     ):
-        self.name = name
-        self.ip = ip
-        self.in_stack = in_stack + ([owner] if owner is not None else [])
-        self.out_stack = out_stack
+
+        self.name: str = name
+        self.ip: int = ip
+        self.owner: "Struct" = None if owner is None else owner.typ
+        self.in_stack: List[object] = in_stack + ([owner] if owner is not None else [])
+        self.out_stack: List[object] = out_stack
         self.block: Block = block
         
         self.is_named: bool = is_named
@@ -102,6 +104,9 @@ class Proc:
         self.used_procs: Set[Proc] = set()
 
         return self
+    
+    def __str__(self) -> str:
+        return f"Proc({self.name}, {None if self.owner is None else self.owner.name})"
 
     def __hash__(self) -> int:
         return id(self)

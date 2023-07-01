@@ -355,7 +355,16 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         for _ in range(op.operand):
             State.bind_stack.pop()
     elif op.type == OpType.PUSH_BIND_STACK:
-        stack.append(State.bind_stack[op.operand])
+        typ = State.bind_stack[op.operand[0]]
+        if op.operand[1] == "base":
+            assert typ == Ptr(), "Binded value self must be a pointer to use base"
+            assert isinstance(typ.typ, Struct), "Binded value self must be a pointer to a structure to use base"
+            assert typ.typ.parent is not None, f'Structure "{typ.typ.name}" does not have a parent'
+
+            stack.append(Ptr(typ.typ.parent))
+        else:
+            stack.append(State.bind_stack[op.operand[0]])
+        return Op(OpType.PUSH_BIND_STACK, op.operand[0], loc=op.loc, loc_id=op.loc_id)
     elif op.type == OpType.DEFPROC:
         State.route_stack.append(("proc", stack.copy()))
         stack.clear()
@@ -376,7 +385,9 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         check_stack(stack, [Ptr(op.operand)])
         stack.append(op.operand)
     elif op.type == OpType.PACK:
-        struct = State.structures[op.operand]
+        struct = State.structures[op.operand[0]]
+        if not op.operand[1]:
+            cont_assert(stack.pop().typ == struct, "Probably a user now has more control over PACK (_, False)")
         if "__init__" in struct.methods:
             args = struct.methods["__init__"].in_stack.copy()[:-1]
             State.add_proc_use(struct.methods["__init__"])
@@ -391,7 +402,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         assert isinstance(ptr.typ, Struct),\
-            f"cant access field of non-struct : {type_to_str(ptr.typ)}"
+            f"can't access field of non-struct : {type_to_str(ptr.typ)}"
         assert op.operand in (*ptr.typ.fields, *ptr.typ.methods),\
             f"field {op.operand} not found on {type_to_str(ptr.typ)}"
         if op.operand in ptr.typ.fields:
@@ -413,7 +424,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         assert isinstance(ptr.typ, Struct),\
-            f"cant access field of non-struct : {type_to_str(ptr.typ)}"
+            f"can't access field of non-struct : {type_to_str(ptr.typ)}"
         assert op.operand in ptr.typ.fields,\
             f"field {op.operand} not found on {type_to_str(ptr.typ)}"
         offset = 0
@@ -501,7 +512,7 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
                 assert type1.typ is not None and type2.typ is not None,\
                     f"incompatible types for {op.operand.name.lower()}"
                 assert type1.typ == type2.typ or type2.typ == type1.typ,\
-                    f"cant perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
+                    f"can't perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
                 assert f"__{op.operand.name.lower()}__" in type1.typ.methods,\
                     f"method __{op.operand.name.lower()}__ not found on {type_to_str(type1.typ)}"
                 method = type1.typ.methods[f"__{op.operand.name.lower()}__"]
@@ -511,6 +522,8 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
                     Op(OpType.OPERATOR, Operator.SWAP, loc=op.loc),
                     Op(OpType.CALL, method, loc=op.loc),
                 ]
+            else:
+                State.throw_error(f"can't perform an operation on {type_to_str(type1)} and {type_to_str(type2)}")
         else:
             State.throw_error(f"incompatible types for {op.operand.name.lower()}")
     elif op.operand == Operator.DIV:
@@ -522,7 +535,7 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
         elif type1 == Ptr() and type2 == Ptr():
             if isinstance(type1.typ, Struct):
                 assert type1.typ == type2.typ,\
-                    f"cant perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
+                    f"can't perform operation on different types: {type_to_str(type1.typ)} and {type_to_str(type2.typ)}"
                 assert f"__div__" in type1.typ.methods,\
                     f"method __div__ was not found on {type_to_str(type1.typ)}"	
                 method = type1.typ.methods[f"__div__"]
@@ -575,9 +588,9 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
         if ptr.typ is None:
             stack.append(Int())
         elif ptr.typ == Array():
-            State.throw_error("cant unpack array to stack")
+            State.throw_error("can't unpack array to stack")
         elif isinstance(ptr.typ, Struct):
-            assert ptr.typ.is_unpackable, f"cant unpack {type_to_str(ptr.typ)}"
+            assert ptr.typ.is_unpackable, f"can't unpack {type_to_str(ptr.typ)}"
             stack.extend(ptr.typ.fields_types)
             return Op(OpType.UNPACK, sizeof(ptr.typ))
         else:

@@ -349,10 +349,11 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         (global.set $bind_stack_ptr) (i64.load) (i64.const 8) (i64.add) (i32.wrap_i64) (i64.load)
         """
         assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
-        struct = State.structures[op.operand]
+        struct = State.structures[op.operand[0]]
         size = sizeof(struct)
-        buf = f"(i64.const {size}) "
-        buf += f"(call $addr_{State.procs['malloc'].ip}) "
+        buf = ""
+        if op.operand[1]:
+            buf += f"(i64.const {size}) (call $addr_{State.procs['malloc'].ip}) "
         buf += "(call $dup) (i32.const 0) (call $bind) (global.get $bind_stack_ptr) "
         buf += "(i32.const 8) (i32.add) (global.set $bind_stack_ptr) "
         if "__init__" in struct.methods:

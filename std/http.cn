@@ -1,0 +1,233 @@
+include std.cn
+include os.cn
+include io.cn
+include vector.cn
+
+enum HTTPRequestMethod
+  GET HEAD POST PUT DELETE CONNECT OPTIONS TRACE PATCH
+end
+
+unpack struct HTTPHeader
+  str property
+  str value
+
+  nproc free:
+    self.property free
+    self.value free
+    self free
+  end
+end
+
+struct HTTPRequest
+  File conn // Must be freed by the user 
+  int method // HTTPRequestMethod
+  str route
+  [DYNAMIC_ARRAY_SIZE] HTTPHeader headers 
+  str body
+
+  nproc free:
+    self.route free
+    if self.body NULL ptr!= do
+      self.body free
+    end
+    0 while dup self.headers [] NULL ptr!= do
+      dup self.headers [] .free
+      1 +
+    end drop
+    self.headers free
+    self free
+  end
+
+  nproc get_header @str -> str:
+    0 
+    0 self.headers [] NULL ptr!= while
+      dup self.headers []
+      if .property @ len data streq do
+        0
+      else
+        1 +
+        dup self.headers [] NULL ptr!=
+      end
+    end
+    self.headers [] 
+    if dup NULL ptr!= do 
+      .value
+    else
+      drop NULL
+    end
+  end
+end
+
+proc HTTPServerListener HTTPRequest: drop end
+const HTTPServer.BUF_SIZE 2048;
+struct HTTPServer
+  int fd
+  ptr address
+
+  nproc _init_address int port:
+    16 malloc !self.address
+    AF_INET    self.address        !16
+    port htons self.address 2 ptr+ !16
+    0          self.address 4 ptr+ !32
+  end
+
+  nproc _init_socket:
+    0 SOCK_STREAM AF_INET socket dup !self.fd
+    "Socket syscall" check_fail
+    16 self.address self.fd bind_sock
+    "Bind syscall" check_fail
+    10 self.fd listen
+    "Listen syscall" check_fail
+  end
+
+  nproc __init__ int port:
+    port self._init_address
+    self._init_socket 
+  end
+
+  nproc _read_conn int fd -> @str:
+    memory temp_buf HTTPServer.BUF_SIZE
+    var offset int = 0;
+    var buf ptr
+    NULL !buf
+    1 while
+      HTTPServer.BUF_SIZE temp_buf fd read
+      dup "Read syscall" check_fail
+      bind size:
+        if buf NULL ptr== do
+          size malloc !buf
+        else
+          if buf get_block_size size offset + < do
+            size buf get_block_size - *buf mem_extend
+          end
+        end
+        size temp_buf buf offset ptr+ memcpy
+        *offset size incby
+        size HTTPServer.BUF_SIZE ==
+      end
+    end
+    offset buf
+  end
+
+  nproc _get_request_method @str -> int:
+    if len data "GET" streq do HTTPRequestMethod.GET else
+    if len data "HEAD" streq do HTTPRequestMethod.HEAD else
+    if len data "POST" streq do HTTPRequestMethod.POST else
+    if len data "PUT" streq do HTTPRequestMethod.PUT else
+    if len data "DELETE" streq do HTTPRequestMethod.DELETE else
+    if len data "CONNECT" streq do HTTPRequestMethod.CONNECT else
+    if len data "OPTIONS" streq do HTTPRequestMethod.OPTIONS else
+    if len data "TRACE" streq do HTTPRequestMethod.TRACE else
+    if len data "PATCH" streq do HTTPRequestMethod.PATCH else 
+    -1 end end end end end end end end end
+  end
+
+  nproc _parse_header CursoredString string HTTPRequest req -> [DYNAMIC_ARRAY_SIZE] HTTPHeader:
+    init var vec IntVector
+    0 2 string.rest str_slice2 "\r\n" streq not while
+      0 string.rest "\r\n" str_find
+      if dup -1 != do
+        string.rest str_slice2
+        bind len_header data_header:
+          len_header data_header ": " str_find
+          bind sep:
+            if sep -1 != do
+              0 sep string.rest str_slice2 str
+              sep 2 + len_header data_header str_slice1 str
+              HTTPHeader (int) vec.push
+            else
+              -1 !req.method
+            end
+          end
+        end
+        "\r\n" string.jump_to
+        if string.rest drop 2 >= do
+          0 2 string.rest str_slice2 "\r\n" streq not
+        else
+          0
+        end
+        and req.method -1 != and
+      else
+        -1 !req.method
+        drop drop 0
+      end
+    end
+    0 vec.push // NULL terminator
+    vec.data ([DYNAMIC_ARRAY_SIZE]) HTTPHeader
+  end
+
+  nproc _parse_request @str -> HTTPRequest:
+    len data init var string CursoredString
+    sizeoftype HTTPRequest malloc (HTTPRequest)
+    bind req:
+      string.rest " " str_find dup -1 != if
+        0 over string.rest str_slice2 self._get_request_method !req.method
+        *string.cursor swap 1 + incby
+        string.rest " " str_find dup -1 != if
+          0 over string.rest str_slice2 str !req.route
+          "\r\n" string.jump_to if
+            string req self._parse_header !req.headers
+            "Content-Length" req.get_header
+            if dup NULL ptr!= do
+              @ str_to_int
+              bind content_len:
+                if content_len string.rest drop <= do
+                  *string.cursor 2 incby
+                  0 content_len string.rest str_slice2 str !req.body
+                  *string.cursor content_len incby
+                else
+                  -1 !req.method
+                end
+              end
+            else
+              drop
+              if string.rest drop 0 != do
+                *string.cursor 2 incby
+              end
+            end
+          else -1 !req.method end
+        else -1 !req.method end
+      else -1 !req.method end
+      drop
+      if string.rest drop 0 != do // If string is not empty
+        -1 !req.method
+      end
+      string.data free
+      req
+    end
+  end
+
+  nproc run addr HTTPServerListener listener:
+    var conn File
+    var sizeof(addr) int = 16;
+    while 1 do
+      *sizeof(addr) self.address self.fd accept
+      dup "Accept" check_fail
+      bind conn_fd:
+        conn_fd !conn.fd
+        conn_fd self._read_conn
+        bind packet_len packet_data:
+          if packet_len 0 > do
+            packet_len packet_data self._parse_request
+            bind req:
+              if req.method -1 != do
+                conn !req.conn
+                req listener call
+              else
+                "HTTP/1.1 400 Bad Request" conn.write
+              end
+              req.free
+            end
+          else
+            "HTTP/1.1 400 Bad Request" conn.write
+          end
+          packet_data free
+        end
+        conn_fd close
+        "Closing connection" check_fail
+      end
+    end
+    self.fd close
+    "Closing socket" check_fail
+  end
+end

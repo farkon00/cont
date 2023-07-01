@@ -207,9 +207,16 @@ def parse_type(
         return Ptr()
     elif name == "addr":
         try:
-            name, _ = next(State.tokens)
+            name, loc = next(State.tokens)
         except StopIteration:
             State.throw_exception("Unexpected EOF")
+        if end is not None:
+            if end in name:
+                end_index = name.find(end)
+                State.tokens_queue.append((name[end_index + len(end):], loc))
+                name = name[:end_index]
+                State.loc = loc
+                assert name, "Procedure name was not provided"
         assert name in State.procs, f"Procedure {name} was not found"
         proc = State.procs[name]
         return Addr(proc.in_stack, proc.out_stack)
@@ -247,6 +254,8 @@ def parse_type(
             assert not throw_exc, "array type was not defined"
             return None
         return Ptr(arr) if auto_ptr else arr
+    elif name == "":
+        State.throw_error(f"Expected token, but end was reached in {error}")
     else:
         if name in State.var_types():
             return State.var_types()[name]

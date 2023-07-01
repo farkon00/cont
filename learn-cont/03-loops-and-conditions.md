@@ -40,7 +40,7 @@ If you experemented with if and if-else you might have encountered a compilation
 Error foo:7:3: stack has extra elements in different routes of if-else
 Types: int
 ```
-This is an error comming from a type checker. It checks, that branches of if-else have the same number of elements on the stack and that this elements have the same type(we are going to cover types later). In case there is no `else`, it checks that types with and without executing the if block are the same.
+This is an error comming from a type checker. It checks, that branches of if-else have the same number of elements on the stack and that these elements have the same type(we are going to cover types later). In case there is no `else`, it checks that types with and without executing the if block are the same.
 
 # While
 While block is the way to create loops and repetition in cont, just as ifs it has two different syntaxes.
@@ -61,5 +61,6 @@ dup 5 < while
   dup 5 <
 end
 ```
+In the second example `end` consumes one integer from the stack, if it's != 0 it will start the next iteration.
 
 The same type checking rules apply to the while as to the if. The type stack with and without executing while's body must be the same.

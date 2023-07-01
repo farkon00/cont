@@ -12,6 +12,7 @@ class Config:
         "program" : "The program to compile and optionally run",
         "run" : "Run program after compilation",
         "dump" : "Dump operations without compilation",
+        "dump_proc" : "Dump operations of a specific procedure",
         "dump_tokens" : "Dump tokens without parsing or compilating",
         "dump_tc" : "Dump operations after type checking",
         "out" : "The name for output file(s)",
@@ -32,6 +33,7 @@ class Config:
     REGULAR_OPTIONS: Dict[str, List[str]] = {
         "out" : (["-o", "--out"], None),
         "target" : (["-t", "--target"], "fasm_x86_64_linux"),
+        "dump_proc" : (["-dp", "--dump_proc"], None),
         "stdout" : (["-stdo", "--stdout"], None),
         "input" : (["-i", "--input"], None),
         "error" : (["-e", "--error"], None),

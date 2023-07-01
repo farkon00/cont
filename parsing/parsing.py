@@ -63,10 +63,13 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
     except StopIteration:
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error("proc contract was not closed")
-    proc_token_value = proc_token[0].split(":")[0].strip()
+    parts = proc_token[0].split(":", 1)
+    if len(parts) > 1:
+        if  parts[1].strip():
+            State.tokens_queue.append((parts[1].strip(), proc_token[1]))
     State.loc = proc_token[1]
 
-    return proc_token, proc_token_value
+    return proc_token, parts[0].strip()
 
 def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType], 
                     end_char: str) -> Tuple[List[Type], List[Type], List[str]]:
@@ -237,7 +240,7 @@ def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
     State.check_name(name, "structure")
     if name[0].endswith(":"):
         sys.stderr.write(
-            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesnt need :\n"
+            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesn't need :\n"
         )
 
     return parent, name
@@ -384,9 +387,12 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> Li
             parts = parts[1:]
         elif parts[0] in State.bind_stack:
             res.append(
-                Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(parts[0]), State.loc)
+                Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index(parts[0]), parts[0]), State.loc)
             )
             parts = parts[1:]
+        elif parts[0] == "base":
+            assert "self" in State.bind_stack, "You must have a binded value self to use base"
+            return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base"))
         else:
             State.throw_error(f'name "{parts[0]}" is not defined')
     for i in parts:
@@ -436,17 +442,20 @@ def parse_var():
 
     if is_init:
         if isinstance(_type, Struct):
-            assert "__init__" in _type.methods, f"Structure to init does not have an __init__ method"
-            State.add_proc_use(_type.methods["__init__"])
+            if "__init__" in _type.methods:
+                State.add_proc_use(_type.methods["__init__"])
             return [
                 Op(
                     OpType.PUSH_VAR
                     if State.current_proc is None
                     else OpType.PUSH_LOCAL_VAR,
-                    name[0]
+                    name[0],
+                    loc=State.loc
                 ),
-                Op(OpType.CALL, _type.methods["__init__"])
+                Op(OpType.PACK, (_type.name, False), loc=State.loc),
+                Op(OpType.OPERATOR, Operator.DROP, loc=State.loc)
             ]
+
         # if the type is an array
         if State.current_proc is None:
             Memory.global_offset += sizeof(_type.typ.typ) * _type.len
@@ -573,7 +582,7 @@ def include_file():
     elif os.path.exists(std_path):
         path = std_path
     else:
-        State.loc = name[1]
+        State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(f'include file "{name[0]}" not found')
 
     if os.path.abspath(path) in State.included_files:
@@ -814,7 +823,11 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.SIZEOF, len(token) - 6)
 
     elif token in State.bind_stack:
-        return Op(OpType.PUSH_BIND_STACK, State.bind_stack.index(token))
+        return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index(token), token))
+
+    elif token == "base":
+        assert "self" in State.bind_stack, "You must have a binded value self to use base"
+        return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base"))
 
     elif token in getattr(State.current_proc, "variables", {}):
         return Op(OpType.PUSH_LOCAL_VAR, token)
@@ -840,7 +853,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.PUSH_MEMORY, State.memories[token].offset)
 
     elif token in State.structures:
-        return Op(OpType.PACK, token)
+        return Op(OpType.PACK, (token, True))
 
     elif token in State.procs:
         State.add_proc_use(State.procs[token])
@@ -892,6 +905,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return parse_dot(token[1:], True, True)
 
     elif (
+        token.split(".", 1)[0] == "base" or\
         token.split(".", 1)[0] in State.bind_stack or\
         token.split(".", 1)[0] in State.variables or\
         token.split(".", 1)[0] in getattr(State.current_proc, "variables", {})
