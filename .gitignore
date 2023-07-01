@@ -1,5 +1,6 @@
 *.asm
-*.fasm
+*.wat
+*.wasm
 test
 tests/results/
 tests/temp/

@@ -1,3 +1,5 @@
+include platform.cn
+
 nproc 2dup t1 a t2 b -> t1 t2 t1 t2:
   a b a b
 end
@@ -9,26 +11,29 @@ proc 2dupip int ptr -> int ptr int ptr:
   2dup
 end
 
-proc shadow a:
-  asm "push 0"
-  drop
-end
+// Unavailable in wasm, because of wasm verification  
+#if platform Platform.wat64 !=;
+  proc shadow a:
+    asm "push 0"
+    drop
+  end
 
-proc shadowi int:
-  shadow
-end 
-proc shadowp ptr:
-  shadow
-end 
+  proc shadowi int:
+    shadow
+  end 
+  proc shadowp ptr:
+    shadow
+  end 
 
 
-proc unshadowi -> int:
-  0
-  asm "pop rax"
-end
+  proc unshadowi -> int:
+    0
+    asm "pop rax"
+  end
 
-proc unshadowp -> ptr:
-  0
-  asm "pop rax"
-  (ptr)
-end
+  proc unshadowp -> ptr:
+    0
+    asm "pop rax"
+    (ptr)
+  end
+#endif

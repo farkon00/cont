@@ -1,6 +1,7 @@
 include std.cn
 include type.cn
 include vector.cn
+include platform.cn
 
 type int              print_type "" println
 type addr print       print_type "" println
@@ -11,6 +12,11 @@ type IntVector        print_type "" println
 type *IntVector       print_type "" println
 type [12] str         print_type "" println
 type [3] *int         print_type "" println
+
+#if platform Platform.wat64 ==;
+    proc shadowi int: drop end
+    proc shadowp ptr: drop end
+#endif
 
 type int               type int          == print
 type *int              type *int         == print

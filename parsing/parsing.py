@@ -71,12 +71,61 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
 
     return proc_token, parts[0].strip()
 
-
-def parse_proc_head():
-    first_token: Tuple[str, str] = next(State.tokens)
+def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType], 
+                    end_char: str) -> Tuple[List[Type], List[Type], List[str]]:
+    """Returns (in_types, out_types, names)"""
     in_types: List[Type] = []
     out_types: List[Type] = []
     names: List[str] = []
+
+    proc_token = ("", "")
+    types = in_types
+    while end_char not in proc_token[0]:
+        proc_token, proc_token_value = next_proc_contract_token(name)
+        if not proc_token_value:
+            break
+        elif proc_token_value == "->":
+            assert types is not out_types, "few -> separators was found in proc contract"
+            types = out_types
+        else:
+            if (
+                proc_token_value.startswith("@") and\
+                State.is_named and types is in_types
+            ):
+                assert proc_token_value[1:] in State.structures,\
+                    f"structure {proc_token_value[1:]} was not found"
+                struct = State.structures[proc_token_value[1:]]
+                names.extend(struct.fields.keys())
+                types.extend(struct.fields_types)
+                continue
+
+            res = parse_type(
+                (proc_token_value, f"{State.filename}:{proc_token[1]}"),
+                "procedure contaract",
+                allow_unpack=True,
+                end=end_char,
+                var_type_scope=var_types_scope if types is in_types else None,
+            )
+            if isinstance(res, Iterable):
+                types.extend(res)
+            elif res is None:  # If ended in array type
+                break
+            else:
+                types.append(res)
+                if State.is_named and types is in_types:
+                    proc_token, proc_token_value = next_proc_contract_token(name)
+                    assert proc_token_value, "name for argument was not specified"
+                    names.append(proc_token_value)
+
+    if end_char in proc_token:
+        queued_token = (proc_token[0].split(end_char)[1].strip(), proc_token[1])
+        if queued_token[0]:
+            State.tokens_queue.append(queued_token)
+
+    return in_types, out_types, names
+
+def parse_proc_head():
+    first_token: Tuple[str, str] = next(State.tokens)
     owner: Optional[Ptr] = (
         None if State.owner is None or State.is_static else Ptr(State.owner)
     )
@@ -101,62 +150,20 @@ def parse_proc_head():
     name_value = name[0]
 
     has_contaract = ":" not in name[0]
-    try:
+    if not has_contaract:
         parts = name[0].split(":")
         name_value = parts[0]
         queued_token = (parts[1].strip(), name[1])
         if queued_token[0]:
             State.tokens_queue.append(queued_token)
-    except IndexError:
-        pass
 
     if owner is None:
         State.check_name((name_value, name[1]), "procedure")
 
-    proc_token = ("", "")
-    types = in_types
-    while ":" not in proc_token[0] and has_contaract:
-        proc_token, proc_token_value = next_proc_contract_token(name)
-        if not proc_token_value:
-            break
-        elif proc_token_value == "->":
-            assert types is not out_types, "few -> separators was found in proc contract"
-            types = out_types
-        else:
-            if (
-                proc_token_value.startswith("@") and\
-                State.is_named and types is in_types
-            ):
-                assert proc_token_value[1:] in State.structures,\
-                    f"structure {proc_token_value[1:]} was not found"
-                struct = State.structures[proc_token_value[1:]]
-                names.extend(struct.fields.keys())
-                types.extend(struct.fields_types)
-                continue
-
-            res = parse_type(
-                (proc_token_value, f"{State.filename}:{proc_token[1]}"),
-                "procedure contaract",
-                allow_unpack=True,
-                end=":",
-                var_type_scope=var_types_scope if types is in_types else None,
-            )
-            if isinstance(res, Iterable):
-                types.extend(res)
-            elif res is None:  # If ended in array type
-                break
-            else:
-                types.append(res)
-                if State.is_named and types is in_types:
-                    assert ":" not in proc_token[0], "Name for argument was not specified"
-                    proc_token, proc_token_value = next_proc_contract_token(name)
-                    assert proc_token_value, "Name for argument was not specified"
-                    names.append(proc_token_value)
-
-    if has_contaract and ":" in proc_token:
-        queued_token = (proc_token[0].split(":")[1].strip(), proc_token[1])
-        if queued_token[0]:
-            State.tokens_queue.append(queued_token)
+    if has_contaract:
+        in_types, out_types, names = parse_signature(name, var_types_scope, ":")
+    else:
+        in_types, out_types, names = [], [], []
 
     if name_value == "__init__" and out_types:
         State.loc = f"{State.filename}:{name[1]}"
@@ -534,9 +541,7 @@ def parse_bind():
                 State.tokens_queue.append(queued_token)
         if not name:
             continue
-        if name in State.procs or name in State.memories:
-            State.loc = name_token[1]
-            State.throw_error(f'name for bind "{name}" is already taken')
+        State.check_name(name_token, "bind")
         State.bind_stack.append(name)
         binded += 1
     op = Op(OpType.BIND, binded)
@@ -714,7 +719,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token == "const":
         name = next(State.tokens)
-        State.check_name(name)
+        State.check_name(name, "constant")
         State.constants[name[0]] = evaluate_block(State.loc, "const")
 
     elif token == "sizeoftype":
@@ -756,6 +761,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
             values.append(current_token[0])
 
         State.enums[name[0]] = values
+        if name[0] == "Platform":
+            assert "platform" not in State.constants, "Defined enum Platform and constant platform is already defined"
+            assert State.config.target in values, "Enum Platform does not have a current platform defined"
+            State.constants["platform"] = values.index(State.config.target)
 
     elif token == "asm":
         asm = safe_next_token()[0]
@@ -776,6 +785,32 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token == "call":
         return Op(OpType.CALL_ADDR, None)
+
+    elif token == "#import":
+        assert State.config.target == "wat64", "Current target does not support imports"
+        
+        name, name_loc = safe_next_token("Expected a function name")
+        path, _ = safe_next_token("Expected a path")
+        State.check_name((name, name_loc))
+        if ";" not in name:
+            in_types, out_types, _ = parse_signature((name, name_loc), {}, ";")
+        else:
+            in_types, out_types = [], []
+
+            parts = name.split(";")
+            name = parts[0]
+            queued_token = (parts[1].strip(), name_loc)
+            if queued_token[0]:
+                State.tokens_queue.append(queued_token)
+        proc = Proc.create_imported(name, in_types, out_types)
+        State.procs[name] = proc
+        State.imported_procs.append((name, path))
+
+    elif token == "#export":
+        name = safe_next_token("Expected a procedure name")[0]
+        assert name in State.procs, f'Procedure "{name}" not found'
+        State.used_procs.add(State.procs[name])
+        State.procs[name].is_export = True
 
     elif token == "[]":
         return Op(OpType.INDEX)
@@ -856,8 +891,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         ]
 
     elif token.startswith("*") and token[1:] in State.procs:
-        State.add_proc_use(State.procs[token[1:]])
-        return Op(OpType.PUSH_PROC, State.procs[token[1:]])
+        proc = State.procs[token[1:]]
+        State.add_proc_use(proc)
+        State.referenced_procs.add(proc)
+        return Op(OpType.PUSH_PROC, proc)
 
     elif (
         token.split(".", 1)[0][1:] in State.bind_stack or\

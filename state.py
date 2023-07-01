@@ -33,7 +33,7 @@ class Block:
     type: BlockType
     start: int
     end: int = -1
-
+    stack_effect: Optional[Tuple[int, int]] = None
 
 @dataclass
 class Memory:
@@ -59,14 +59,8 @@ class Memory:
 
 class Proc:
     def __init__(
-        self,
-        name: str,
-        ip: int,
-        in_stack: List[object],
-        out_stack: List[object],
-        block: Block,
-        is_named: bool,
-        owner=None,
+        self, name: str, ip: int, in_stack: List["Type"],
+        out_stack: List["Type"], block: Block, is_named: bool, owner=None,
     ):
 
         self.name: str = name
@@ -75,7 +69,10 @@ class Proc:
         self.in_stack: List[object] = in_stack + ([owner] if owner is not None else [])
         self.out_stack: List[object] = out_stack
         self.block: Block = block
-        self.is_named = is_named
+        
+        self.is_named: bool = is_named
+        self.is_imported: bool = False
+        self.is_exported: bool = False
 
         self.memories: Dict[str, Memory] = {}
         self.memory_size: int = 0
@@ -86,6 +83,28 @@ class Proc:
         if owner is not None:
             owner.typ.add_method(self)
 
+    @classmethod
+    def create_imported(cls, name: str, in_stack: List["Type"], out_stack: List["Type"]) -> "Proc":
+        self = cls.__new__(cls)
+
+        self.name = name
+        self.ip = State.get_new_ip(None)
+        self.in_stack = in_stack
+        self.out_stack = out_stack
+        self.block: Block = None
+        
+        self.is_exported: bool = False
+        self.is_named: bool = False
+        self.is_imported: bool = True
+
+        self.memories: Dict[str, Memory] = {}
+        self.memory_size: int = 0
+        self.variables: Dict[str, "Type"] = {}  # type: ignore
+
+        self.used_procs: Set[Proc] = set()
+
+        return self
+    
     def __str__(self) -> str:
         return f"Proc({self.name}, {None if self.owner is None else self.owner.name})"
 
@@ -121,6 +140,8 @@ class State:
     memories: Dict[str, Memory] = {}
     variables: Dict[str, "Type"] = {}  # type: ignore
     procs: Dict[str, Proc] = {}
+    imported_procs: List[Tuple[str, str]] = []
+    referenced_procs: Set[Proc] = set() # The procedures, which were used for proc pointers
     structures: Dict[str, "Struct"] = {}  # type: ignore
     constants: Dict[str, int] = {}
     enums: Dict[str, List[str]] = {}

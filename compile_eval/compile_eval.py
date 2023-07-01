@@ -74,7 +74,7 @@ def evaluate_block(orig_loc: str, error: str):
         except StopIteration:
             break
 
-        State.loc = token[1]
+        State.loc = f"{State.filename}:{token[1]}"
         if token[0] in ("end", ";") or token[0].endswith(";"):
             if token[0].endswith(";") and token[0] != ";":
                 evaluate_token(token[0][:-1], stack)
