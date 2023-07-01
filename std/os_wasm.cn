@@ -1,0 +1,41 @@
+include core.cn
+
+#import timesys cont_runtime.timesys *int -> int;
+#import exit cont_runtime.exit int;
+
+proc get_wasm_mem_capacity -> int:
+  asm "memory.size" asm "i64.extend_i32_s"
+  0 asm "drop"
+end
+
+proc __heap_end -> ptr:
+  asm "global.get $heap_end"
+  NULL asm "drop"
+end
+
+proc !__heap_end ptr:
+  asm "global.set $heap_end"
+  asm "i64.const 0" drop
+end
+
+nproc brk ptr ptr -> ptr:
+  if ptr (int) 0 <= do
+    __heap_end
+  else
+    if ptr (int) __heap_end (int) > do 
+      if get_wasm_mem_capacity 65536 * ptr (int) <= do
+        ptr (int) 65536 / 1 + get_wasm_mem_capacity -
+        asm "i32.wrap_i64" asm "memory.grow" asm "i64.extend_i32_s"
+        if 0 < do
+          __heap_end
+        else
+          ptr dup !__heap_end
+        end
+      else
+        ptr dup !__heap_end
+      end
+    else
+      ptr dup !__heap_end
+    end
+  end
+end

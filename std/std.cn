@@ -1,5 +1,6 @@
 include core.cn
 include os.cn
+include platform.cn
 include stack.cn
 
 
@@ -17,9 +18,13 @@ unpack struct str
   ptr data
 end
 
-proc puts @str: STDOUT write drop end 
-proc input ptr -> @str: dup 1024 swap STDIN read swap end
-proc println @str: puts "\n" puts end
+#if platform Platform.fasm_x86_64_linux ==;
+  proc puts @str: STDOUT write drop end
+  proc println @str: puts "\n" puts end
+#else #if platform Platform.wat64 ==;
+  #import puts cont_runtime.puts @str;
+  #import println cont_runtime.println @str;
+#endif #endif
 
 nproc assert int cond @str:
   if cond not do
@@ -266,24 +271,26 @@ proc streq @str @str -> int:
   end
 end
 
-nproc exec_cmd ptr argv ptr exec:
-  var wstatus int
-  fork
-  bind  pid:
-    pid 0 == if
-      0 (ptr)
-      argv
-      exec
-      execve drop
-    else pid 0 > if
-      0 (ptr)
-      0
-      *wstatus
-      -1
-      wait4 drop
-    else
-      "Fork failed\n" puts
-      1 exit
-    end end 
+#if platform Platform.fasm_x86_64_linux ==;
+  nproc exec_cmd ptr argv ptr exec:
+    var wstatus int
+    fork
+    bind  pid:
+      pid 0 == if
+        0 (ptr)
+        argv
+        exec
+        execve drop
+      else pid 0 > if
+        0 (ptr)
+        0
+        *wstatus
+        -1
+        wait4 drop
+      else
+        "Fork failed\n" puts
+        1 exit
+      end end 
+    end
   end
-end
+#endif

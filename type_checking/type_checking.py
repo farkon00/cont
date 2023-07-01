@@ -65,11 +65,11 @@ def type_check(ops: List[Op], is_main: bool = False):
             proc = State.procs["malloc"]
             if proc.in_stack != [Int()]:
                 assert not State.config.struct_malloc[0],\
-                    "Malloc must take one integer, disable struct_malloc if you don't want language to use malloc"
+                    "Malloc must take one integer, disable struct_malloc if you don't want the compiler to use malloc"
                 State.config.config["struct_malloc"] = False
             if proc.out_stack != [Ptr()]:
                 assert not State.config.struct_malloc[0],\
-                    "Malloc must return one pointer, disable struct_malloc if you don't want language to use malloc"
+                    "Malloc must return one pointer, disable struct_malloc if you don't want the compiler to use malloc"
                 State.config.config["struct_malloc"] = False
         if State.config.struct_malloc[1]:
             State.add_proc_use(proc)

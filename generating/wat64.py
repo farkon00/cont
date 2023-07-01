@@ -45,6 +45,23 @@ WAT64_HEADER =\
     (i32.add)
     (local.get 0)
     (i64.store))
+(func $upcast_move (param i64 i64 i64) (result i64 i64)
+    (local.get 1)
+    (local.get 2)
+    (i64.add) (i32.wrap_i64) 
+    (local.get 0)
+    (local.get 2)
+    (i64.add) (i32.wrap_i64)
+    (i64.load) (i64.store)
+    (local.get 0)
+    (local.get 1))
+(func $upcast_set (param i64 i64 i64) (result i64)
+    (local.get 1)
+    (local.get 2)
+    (i64.add) (i32.wrap_i64)
+    (local.get 0) (i64.store)
+    (local.get 1))
+(global $heap_end (mut i64) (i64.const {}))
 """.replace("\n", "").replace("    ", "")
 LOAD_CODE = "(i32.wrap_i64) (i64.load)"
 MEMORY_PAGE_SIZE = 65536 
@@ -169,7 +186,10 @@ def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
     procs_table = {}
     for index, proc in enumerate(State.referenced_procs):
         procs_table[proc] = index
-        buf += f" $addr_{proc.ip}"
+        if proc.is_imported:
+            buf += f" ${proc.name}"
+        else:
+            buf += f" $addr_{proc.ip}"
     return procs_table, buf + ")"
 
 def get_static_size(data_offset: int) -> int:
@@ -208,7 +228,8 @@ def generate_wat64(ops: List[Op]) -> str:
     procs_table, procs_table_wat = generate_proc_table()
     offset, types_wat, types_table = generate_types(offset)
     buf = "(module " + generate_imports() + WAT64_HEADER.format(
-        math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE)
+        math.ceil(get_static_size(offset) / MEMORY_PAGE_SIZE),
+        get_static_size(offset)
     ) + generate_globals(offset) + data + procs_table_wat + types_wat
     call_types: List[str] = []
     main_buf = '(func (export "main") '
@@ -249,7 +270,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         return f"(i64.const {offset + State.memories[op.operand].offset})"
     elif op.type == OpType.PUSH_LOCAL_MEM:
         return "(global.get $call_stack_ptr) (i64.extend_i32_u) (i64.const " +\
-            f"{State.current_proc.memory_size + 8 - op.operand}) (i64.sub)"
+            f"{State.current_proc.memory_size - op.operand}) (i64.sub)"
     elif op.type == OpType.PUSH_LOCAL_VAR:
         var_offset = State.current_proc.memory_size - State.current_proc.memories[op.operand].offset
         return "(global.get $call_stack_ptr)" +\
@@ -326,7 +347,32 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
     elif op.type == OpType.TYPED_LOAD:
         return LOAD_CODE
     elif op.type == OpType.PACK:
-        cont_assert(False, "Not implemented op: PACK")
+        assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
+        struct = State.structures[op.operand]
+        size = sizeof(struct)
+        buf = f"(i64.const {size}) "
+        if State.procs["malloc"].is_imported:
+            buf += f"(call ${State.procs['malloc'].name}) "
+        else:
+            buf += f"(call $addr_{State.procs['malloc'].ip}) "
+        buf += "(call $dup) (i32.const 0) (call $bind) (global.get $bind_stack_ptr) "
+        buf += "(i32.const 8) (i32.add) (global.set $bind_stack_ptr) "
+        if "__init__" in struct.methods:
+            buf += f"(call $addr_{struct.methods['__init__'].ip}) "
+            buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) "
+            buf += "(call $dup) (global.set $bind_stack_ptr) (i64.load) "
+        else:
+            offset = 0
+            for index, field in list(enumerate(struct.fields_types))[::-1]:
+                offset += sizeof(field)
+                if index in struct.defaults:
+                    buf += f"(i64.const {struct.defaults[index]}) "
+
+                buf += f"(i64.const {size-offset}) (i64.add) "
+                buf += "(call $prepare_store) (i64.store) "
+                buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (i64.load) "
+            buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (global.set $bind_stack_ptr)"
+        return buf
     elif op.type == OpType.UNPACK:
         buf = ""
         for _ in range(op.operand // 8):
@@ -349,9 +395,39 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
     elif op.type == OpType.PUSH_FIELD_PTR:
         return f"(i64.const {op.operand}) (i64.add)"
     elif op.type == OpType.UPCAST:
-        cont_assert(False, "Not implemented op: UPCAST")
+        assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
+        buf = f"(i64.const {op.operand[0]}) "
+        if State.procs["malloc"].is_imported:
+            buf += f"(call ${State.procs['malloc'].name}) "
+        else:
+            buf += f"(call $addr_{State.procs['malloc'].ip}) "
+        for i in range(op.operand[2] // 8):
+            buf += f"(i64.const {i*8}) (call $upcast_move) "
+        buf += "(call $swap) (drop)"
+        for i in range(op.operand[1]):
+            buf += f"(i64.const {op.operand[0]-(i+1)*8}) (call $upcast_set) "
+        return buf
     elif op.type == OpType.AUTO_INIT:
-        cont_assert(False, "Not implemented op: AUTO_INIT")
+        
+        if State.current_proc is not None:
+            var: Array = State.current_proc.variables[op.operand[0].name]
+            memory = (
+                "(global.get $call_stack_ptr) (i64.extend_i32_s) "
+                f"(i64.const {State.current_proc.memory_size - op.operand[0].offset}) (i64.sub) "
+            )
+        else:
+            var: Array = State.variables[op.operand[0].name]
+            memory = f"(i64.const {offset + op.operand[0].offset}) "
+        if var.len == 0: return ""
+        return (
+            f"(i64.const 0) (loop $addr_{op.operand[1]} (param i64) (result i64) "
+            f"(call $dup) (i64.const {sizeof(var.typ)}) (i64.mul) {memory} (i64.add) "
+            f"(call $swap) (call $dup) (i64.const {sizeof(var.typ.typ)}) (i64.mul) "
+            f"(i64.const {sizeof(var)}) (i64.add) {memory} (i64.add) "
+            "(call $swap) (call $rot) (call $prepare_store) (i64.store) "
+            "(i64.const 1) (i64.add) (call $dup) "
+            f"(i64.const {var.len}) (i64.ne) (br_if $addr_{op.operand[1]})) (drop) "
+        )
     elif op.type == OpType.CALL_ADDR:
         params = f"(param {' i64' * len(op.operand.in_types)})"
         results = f"(result {'i64' * len(op.operand.out_types)})"
