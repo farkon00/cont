@@ -119,14 +119,16 @@ def generate_fasm_x86_64_linux(ops: List[Op]):
                 continue
         buf += generate_op_fasm_x86_64_linux(op)
 
+    ior_code = 'index_out_of_range_text: db "Index out of range in "'
+    npd_code = 'null_ptr_deref_text: db "Null pointer dereference in "'
     buf += (
         "mov rax, 60\n"
         "xor rdi, rdi\n"
         "syscall\n"
         "segment readable writeable\n"
-        f"{'index_out_of_range_text: db "Index out of range in "' if State.config.re_IOR else ''}\n"
-        f"{'null_ptr_deref_text: db "Null pointer dereference in "' if State.config.re_NPD else ''}\n"
-        "{generate_fasm_types()}\n"
+        f"{ior_code if State.config.re_IOR else ''}\n"
+        f"{npd_code if State.config.re_NPD else ''}\n"
+        f"{generate_fasm_types()}\n"
     )
 
     for index, loc in enumerate(State.locs_to_include):
@@ -567,7 +569,7 @@ def generate_op_fasm_x86_64_linux(op: Op):
                 "mov rax, r10\n"
                 f"mov rbx, {op.operand[1]}\n"
                 f"mov r15, loc_{op.loc_id}\n"
-                "mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
+                f"mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
                 "call check_array_bounds\n"
             )
         return comment + code
