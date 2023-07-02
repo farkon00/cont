@@ -124,7 +124,7 @@ def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType],
 
     return in_types, out_types, names
 
-def parse_proc_head():
+def parse_proc_head(self_named: bool = False):
     first_token: Tuple[str, str] = next(State.tokens)
     owner: Optional[Ptr] = (
         None if State.owner is None or State.is_static else Ptr(State.owner)
@@ -146,6 +146,8 @@ def parse_proc_head():
         owner = Ptr(State.structures[first_token[0][1:-1]])
     else:
         name = first_token
+
+    assert not (not owner and self_named), "Non-method procedure cannot be self-named"
 
     name_value = name[0]
 
@@ -192,7 +194,7 @@ def parse_proc_head():
         )
         exit()
     if (
-    name_value in State.DUNDER_METHODS or\
+        name_value in State.DUNDER_METHODS or\
         name_value == "__div__" and\
         owner is not None and\
         name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
@@ -207,7 +209,7 @@ def parse_proc_head():
 
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
-    proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, owner)
+    proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -224,6 +226,9 @@ def parse_proc_head():
         State.is_named = False
         State.bind_stack.extend(names)
         return [op, Op(OpType.BIND, len(names))]
+    if self_named:
+        State.bind_stack.append("self")
+        return [op, Op(OpType.BIND, 1)]
     return op
 
 
@@ -320,7 +325,7 @@ def parse_struct() -> Union[Op, List[Op]]:
             struct.defaults[len(struct.fields_types)] = def_value
             struct.fields_types.append(struct.fields[def_name])
             continue
-        if current_token[0] in ("proc", "nproc"):
+        if current_token[0] in ("proc", "nproc", "sproc"):
             if not started_proc:
                 started_proc = True
                 if field_type != -1:
@@ -489,6 +494,10 @@ def parse_end():
             State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
             block.end = State.get_new_ip(op)
             return [Op(OpType.UNBIND, len(proc.in_stack)), op]
+        if proc.is_self_named:
+            State.bind_stack = State.bind_stack[:-1]
+            block.end = State.get_new_ip(op)
+            return [Op(OpType.UNBIND, 1), op]
     elif block.type == BlockType.WHILE:
         cond = State.do_stack.pop()[::-1]
         for i in cond:
@@ -606,7 +615,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     assert not State.is_unpack or token == "struct", "unpack must be followed by struct"
     assert not State.is_init or token == "var", "init must be followed by var"
-    assert not State.is_named or token == "proc", "init must be followed by proc"
+    assert not State.is_named or token == "proc", "named must be followed by proc"
 
     if token in OPERATORS:
         return Op(OpType.OPERATOR, OPERATORS[token])
@@ -735,6 +744,9 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "nproc":
         State.is_named = True
         return parse_proc_head()
+    elif token == "sproc":
+        assert not State.is_named, "Procedure cannot be named and self-named at the same time"
+        return parse_proc_head(self_named=True)
 
     # prefix tokens
     elif token == "unpack":

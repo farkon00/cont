@@ -446,8 +446,8 @@ struct CursoredString
   str data
   int cursor
   
-  nproc __init__ @str:
-    len data str !self.data
+  sproc __init__ @str:
+    str !self.data
     0 !self.cursor
   end
 

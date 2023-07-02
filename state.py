@@ -60,8 +60,10 @@ class Memory:
 class Proc:
     def __init__(
         self, name: str, ip: int, in_stack: List["Type"],
-        out_stack: List["Type"], block: Block, is_named: bool, owner=None,
+        out_stack: List["Type"], block: Block, is_named: bool,
+        is_self_named: bool, owner=None
     ):
+        cont_assert(not (is_named and is_self_named), "Procedure cannot be both self-named and named.")
 
         self.name: str = name
         self.ip: int = ip
@@ -71,6 +73,7 @@ class Proc:
         self.block: Block = block
         
         self.is_named: bool = is_named
+        self.is_self_named: bool = is_self_named
         self.is_imported: bool = False
         self.is_exported: bool = False
 
@@ -95,7 +98,9 @@ class Proc:
         
         self.is_exported: bool = False
         self.is_named: bool = False
+        self.is_self_named: bool = False
         self.is_imported: bool = True
+        self.is_exported: bool = False
 
         self.memories: Dict[str, Memory] = {}
         self.memory_size: int = 0

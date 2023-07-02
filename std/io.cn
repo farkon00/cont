@@ -43,10 +43,10 @@ include std.cn
       end
     end
 
-    nproc __init__ int flags @str:
-      len data str_to_nstr
+    sproc __init__ int @str:
+      str_to_nstr
       bind path:
-        flags path open2
+        path open2
         dup self.check_fd
         !self.fd
 
