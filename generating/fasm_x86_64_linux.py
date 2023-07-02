@@ -36,78 +36,80 @@ def compile_ops_fasm_x86_64_linux(ops: List[Op]):
             [f"./{out}"], stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr
         )
 
+INDEX_ERROR_CODE = (
+    "check_array_bounds:\n"
+    ";; rax - index\n"
+    ";; rbx - size of an array\n"
+    ";; r15 - loc pointer\n"
+    ";; r12 - loc size\n"
+
+    ";; if rax >= rbx\n"
+    "cmp rax, rbx\n"
+    "jl array_bound_if\n"
+
+    ";; write out of range text to stdout\n"
+    "mov rax, 1\n"
+    "mov rdi, 1\n"
+    "mov rsi, index_out_of_range_text\n"
+    "mov rdx, 22\n"
+    "syscall\n"
+    
+    ";; write loc to stdout\n"
+    "mov rax, 1\n"
+    "mov rdi, 1\n"
+    "mov rsi, r15\n"
+    "mov rdx, r12\n"
+    "syscall\n"
+    
+    ";; exit\n"
+    "mov rax, 60\n"
+    "mov rdi, 1\n"
+    "syscall\n"
+    "array_bound_if:\n"
+    "ret\n"
+)
+NULL_POINTER_CODE = (
+    "check_null_ptr:\n"
+    ";; rax - ptr\n"
+    ";; r15 - loc pointer\n"
+    ";; r12 - loc size\n"
+
+    ";; if ptr is null\n"
+    "cmp rax, 0\n"
+    "jne null_ptr_if\n"
+
+    ";; write null pointer dereference text to stdout\n"
+    "mov rax, 1\n"
+    "mov rdi, 1\n"
+    "mov rsi, null_ptr_deref_text\n"
+    "mov rdx, 28\n"
+    "syscall\n"
+
+    ";; write loc to stdout\n"
+    "mov rax, 1\n"
+    "mov rdi, 1\n"
+    "mov rsi, r15\n"
+    "mov rdx, r12\n"
+    "syscall\n"
+
+    ";; exit\n"
+    "mov rax, 60\n"
+    "mov rdi, 1\n"
+    "syscall\n"
+
+    "null_ptr_if:\n"
+    "ret\n"
+)
 
 def generate_fasm_x86_64_linux(ops: List[Op]):
-    buf = f"""
-format ELF64 executable 3
-segment readable executable
-entry _start
-{'''check_array_bounds:
-;; rax - index
-;; rbx - size of an array
-;; r15 - loc pointer
-;; r12 - loc size
-
-;; if rax >= rbx
-cmp rax, rbx
-jl array_bound_if
-
-;; write out of range text to stdout
-mov rax, 1
-mov rdi, 1
-mov rsi, index_out_of_range_text
-mov rdx, 22
-syscall
-
-;; write loc to stdout
-mov rax, 1
-mov rdi, 1
-mov rsi, r15
-mov rdx, r12
-syscall
-
-;; exit
-mov rax, 60
-mov rdi, 1
-syscall
-
-array_bound_if:
-ret'''
-if State.config.re_IOR else ''}
-{'''check_null_ptr:
-;; rax - ptr
-;; r15 - loc pointer
-;; r12 - loc size
-
-;; if ptr is null
-cmp rax, 0
-jne null_ptr_if
-
-;; write null pointer dereference text to stdout
-mov rax, 1
-mov rdi, 1
-mov rsi, null_ptr_deref_text
-mov rdx, 28
-syscall
-
-;; write loc to stdout
-mov rax, 1
-mov rdi, 1
-mov rsi, r15
-mov rdx, r12
-syscall
-
-;; exit
-mov rax, 60
-mov rdi, 1
-syscall
-
-null_ptr_if:
-ret'''
-if State.config.re_NPD else ''
-}
-_start:
-"""
+    buf = (
+        "format ELF64 executable 3\n"
+        "segment readable executable\n"
+        "entry _start\n"
+        f"{INDEX_ERROR_CODE if State.config.re_IOR else ''}"
+        f"{NULL_POINTER_CODE if State.config.re_NPD else ''}"
+        "_start:\n"
+    )
 
     for op in ops:
         if State.current_proc is not None and State.config.o_UPR:
@@ -117,15 +119,18 @@ _start:
                 continue
         buf += generate_op_fasm_x86_64_linux(op)
 
-    buf += f"""
-mov rax, 60
-xor rdi, rdi
-syscall
-segment readable writeable
-{'index_out_of_range_text: db "Index out of range in "' if State.config.re_IOR else ''}
-{'null_ptr_deref_text: db "Null pointer dereference in "' if State.config.re_NPD else ''}
-{generate_fasm_types()}
-"""
+    ior_code = 'index_out_of_range_text: db "Index out of range in "'
+    npd_code = 'null_ptr_deref_text: db "Null pointer dereference in "'
+    buf += (
+        "mov rax, 60\n"
+        "xor rdi, rdi\n"
+        "syscall\n"
+        "segment readable writeable\n"
+        f"{ior_code if State.config.re_IOR else ''}\n"
+        f"{npd_code if State.config.re_NPD else ''}\n"
+        f"{generate_fasm_types()}\n"
+    )
+
     for index, loc in enumerate(State.locs_to_include):
         buf += f"loc_{index}: db {', '.join([str(j) for j in bytes(loc, encoding='utf-8')])}, 10\n"
     for index, string in enumerate(State.string_data):
@@ -134,13 +139,13 @@ segment readable writeable
         else:
             buf += f"str_{index}:\n"
 
-    buf += f"""
-{f'mem: rb {Memory.global_offset}' if Memory.global_offset else ''}
-call_stack_ptr: rb 8
-bind_stack_ptr: rb 8
-bind_stack: rb {State.config.size_bind_stack}
-call_stack: rb {State.config.size_call_stack}
-"""
+    buf += (
+        f"{f'mem: rb {Memory.global_offset}' if Memory.global_offset else ''}\n"
+        "call_stack_ptr: rb 8\n"
+        "bind_stack_ptr: rb 8\n"
+        f"bind_stack: rb {State.config.size_bind_stack}\n"
+        f"call_stack: rb {State.config.size_call_stack}\n"
+    )
 
     return buf
 
@@ -254,39 +259,30 @@ def generate_op_fasm_x86_64_linux(op: Op):
     elif op.type == OpType.PUSH_LOCAL_MEM:
         cont_assert(State.current_proc is not None, 
             "Bug in parsing of local and global memories")
-        return (
-            comment
-            + f"""
-mov rbx, [call_stack_ptr]
-add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + 8 - op.operand}\n
-push rbx
-"""
+        return comment + (
+            "mov rbx, [call_stack_ptr]\n"
+            "add rbx, call_stack\n"
+            f"sub rbx, {State.current_proc.memory_size + 8 - op.operand}\n"
+            "push rbx\n"
         )
     elif op.type == OpType.PUSH_LOCAL_VAR:
         cont_assert(State.current_proc is not None, 
             "Bug in parsing of local and global memories")
-        return (
-            comment
-            + f"""
-mov rbx, [call_stack_ptr]
-add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
-mov rax, [rbx]
-push rax
-"""
+        return comment + (
+            "mov rbx, [call_stack_ptr]\n"
+            "add rbx, call_stack\n"
+            f"sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}\n"
+            "mov rax, [rbx]\n"
+            "push rax\n"
         )
     elif op.type == OpType.PUSH_LOCAL_VAR_PTR:
         cont_assert(State.current_proc is not None, 
             "Bug in parsing of local and global memories")
-        return (
-            comment
-            + f"""
-mov rbx, [call_stack_ptr]
-add rbx, call_stack
-sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}
-push rbx
-"""
+        return comment + (
+            "mov rbx, [call_stack_ptr]\n"
+            "add rbx, call_stack\n"
+            f"sub rbx, {State.current_proc.memory_size + 8 - State.current_proc.memories[op.operand].offset}\n"
+            "push rbx\n"
         )
     elif op.type == OpType.PUSH_STR:
         return (
@@ -306,80 +302,56 @@ push rbx
         buf += f"syscall\npush rax\n\n"
         return comment + buf
     elif op.type == OpType.IF:
-        return (
-            comment
-            + f"""
-pop rax
-cmp rax, 0
-jz addr_{op.operand.end}
-"""
+        return comment + (
+            "pop rax\n"
+            "cmp rax, 0\n"
+            f"jz addr_{op.operand.end}\n"
         )
     elif op.type == OpType.ELSE:
-        return (
-            comment
-            + f"""
-jmp addr_{op.operand.end}
-addr_{op.operand.start}:
-"""
+        return comment + (
+            f"jmp addr_{op.operand.end}\n"
+            f"addr_{op.operand.start}:\n"
         )
     elif op.type == OpType.ENDIF:
-        return (
-            comment
-            + f"""
-addr_{op.operand.end}:
-"""
-        )
+        return comment + f"addr_{op.operand.end}:\n"
     elif op.type == OpType.WHILE:
-        return (
-            comment
-            + f"""
-addr_{op.operand.start}:
-pop rax
-cmp rax, 0
-jz addr_{op.operand.end}
-"""
+        return comment + (
+            f"addr_{op.operand.start}:\n"
+            "pop rax\n"
+            "cmp rax, 0\n"
+            f"jz addr_{op.operand.end}\n"
         )
     elif op.type == OpType.ENDWHILE:
-        return (
-            comment
-            + f"""
-jmp addr_{op.operand.start}
-addr_{op.operand.end}:
-"""
+        return comment + (
+            f"jmp addr_{op.operand.start}\n"
+            f"addr_{op.operand.end}:\n"
         )
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:
             return ""
-        return (
-            comment
-            + f"""
-jmp addr_{op.operand.block.end}
-addr_{op.operand.ip}:
-pop rax
-mov rbx, [call_stack_ptr]
-add rbx, {op.operand.memory_size}
-mov [call_stack+rbx], rax
-add rbx, 8
-mov [call_stack_ptr], rbx
-"""
+        return comment + (
+            f"jmp addr_{op.operand.block.end}\n"
+            f"addr_{op.operand.ip}:\n"
+            "pop rax\n"
+            "mov rbx, [call_stack_ptr]\n"
+            f"add rbx, {op.operand.memory_size}\n"
+            "mov [call_stack+rbx], rax\n"
+            "add rbx, 8\n"
+            "mov [call_stack_ptr], rbx\n"
         )
     elif op.type == OpType.ENDPROC:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
-        asm = (
-            comment
-            + f"""
-mov rbx, [call_stack_ptr]
-sub rbx, 8
-mov [call_stack_ptr], rbx
-
-mov rax, [call_stack+rbx]
-push rax
-sub rbx, {State.current_proc.memory_size}
-mov [call_stack_ptr], rbx
-ret
-addr_{op.operand.end}:
-"""
+        asm = comment + (
+            "mov rbx, [call_stack_ptr]\n"
+            "sub rbx, 8\n"
+            "mov [call_stack_ptr], rbx\n"
+            "mov rax, [call_stack+rbx]\n"
+            "push rax\n"
+            f"sub rbx, {State.current_proc.memory_size}\n"
+            "mov [call_stack_ptr], rbx\n"
+            "ret\n"
+            f"addr_{op.operand.end}:\n"
         )
 
         State.current_proc = None
@@ -388,49 +360,41 @@ addr_{op.operand.end}:
         buf = comment
         State.bind_stack_size += op.operand
         for i in range(op.operand):
-            buf += f"""
-pop rax
-mov rbx, [bind_stack_ptr]
-add rbx, {(op.operand - i - 1) * 8}
-mov [bind_stack+rbx], rax
-"""
-        buf += f"""
-mov rax, [bind_stack_ptr]
-add rax, {op.operand * 8}
-mov [bind_stack_ptr], rax
-"""
+            buf += (
+                "pop rax\n"
+                "mov rbx, [bind_stack_ptr]\n"
+                f"add rbx, {(op.operand - i - 1) * 8}\n"
+                "mov [bind_stack+rbx], rax\n"
+            )
+        buf += (
+            "mov rax, [bind_stack_ptr]\n"
+            f"add rax, {op.operand * 8}\n"
+            "mov [bind_stack_ptr], rax\n"
+        )
+
         return buf
     elif op.type == OpType.UNBIND:
         State.bind_stack_size -= op.operand
-        return (
-            comment
-            + f"""
-mov rbx, [bind_stack_ptr]
-sub rbx, {op.operand * 8}
-mov [bind_stack_ptr], rbx
-"""
+        return comment + (
+            "mov rbx, [bind_stack_ptr]\n"
+            f"sub rbx, {op.operand * 8}\n"
+            "mov [bind_stack_ptr], rbx\n"
         )
     elif op.type == OpType.PUSH_BIND_STACK:
-        return (
-            comment
-            + f"""
-mov rbx, bind_stack-{(State.bind_stack_size - op.operand)*8}
-mov rcx, [bind_stack_ptr]
-mov rax, [rbx+rcx]
-push rax
-"""
+        return comment + (
+            f"mov rbx, bind_stack-{(State.bind_stack_size - op.operand)*8}\n"
+            "mov rcx, [bind_stack_ptr]\n"
+            "mov rax, [rbx+rcx]\n"
+            "push rax\n"
         )
     elif op.type == OpType.CALL:
         return comment + f"call addr_{op.operand.ip}\n"
     elif op.type == OpType.TYPED_LOAD:
         cont_assert(not isinstance(op.operand, Struct), "Bug in parsing of structure types")
-        return (
-            comment
-            + """
-pop rax
-mov rbx, [rax]
-push rbx 
-"""
+        return comment + (
+            "pop rax\n"
+            "mov rbx, [rax]\n"
+            "push rbx\n"
         )
     elif op.type == OpType.PACK:
         struct = State.structures[op.operand[0]]
@@ -438,38 +402,36 @@ push rbx
         if op.operand[1]:
             if State.config.struct_malloc[1]:
                 assert not State.procs["malloc"].is_imported, "Cannot import malloc in fasm_x86_64_linux target"
-                buf = comment +\
-f"""
-push {size}
-call addr_{State.procs["malloc"].ip}
-pop rbx
-"""
+                buf = comment + (
+                    f"push {size}\n"
+                    f"call addr_{State.procs['malloc'].ip}\n"
+                    "pop rbx\n"
+                )
             else:
-                buf = comment +\
-f"""
-xor rdi, rdi
-mov rax, 12
-syscall
-mov rbx, rax
-add rax, {size}
-mov rdi, rax
-mov rax, 12
-syscall
-"""
+                buf = comment + (
+                    "xor rdi, rdi\n"
+                    "mov rax, 12\n"
+                    "syscall\n"
+                    "mov rbx, rax\n"
+                    f"add rax, {size}\n"
+                    "mov rdi, rax\n"
+                    "mov rax, 12\n"
+                    "syscall\n"
+                )
         else:
-            buf = comment + "\npop rbx"
+            buf = comment + "\npop rbx\n"
 
-        buf += """
-mov rcx, [bind_stack_ptr]
-mov [bind_stack+rcx], rbx
-add rcx, 8
-mov [bind_stack_ptr], rcx
-"""
+        buf += (
+            "mov rcx, [bind_stack_ptr]\n"
+            "mov [bind_stack+rcx], rbx\n"
+            "add rcx, 8\n"
+            "mov [bind_stack_ptr], rcx\n"
+        )
         if "__init__" in struct.methods:
-            buf += f"""
-push rbx
-call addr_{struct.methods['__init__'].ip}
-"""
+            buf += (
+                "push rbx\n"
+                f"call addr_{struct.methods['__init__'].ip}\n"
+            )
         else:
             offset = 0
             for index, field in list(enumerate(struct.fields_types))[::-1]:
@@ -481,149 +443,135 @@ call addr_{struct.methods['__init__'].ip}
 
                 buf += f"\nmov [rbx+{size-offset}], rax\n"
 
-        buf += f"""
-mov rcx, [bind_stack_ptr]
-sub rcx, 8
-mov rax, [bind_stack+rcx] 
-mov [bind_stack_ptr], rcx
-push rax
-"""
+        buf += (
+            "mov rcx, [bind_stack_ptr]\n"
+            "sub rcx, 8\n"
+            "mov rax, [bind_stack+rcx]\n"
+            "mov [bind_stack_ptr], rcx\n"
+            "push rax\n"
+        )
 
         return buf
     elif op.type == OpType.UNPACK:
         buf = comment + "\npop rax\n"
         for i in range(op.operand // 8):
-            buf += f"""
-mov rbx, [{i*8}+rax]
-push rbx
-"""
+            buf += (
+                f"mov rbx, [{i*8}+rax]\n"
+                "push rbx\n"
+            )
         return buf
     elif op.type == OpType.MOVE_STRUCT:
         buf = comment + "\npop rbx\npop rax\n"
         for i in range(op.operand // 8):
-            buf += f"""
-mov rcx, [rax+{i*8}]
-mov [rbx+{i*8}], rcx
-"""
+            buf += (
+                f"mov rcx, [rax+{i*8}]\n"
+                f"mov [rbx+{i*8}], rcx\n"
+            )
 
         return buf
     elif op.type == OpType.PUSH_FIELD:
-        return (
-            comment
-            + f"""
-pop rax
-mov rbx, [rax+{op.operand}]
-push rbx
-"""
+        return comment + (
+            "pop rax\n"
+            f"mov rbx, [rax+{op.operand}]\n"
+            "push rbx\n"
         )
     elif op.type == OpType.PUSH_FIELD_PTR:
-        return (
-            comment
-            + f"""
-pop rax
-add rax, {op.operand}
-push rax
-"""
+        return comment + (
+            "pop rax\n"
+            f"add rax, {op.operand}\n"
+            "push rax\n"
         )
     elif op.type == OpType.UPCAST:
-        buf = (
-            comment
-            + f"""
-pop rbx
-xor rdi, rdi
-mov rax, 12
-syscall
-mov rdx, rax
-add rax, {op.operand[0]}
-mov rdi, rax
-mov rax, 12
-syscall
-"""
+        buf = comment + (
+            "pop rbx\n"
+            "xor rdi, rdi\n"
+            "mov rax, 12\n"
+            "syscall\n"
+            "mov rdx, rax\n"
+            f"add rax, {op.operand[0]}\n"
+            "mov rdi, rax\n"
+            "mov rax, 12\n"
+            "syscall\n"
         )
         for i in range(op.operand[2] // 8):
-            buf += f"""
-mov rcx, [rbx+{i*8}]
-mov [rdx+{i*8}], rcx
-"""
+            buf += (
+                f"mov rcx, [rbx+{i*8}]\n"
+                f"mov [rdx+{i*8}], rcx\n"
+            )
 
         for i in range(op.operand[1]):
-            buf += f"""
-pop rcx
-mov [rdx+{op.operand[0]-(i+1)*8}], rcx
-"""
+            buf += (
+                "pop rcx\n"
+                f"mov [rdx+{op.operand[0]-(i+1)*8}], rcx\n"
+            )
+
         buf += "\npush rdx\n"
         return buf
     elif op.type == OpType.AUTO_INIT:
         if State.current_proc is not None:
-            memory = f"""
-mov r12, [call_stack_ptr]
-add r12, call_stack
-sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}
-"""
+            memory = (
+                "mov r12, [call_stack_ptr]\n"
+                "add r12, call_stack\n"
+                f"sub r12, {State.current_proc.memory_size + op.operand[0].offset + 8}\n"
+            )
         else:
             memory = f"\nmov r12, mem+{op.operand[0].offset}\n"
         if State.current_proc is None:
             var: Array = State.variables[op.operand[0].name]  # type: ignore
         else:
             var: Array = State.current_proc.variables[op.operand[0].name]  # type: ignore
-        return (
-            comment
-            + f"""
-;; loop
-xor rdi, rdi
-addr_{op.operand[1]}_1:
-cmp rdi, {var.len}
-je addr_{op.operand[1]}_2
+        return comment + (
+            ";; loop\n"
+            "xor rdi, rdi\n"
+            f"addr_{op.operand[1]}_1:\n"
+            f"cmp rdi, {var.len}\n"
+            f"je addr_{op.operand[1]}_2\n"
 
-{memory}
+            f"{memory}\n"
 
-;; get ptr to array element into r10
-mov r10, r12
-mov rax, 8
-mul rdi
-add r10, rax
+            ";; get ptr to array element into r10\n"
+            "mov r10, r12\n"
+            "mov rax, 8\n"
+            "mul rdi\n"
+            "add r10, rax\n"
 
-;; put ptr to struct into r11
-add r12, {sizeof(var)}
-mov r11, r12
-mov rax, {sizeof(var.typ.typ)}
-mul rdi
-add r11, rax
+            ";; put ptr to struct into r11\n"
+            f"add r12, {sizeof(var)}\n"
+            "mov r11, r12\n"
+            f"mov rax, {sizeof(var.typ.typ)}\n"
+            "mul rdi\n"
+            "add r11, rax\n"
 
-;; moves ptr into array
-mov [r10], r11 
+            ";; moves ptr into array\n"
+            "mov [r10], r11 \n"
 
-add rdi, 1
+            "add rdi, 1\n"
 
-jmp addr_{op.operand[1]}_1
-addr_{op.operand[1]}_2:
-"""
+            f"jmp addr_{op.operand[1]}_1\n"
+            f"addr_{op.operand[1]}_2:\n"
         )
     elif op.type == OpType.CALL_ADDR:
-        return comment +\
-f"""
-pop rax
-call rax
-"""
+        return comment + "pop rax\ncall rax\n"
+
     elif op.type in (OpType.INDEX, OpType.INDEX_PTR):
-        code = f"""
-pop r11
-pop rbx
-mov r10, rbx
-mov rax, {op.operand[0]}
-mul rbx
-add r11, rax
-mov rbx, {'[r11]' if op.type == OpType.INDEX else 'r11'}
-push rbx
-"""
+        code = (
+            "pop r11\n"
+            "pop rbx\n"
+            "mov r10, rbx\n"
+            f"mov rax, {op.operand[0]}\n"
+            "mul rbx\n"
+            "add r11, rax\n"
+            f"mov rbx, {'[r11]' if op.type == OpType.INDEX else 'r11'}\n"
+            "push rbx\n"
+        )
         if State.config.re_IOR:  # Checking index out of range
-            code += f"""
-            mov rax, r10
-            mov rbx, {op.operand[1]}
-            mov r15, loc_{op.loc_id}
-            mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
-            call check_array_bounds
-            """
+            code += (
+                "mov rax, r10\n"
+                f"mov rbx, {op.operand[1]}\n"
+                f"mov r15, loc_{op.loc_id}\n"
+                f"mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
+                "call check_array_bounds\n"
+            )
         return comment + code
     elif op.type == OpType.ASM:
         return op.operand + "\n"
@@ -639,29 +587,35 @@ def generate_operator_fasm_x86_64_linux(op: Op):
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_fasm_x86_64_linux")
     cont_assert(op.type == OpType.OPERATOR, f"generate_operator_fasm_x86_64_linux cant generate {op.type.name}")
 
+    call_npd_code = (
+        f"mov r15, loc_{op.loc_id}\n"
+        f"mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
+        "call check_null_ptr\n"
+    )
+
     if op.operand in (Operator.ADD, Operator.SUB):
-        return f"""
-pop rbx
-pop rax
-{op.operand.name.lower()} rax, rbx
-push rax
-"""
+        return (
+            "pop rbx\n"
+            "pop rax\n"
+            f"{op.operand.name.lower()} rax, rbx\n"
+            "push rax\n"
+        )
     elif op.operand == Operator.MUL:
-        return f"""
-pop rbx
-pop rax
-mul rbx
-push rax
-"""
+        return (
+            "pop rbx\n"
+            "pop rax\n"
+            "mul rbx\n"
+            "push rax\n"
+        )
     elif op.operand == Operator.DIV:
-        return f"""
-xor rdx, rdx
-pop rbx
-pop rax
-idiv rbx
-push rax
-push rdx
-"""
+        return (
+            "xor rdx, rdx\n"
+            "pop rbx\n"
+            "pop rax\n"
+            "idiv rbx\n"
+            "push rax\n"
+            "push rdx\n"
+        )
     elif op.operand == Operator.DUP:
         return "pop rax\npush rax\npush rax\n"
     elif op.operand == Operator.DROP:
@@ -673,74 +627,54 @@ push rdx
     elif op.operand == Operator.OVER:
         return "pop rbx\npop rax\npush rax\npush rbx\npush rax\n"
     elif op.operand in (Operator.LT, Operator.GT, Operator.EQ):
-        return \
-f"""
-xor rcx, rcx
-mov rdx, 1
-pop rbx
-pop rax
-cmp rax, rbx
-cmov{op.operand.name.lower()[0]} rcx, rdx
-push rcx
-"""
+        return (
+            "xor rcx, rcx\n"
+            "mov rdx, 1\n"
+            "pop rbx\n"
+            "pop rax\n"
+            "cmp rax, rbx\n"
+            f"cmov{op.operand.name.lower()[0]} rcx, rdx\n"
+            "push rcx\n"
+        )
     elif op.operand in (Operator.LE, Operator.GE, Operator.NE):
-        return \
-f"""
-xor rcx, rcx
-mov rdx, 1
-pop rbx
-pop rax
-cmp rax, rbx
-cmov{op.operand.name.lower()} rcx, rdx
-push rcx
-"""
+        return (
+            "xor rcx, rcx\n"
+            "mov rdx, 1\n"
+            "pop rbx\n"
+            "pop rax\n"
+            "cmp rax, rbx\n"
+            f"cmov{op.operand.name.lower()} rcx, rdx\n"
+            "push rcx\n"
+        )
     elif op.operand == Operator.STORE:
-        return f"""
-pop rax
-pop rbx
-{f'''
-mov r15, loc_{op.loc_id}
-mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
-call check_null_ptr
-''' if State.config.re_NPD else ''}
-
-mov [rax], rbx
-"""
+        
+        return (
+            "pop rax\n"
+            "pop rbx\n"
+            f"{call_npd_code if State.config.re_NPD else ''}"
+            "mov [rax], rbx\n"
+        )
     elif op.operand == Operator.LOAD:
-        return f"""
-pop rax
-{f'''
-mov r15, loc_{op.loc_id}
-mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
-call check_null_ptr
-''' if State.config.re_NPD else ''}
-
-mov rbx, [rax]
-push rbx 
-"""
+        return (
+            "pop rax\n"
+            f"{call_npd_code if State.config.re_NPD else ''}"
+            "mov rbx, [rax]\n"
+            "push rbx\n"
+        )
     elif op.operand == Operator.STORE8:
-        return f"""
-pop rax
-pop rbx
-{f'''
-mov r15, loc_{op.loc_id}
-mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
-call check_null_ptr
-''' if State.config.re_NPD else ''}
-mov [rax], bl
-"""
+        return (
+            "pop rax\n"
+            "pop rbx\n"
+            f"{call_npd_code if State.config.re_NPD else ''}"
+            "mov [rax], bl\n"
+        )
     elif op.operand == Operator.LOAD8:
-        return f"""
-pop rax
-{f'''
-mov r15, loc_{op.loc_id}
-mov r12, {len(State.locs_to_include[op.loc_id]) + 1}
-call check_null_ptr
-''' if State.config.re_NPD else ''}
-
-xor rbx, rbx
-mov bl, [rax]
-push rbx
-"""
+        return (
+            "pop rax\n"
+            f"{call_npd_code if State.config.re_NPD else ''}"
+            "xor rbx, rbx\n"
+            "mov bl, [rax]\n"
+            "push rbx\n"
+        )
     else:
         cont_assert(False, f"Generation isn't implemented for operator: {op.operand.name}")
