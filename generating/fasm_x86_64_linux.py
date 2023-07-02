@@ -482,17 +482,26 @@ def generate_op_fasm_x86_64_linux(op: Op):
             "push rax\n"
         )
     elif op.type == OpType.UPCAST:
-        buf = comment + (
-            "pop rbx\n"
-            "xor rdi, rdi\n"
-            "mov rax, 12\n"
-            "syscall\n"
-            "mov rdx, rax\n"
-            f"add rax, {op.operand[0]}\n"
-            "mov rdi, rax\n"
-            "mov rax, 12\n"
-            "syscall\n"
-        )
+        if State.config.struct_malloc[1]:
+            assert not State.procs["malloc"].is_imported, "Cannot import malloc in fasm_x86_64_linux target"
+            buf = comment + (
+                f"push {op.operand[0]}\n"
+                f"call addr_{State.procs['malloc'].ip}\n"
+                "pop rdx\n"
+                "pop rbx\n"
+            )
+        else:
+            buf = comment + (
+                "pop rbx\n"
+                "xor rdi, rdi\n"
+                "mov rax, 12\n"
+                "syscall\n"
+                "mov rdx, rax\n"
+                f"add rax, {op.operand[0]}\n"
+                "mov rdi, rax\n"
+                "mov rax, 12\n"
+                "syscall\n"
+            )
         for i in range(op.operand[2] // 8):
             buf += (
                 f"mov rcx, [rbx+{i*8}]\n"
