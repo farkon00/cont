@@ -8,7 +8,8 @@ $ python3 -V
 $ git clone https://github.com/farkon00/cont.git
 $ cd cont
 
-$ sudo apt install fasm # Install fasm with your package manager
+# Install fasm with your package manager, nodejs for testing wasm
+$ sudo apt install fasm nodejs 
 $ python3 -m pip install pytest
 $ pytest test.py
 
