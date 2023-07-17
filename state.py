@@ -34,6 +34,7 @@ class Block:
     start: int
     end: int = -1
     stack_effect: Optional[Tuple[int, int]] = None
+    binded: int = 0
 
 @dataclass
 class Memory:

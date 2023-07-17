@@ -349,8 +349,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
             ]
     elif op.type == OpType.BIND:
         assert len(stack) >= op.operand, "stack is too short for bind"
-        State.bind_stack.extend(stack[-op.operand :])
-        stack[-op.operand :] = []
+        State.bind_stack.extend(stack[-op.operand:])
+        stack[-op.operand:] = []
     elif op.type == OpType.UNBIND:
         for _ in range(op.operand):
             State.bind_stack.pop()

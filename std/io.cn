@@ -45,13 +45,12 @@ include std.cn
 
     sproc __init__ int @str:
       str_to_nstr
-      bind path:
-        path open2
-        dup self.check_fd
-        !self.fd
+      let path;
+      path open2
+      dup self.check_fd
+      !self.fd
 
-        path free
-      end
+      path free
     end
 
     nproc read int size -> @str:
@@ -69,14 +68,13 @@ include std.cn
         end 
         
         size malloc
-        bind buff:
-          // TODO: Handle errors in here with better discriptions
-          size buff self.fd read
-          if dup 0 < do
-            "Read syscall failed" self.print_error
-          end
-          buff
+        let buff;
+        // TODO: Handle errors in here with better discriptions
+        size buff self.fd read
+        if dup 0 < do
+          "Read syscall failed" self.print_error
         end
+        buff
       end
     end
 

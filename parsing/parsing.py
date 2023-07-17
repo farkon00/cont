@@ -482,6 +482,8 @@ def parse_var():
 def parse_end():
     assert len(State.block_stack) > 0, "block for end not found"
     block = State.block_stack.pop()
+    if block.binded != 0:
+        State.bind_stack = State.bind_stack[:-block.binded]
     if block.type == BlockType.BIND:
         unbinded = State.ops_by_ips[block.start].operand
         op = Op(OpType.UNBIND, unbinded)
@@ -493,17 +495,19 @@ def parse_end():
         if proc.is_named:
             State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
             block.end = State.get_new_ip(op)
-            return [Op(OpType.UNBIND, len(proc.in_stack)), op]
+            return [Op(OpType.UNBIND, len(proc.in_stack) + block.binded), op]
         if proc.is_self_named:
             State.bind_stack = State.bind_stack[:-1]
             block.end = State.get_new_ip(op)
-            return [Op(OpType.UNBIND, 1), op]
+            return [Op(OpType.UNBIND, 1 + block.binded), op]
     elif block.type == BlockType.WHILE:
         cond = State.do_stack.pop()[::-1]
         for i in cond:
             i.loc = State.loc
         op = Op(OpType.ENDWHILE, block, State.loc)
         op.operand.end = State.get_new_ip(op)
+        if block.binded != 0:
+            return [Op(OpType.UNBIND, block.binded), *cond, op]
         return [*cond, op]
     elif block.type == BlockType.FOR:
         State.bind_stack.pop()
@@ -515,6 +519,9 @@ def parse_end():
         op = Op(END_TYPES[block.type], block)
 
     block.end = State.get_new_ip(op)
+    if block.binded != 0:
+        return [Op(OpType.UNBIND, block.binded), op]
+    
     return op
 
 
@@ -537,12 +544,12 @@ def parse_for():
     return op
 
 
-def parse_bind():
+def parse_bind(end_char: str = ":", unbind_on_block: bool = False):
     binded = 0
     name_token = ("", "")
-    while ":" not in name_token[0]:
+    while end_char not in name_token[0]:
         name_token = next(State.tokens)
-        parts = name_token[0].split(":")
+        parts = name_token[0].split(end_char)
         name = parts[0]
         if len(parts) > 1:
             queued_token = (parts[1].strip(), name_token[1])
@@ -554,7 +561,10 @@ def parse_bind():
         State.bind_stack.append(name)
         binded += 1
     op = Op(OpType.BIND, binded)
-    State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
+    if unbind_on_block:
+        State.block_stack[-1].binded += binded
+    else:
+        State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
     return op
 
 
@@ -674,7 +684,11 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         op = Op(OpType.ELSE, new_block)
         block.end = State.get_new_ip(op)
         new_block.start = block.end
-        return op
+        if block.binded != 0:
+            State.bind_stack = State.bind_stack[:-block.binded]
+            return [Op(OpType.UNBIND, block.binded), op]
+        else:
+            return op
 
     elif token == "#if":
         cond = evaluate_block(State.loc, "#if condition")
@@ -738,7 +752,8 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
     elif token == "bind":
         return parse_bind()
-
+    elif token == "let":
+        return parse_bind(end_char=";", unbind_on_block=True)
     elif token == "proc":
         return parse_proc_head()
     elif token == "nproc":

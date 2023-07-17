@@ -16,12 +16,11 @@ struct Type
       if self.id Type.PTR_ID == do
         self 24 ptr+ (*Type) @ // TODO: Start using a cast and sizeoftype in here when compiler will allow
         typ 24 ptr+ (*Type) @
-        bind self_type typ_type:
-          self_type NULL ptr== typ_type NULL ptr== or
-          dup not if
-            drop
-            self_type typ_type ==
-          end
+        let self_type typ_type;
+        self_type NULL ptr== typ_type NULL ptr== or
+        dup not if
+          drop
+          self_type typ_type ==
         end
       else if self.id Type.ARRAY_ID == do
         self 24 ptr+ (*Type) @ // TODO: Start using a cast and sizeoftype in here when compiler will allow
@@ -34,27 +33,26 @@ struct Type
         // TODO: Start using a cast in here when compiler will allow
         self 24 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type typ 24 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type 
         self 32 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type typ 32 ptr+ ([DYNAMIC_ARRAY_SIZE]) Type 
-        bind self.in_types typ.in_types self.out_types typ.out_types:
-          self.in_types array_length typ.in_types array_length !=
-          self.out_types array_length typ.out_types  array_length !=
-          or if
-            0
-          else
-            // Check if self.in_types and typ.in_types are equal
-            1 0 while dup self.in_types [] (int) bind cond index val: cond index cond val and end do
-              swap drop // Drop the previous cond
-              dup self.in_types [] over typ.in_types [] ==
-              swap 1 +
-            end drop
+        let self.in_types typ.in_types self.out_types typ.out_types;
+        self.in_types array_length typ.in_types array_length !=
+        self.out_types array_length typ.out_types  array_length !=
+        or if
+          0
+        else
+          // Check if self.in_types and typ.in_types are equal
+          1 0 while dup self.in_types [] (int) bind cond index val: cond index cond val and end do
+            swap drop // Drop the previous cond
+            dup self.in_types [] over typ.in_types [] ==
+            swap 1 +
+          end drop
 
-            // Check if self.out_types and typ.out_types are equal
-            1 0 while dup self.out_types [] (int) bind cond index val: cond index cond val and end do
-              swap drop // Drop the previous cond
-              dup self.out_types [] over typ.out_types [] ==
-              swap 1 +
-            end drop
-            and // And the the last cont of both loops
-          end
+          // Check if self.out_types and typ.out_types are equal
+          1 0 while dup self.out_types [] (int) bind cond index val: cond index cond val and end do
+            swap drop // Drop the previous cond
+            dup self.out_types [] over typ.out_types [] ==
+            swap 1 +
+          end drop
+          and // And the the last cont of both loops
         end
       else
         1
@@ -130,12 +128,11 @@ nproc print_type Type typ:
     typ (Struct) .fields 0
     0 typ (Struct) .fields [] NULL ptr!=
     while
-      bind arr index: 
-        index arr [] print_type
-        " " puts
-        arr index 1 +
-        dup arr [] NULL ptr!=
-      end
+      let arr index;
+      index arr [] print_type
+      " " puts
+      arr index 1 +
+      dup arr [] NULL ptr!=
     end drop drop
   end
 end

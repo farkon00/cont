@@ -37,14 +37,12 @@ nproc cpy_buf int size ptr buf ptr des:
   0
   size 0 >
   while
-    bind index: 
-      buf index ptr+ @8
-      des index ptr+ !8
-      index 1 +
-    end
+    let index; 
+    buf index ptr+ @8
+    des index ptr+ !8
+    index 1 +
     dup size < 
-  end
-  drop
+  end drop
 end
 
 // Synonym
@@ -56,10 +54,9 @@ nproc memset ptr ptr int val int len:
   0
   len 0 >
   while
-    bind index: 
-      val ptr index ptr+ !8
-      index 1 +
-    end
+    let index;
+    val ptr index ptr+ !8
+    index 1 +
     dup len < 
   end
   drop
@@ -89,47 +86,45 @@ var malloc_last *MallocBlockMeta
 
 nproc malloc int size -> ptr:
   malloc_base dup NULL ptr!= while
-    bind curr_block:
-      if curr_block.is_free curr_block.size size >= and do 
-        if curr_block.size size - sizeoftype MallocBlockMeta > do
-          curr_block sizeoftype MallocBlockMeta ptr+ size ptr+ (MallocBlockMeta)        
-          bind new_block:
-            curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
-            curr_block.next !new_block.next
-            if new_block.next NULL ptr== do
-              new_block !malloc_last
-            end
-            1 !new_block.is_free
-            new_block !curr_block.next
-            size !curr_block.size
-          end
+    let curr_block;
+    if curr_block.is_free curr_block.size size >= and do 
+      if curr_block.size size - sizeoftype MallocBlockMeta > do
+        curr_block sizeoftype MallocBlockMeta ptr+ size ptr+ (MallocBlockMeta)        
+        let new_block;
+        curr_block.size size - sizeoftype MallocBlockMeta - !new_block.size
+        curr_block.next !new_block.next
+        if new_block.next NULL ptr== do
+          new_block !malloc_last
         end
-        0 !curr_block.is_free
-        curr_block sizeoftype MallocBlockMeta ptr+ 0
-      else
-        if 
-          curr_block curr_block.size sizeoftype MallocBlockMeta +
-          ptr+ NULL brk ptr==
-        do // The last block
-          if curr_block.is_free do
-            size curr_block.size - sbrk
-            if NULL ptr== do // Sbrk failed
-              NULL
-            else
-              size !curr_block.size
-              0 !curr_block.is_free
-              curr_block sizeoftype MallocBlockMeta ptr+
-            end
-            0
+        1 !new_block.is_free
+        new_block !curr_block.next
+        size !curr_block.size
+      end
+      0 !curr_block.is_free
+      curr_block sizeoftype MallocBlockMeta ptr+ 0
+    else
+      if 
+        curr_block curr_block.size sizeoftype MallocBlockMeta +
+        ptr+ NULL brk ptr==
+      do // The last block
+        if curr_block.is_free do
+          size curr_block.size - sbrk
+          if NULL ptr== do // Sbrk failed
+            NULL
           else
-            NULL 0
+            size !curr_block.size
+            0 !curr_block.is_free
+            curr_block sizeoftype MallocBlockMeta ptr+
           end
+          0
         else
-          if curr_block.next NULL ptr== do
-            NULL 0
-          else
-            curr_block.next 1
-          end
+          NULL 0
+        end
+      else
+        if curr_block.next NULL ptr== do
+          NULL 0
+        else
+          curr_block.next 1
         end
       end
     end
@@ -160,73 +155,64 @@ end
 proc u_to_str int -> @str:
   var index int
   21 !index
-  22 malloc
-  bind res:
-    dup 0 == if
-      48 res index ptr+ !8
-      *index dec
-    end 
+  22 malloc let res;
+  dup 0 == if
+    48 res index ptr+ !8
+    *index dec
+  end 
+  dup 0 !=
+  while
+    10 div 
+    48 + // Get character from mod
+    index res +ptr !8
+    *index dec
     dup 0 !=
-    while
-      10 div 
-      48 + // Get character from mod
-      index res +ptr !8
-      *index dec
-      dup 0 !=
-    end drop
-    21 index -
-    bind len:
-      len res 1 index + ptr+ res cpy_buf
-      len res
-    end
-  end
+  end drop
+  21 index - let len;
+  len res 1 index + ptr+ res cpy_buf
+  len res
 end
 
 nproc int_to_str int value -> @str:
-  value 0 < if 
-    0 value - u_to_str 
-    bind len ptr:
-      22 malloc
-      bind buf:
-        len ptr buf 1 ptr+ cpy_buf // Shift u_to_str result and put into buf
-        ptr free
-        45 buf !8
-        len 1 + buf
-      end
-    end
+  if value 0 < do 
+    0 value - u_to_str
+    22 malloc
+    let len ptr buf;
+    len ptr buf 1 ptr+ cpy_buf // Shift u_to_str result and put into buf
+    ptr free
+    45 buf !8
+    len 1 + buf
   else
     value u_to_str
   end
 end
 
-proc print int: 
+proc print int:
   int_to_str dup rot swap println free
 end
 
 // Will extend the block if possible and return the same pointer, if not possible allocates a new block and returns it 
 nproc extend_alloc int delta ptr block' -> ptr:
-  block' get_malloc_meta
-  bind block:
-    if 
-      block block.size sizeoftype MallocBlockMeta +
-      ptr+ NULL brk ptr==
-    do
-      delta sbrk
-      if NULL ptr== do // Sbrk failed
-        NULL
-      else
-        *block.size delta incby
-        block'
-      end
-    else
+  block' get_malloc_meta let block;
+  if 
+    block block.size sizeoftype MallocBlockMeta +
+    ptr+ NULL brk ptr==
+  do
+    delta sbrk
+    if NULL ptr== do // Sbrk failed
       NULL
+    else
+      *block.size delta incby
+      block'
     end
-    if dup NULL ptr== do
-      drop
-      block.size delta + malloc
-      block.size over block' swap memcpy
-      block' free
-    end
+  else
+    NULL
+  end
+  if dup NULL ptr== do
+    drop
+    block.size delta + malloc
+    block.size over block' swap memcpy
+    block' free
   end 
 end
 
@@ -236,7 +222,7 @@ nproc mem_extend int delta *ptr mem:
 end
 
 nproc check_fail int res @str:
-  res 0 < if
+  if res 0 < do
     "Error code: " puts
     0 res - print
     len data puts
@@ -246,36 +232,33 @@ nproc check_fail int res @str:
 end
 
 nproc str_to_int @str -> int:
-  var res int
-  0 !res
+  var res int = 0;
   0 while dup len < do
-    dup data +ptr @8
-    bind char:
-      if char '0' < char '9' > or do
-        "Non-digit character in str_to_int: " puts
-        dup 1 swap data +ptr puts
-        "\n" puts
-        0 exit
-      end 
-      res 10 * !res
-      *res char '0' - incby
-      1 +
-    end
+    dup data +ptr @8 let char;
+    if char '0' < char '9' > or do
+      "Non-digit character in str_to_int: " puts
+      dup 1 swap data +ptr puts
+      "\n" puts
+      0 exit
+    end 
+    res 10 * !res
+    *res char '0' - incby
+    1 +
   end drop
   res
 end
 
 // Debug procedure
 proc print_malloc_list:
-  malloc_base 1 
+  malloc_base 1
   while
-    dup NULL ptr!= if 
+    if dup NULL ptr!= do 
       dup .size u_to_str dup rot swap puts free
       "(" puts dup (int) u_to_str dup rot swap puts free
       ") " puts
       if dup (MallocBlockMeta) .is_free do
         "free " puts
-      end 
+      end
       "-> " puts
       (MallocBlockMeta) .next 1
     else
@@ -305,116 +288,104 @@ proc nstr_to_str ptr -> @str:
 end
 
 nproc str_to_nstr @str -> ptr:
-  len 1 + malloc
-  bind buf:
-    len data buf memcpy
-    0 buf len ptr+ !8
-    buf
-  end
+  len 1 + malloc let buf;
+  len data buf memcpy
+  0 buf len ptr+ !8
+  buf
 end
 
 proc streq @str @str -> int:
-  bind len data len2 data2:
-    len2 len == if
-      0 1
-      len 0 >
-      while
-        drop
-        bind curlen:
-          curlen
-          data curlen ptr+ @8
-          data2 curlen ptr+ @8
-          ==
-        end
-        bind curlen res:
-          curlen 1 + res
-          curlen 1 + len <
-          res and
-        end
-      end
-      swap drop
-    else
-      0
-    end 
+  let len data len2 data2;
+  len2 len == if
+    0 1
+    len 0 >
+    while
+      drop
+      let curlen;
+      data curlen ptr+ @8
+      data2 curlen ptr+ @8
+      == let res;
+      curlen 1 + res
+      curlen 1 + len <
+      res and
+    end
+    swap drop
+  else
+    0
   end
 end
 
 #if platform Platform.fasm_x86_64_linux ==;
   nproc exec_cmd ptr argv ptr exec:
     var wstatus int
-    fork
-    bind  pid:
-      pid 0 == if
-        0 (ptr)
-        argv
-        exec
-        execve drop
-      else pid 0 > if
-        0 (ptr)
-        0
-        *wstatus
-        -1
-        wait4 drop
-      else
-        "Fork failed\n" puts
-        1 exit
-      end end 
-    end
+    fork let pid;
+    pid 0 == if
+      0 (ptr)
+      argv
+      exec
+      execve drop
+    else pid 0 > if
+      0 (ptr)
+      0
+      *wstatus
+      -1
+      wait4 drop
+    else
+      "Fork failed\n" puts
+      1 exit
+    end end
   end
 #endif
 
 proc str_find @str @str -> int:
-  bind len1 data1 len2 data2:
-    if len2 0 > len1 len2 >= and do
-      0
-      1 while
-        if len2 over data1 +ptr len2 data2 streq do
-          0
-        else
-          1 +
-          dup len1 len2 - <=
-        end
+  let len1 data1 len2 data2;
+  if len2 0 > len1 len2 >= and do
+    0
+    1 while
+      if len2 over data1 +ptr len2 data2 streq do
+        0
+      else
+        1 +
+        dup len1 len2 - <=
       end
-      if dup len1 len2 - 1 + == do
-        drop -1
-      end
-    else
-      -1
     end
+    if dup len1 len2 - 1 + == do
+      drop -1
+    end
+  else
+    -1
   end
 end
 
 proc str_rfind @str @str -> int:
-  bind len1 data1 len2 data2:
-    if len2 0 > len1 len2 >= and do
-      len1 len2 -
-      1 while
-        if len2 over data1 +ptr len2 data2 streq do
-          0
-        else
-          1 -
-          dup 0 >=
-        end
+  let len1 data1 len2 data2;
+  if len2 0 > len1 len2 >= and do
+    len1 len2 -
+    1 while
+      if len2 over data1 +ptr len2 data2 streq do
+        0
+      else
+        1 -
+        dup 0 >=
       end
-    else
-      -1
     end
+  else
+    -1
   end
 end
 
 proc str_count @str @str -> int:
   var counter int
-  bind len1 data1 len2 data2:
-    0 
-    len1 0 != len1 len2 >= and while
-      if len2 over data1 +ptr len2 data2 streq do
-        *counter inc
-        len2 +
-      else
-        1 +
-      end
-      dup len1 len2 - <=
+  let len1 data1 len2 data2;
+  0 
+  len1 0 != len1 len2 >= and while
+    if len2 over data1 +ptr len2 data2 streq do
+      *counter inc
+      len2 +
+    else
+      1 +
     end
+    dup len1 len2 - <=
   end drop
   counter
 end
@@ -461,11 +432,10 @@ struct CursoredString
   // false - no next line found
   nproc jump_to @str -> int:
     self.rest len data str_find
-    bind offset:
-      offset -1 != offset len + self.data.len != and
-      dup if
-        *self.cursor offset len + incby
-      end
+    let offset;
+    offset -1 != offset len + self.data.len != and
+    dup if
+      *self.cursor offset len + incby
     end
   end
 end

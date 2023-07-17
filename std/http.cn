@@ -93,18 +93,17 @@ struct HTTPServer
     1 while
       HTTPServer.BUF_SIZE temp_buf fd read
       dup "Read syscall" check_fail
-      bind size:
-        if buf NULL ptr== do
-          size malloc !buf
-        else
-          if buf get_block_size size offset + < do
-            size buf get_block_size - *buf mem_extend
-          end
+      let size;
+      if buf NULL ptr== do
+        size malloc !buf
+      else
+        if buf get_block_size size offset + < do
+          size buf get_block_size - *buf mem_extend
         end
-        size temp_buf buf offset ptr+ memcpy
-        *offset size incby
-        size HTTPServer.BUF_SIZE ==
       end
+      size temp_buf buf offset ptr+ memcpy
+      *offset size incby
+      size HTTPServer.BUF_SIZE ==
     end
     offset buf
   end
@@ -128,17 +127,14 @@ struct HTTPServer
       0 string.rest "\r\n" str_find
       if dup -1 != do
         string.rest str_slice2
-        bind len_header data_header:
-          len_header data_header ": " str_find
-          bind sep:
-            if sep -1 != do
-              0 sep string.rest str_slice2 str
-              sep 2 + len_header data_header str_slice1 str
-              HTTPHeader (int) vec.push
-            else
-              -1 !req.method
-            end
-          end
+        2dup let len_header data_header;
+        ": " str_find let sep;
+        if sep -1 != do
+          0 sep string.rest str_slice2 str
+          sep 2 + len_header data_header str_slice1 str
+          HTTPHeader (int) vec.push
+        else
+          -1 !req.method
         end
         "\r\n" string.jump_to
         if string.rest drop 2 >= do
@@ -159,42 +155,40 @@ struct HTTPServer
   nproc _parse_request @str -> HTTPRequest:
     len data init var string CursoredString
     sizeoftype HTTPRequest malloc (HTTPRequest)
-    bind req:
+    let req;
+    string.rest " " str_find dup -1 != if
+      0 over string.rest str_slice2 self._get_request_method !req.method
+      *string.cursor swap 1 + incby
       string.rest " " str_find dup -1 != if
-        0 over string.rest str_slice2 self._get_request_method !req.method
-        *string.cursor swap 1 + incby
-        string.rest " " str_find dup -1 != if
-          0 over string.rest str_slice2 str !req.route
-          "\r\n" string.jump_to if
-            string req self._parse_header !req.headers
-            "Content-Length" req.get_header
-            if dup NULL ptr!= do
-              @ str_to_int
-              bind content_len:
-                if content_len string.rest drop <= do
-                  *string.cursor 2 incby
-                  0 content_len string.rest str_slice2 str !req.body
-                  *string.cursor content_len incby
-                else
-                  -1 !req.method
-                end
-              end
+        0 over string.rest str_slice2 str !req.route
+        "\r\n" string.jump_to if
+          string req self._parse_header !req.headers
+          "Content-Length" req.get_header
+          if dup NULL ptr!= do
+            @ str_to_int
+            let content_len;
+            if content_len string.rest drop <= do
+              *string.cursor 2 incby
+              0 content_len string.rest str_slice2 str !req.body
+              *string.cursor content_len incby
             else
-              drop
-              if string.rest drop 0 != do
-                *string.cursor 2 incby
-              end
+              -1 !req.method
             end
-          else -1 !req.method end
+          else
+            drop
+            if string.rest drop 0 != do
+              *string.cursor 2 incby
+            end
+          end
         else -1 !req.method end
       else -1 !req.method end
-      drop
-      if string.rest drop 0 != do // If string is not empty
-        -1 !req.method
-      end
-      string.data free
-      req
+    else -1 !req.method end
+    drop
+    if string.rest drop 0 != do // If string is not empty
+      -1 !req.method
     end
+    string.data free
+    req
   end
 
   nproc run addr HTTPServerListener listener:
@@ -203,31 +197,27 @@ struct HTTPServer
     while 1 do
       *sizeof(addr) self.address self.fd accept
       dup "Accept" check_fail
-      bind conn_fd:
-        conn_fd !conn.fd
-        conn_fd self._read_conn
-        bind packet_len packet_data:
-          if packet_len 0 > do
-            packet_len packet_data self._parse_request
-            bind req:
-              if req.method -1 != do
-                conn !req.conn
-                req listener call
-              else
-                "HTTP/1.1 400 Bad Request" conn.write
-              end
-              req.free
-            end
-          else
-            "HTTP/1.1 400 Bad Request" conn.write
-          end
-          packet_data free
+      let conn_fd;
+      conn_fd !conn.fd
+      conn_fd self._read_conn let packet_len packet_data;
+      if packet_len 0 > do
+        packet_len packet_data self._parse_request
+        let req;
+        if req.method -1 != do
+          conn !req.conn
+          req listener call
+        else
+          "HTTP/1.1 400 Bad Request" conn.write
         end
-        conn_fd close
-        "Closing connection" check_fail
+        req.free
+      else
+        "HTTP/1.1 400 Bad Request" conn.write
       end
+      packet_data free
+      conn_fd close
+      "Closing connection" check_fail
     end
-    self.fd close
-    "Closing socket" check_fail
   end
+  self.fd close
+  "Closing socket" check_fail
 end
