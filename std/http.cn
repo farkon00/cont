@@ -217,7 +217,7 @@ struct HTTPServer
       conn_fd close
       "Closing connection" check_fail
     end
+    self.fd close
+    "Closing socket" check_fail
   end
-  self.fd close
-  "Closing socket" check_fail
 end

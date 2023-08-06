@@ -1,0 +1,186 @@
+include std.cn
+include platform.cn
+
+#if platform Platform.wat64 ==;
+enum JSTypes
+  Int String Null Undefined Array Object 
+end
+
+struct JSValue
+  int type
+end
+
+struct (JSValue) JSInt
+  int value
+
+  sproc __init__ int:
+    JSTypes.Int !self.type
+    !self.value
+  end
+
+  static proc unwrap JSValue -> JSInt:
+    dup .type JSTypes.Int == "Unwrap of JSValue failed, expected JSInt\n" assert
+    (JSInt)
+  end
+end
+
+struct (JSValue) JSString
+  int len
+  ptr data
+
+  sproc __init__ @str:
+    JSTypes.String !self.type
+    !self.data !self.len
+  end
+
+  sproc value -> @str:
+    self.len self.data
+  end
+  sproc *value -> str:
+    *self.len (str)
+  end
+
+  static proc unwrap JSValue -> JSString:
+    dup .type JSTypes.String == "Unwrap of JSValue failed, expected JSString\n" assert
+    (JSString)
+  end
+end
+
+struct (JSValue) JSNull
+  proc __init__:
+    JSTypes.Null swap !.type
+  end
+  
+  static proc unwrap JSValue -> JSNull:
+    dup .type JSTypes.Null == "Unwrap of JSValue failed, expected JSNull\n" assert
+    (JSNull)
+  end
+end
+struct (JSValue) JSUndefined
+  proc __init__:
+    JSTypes.Undefined swap !.type
+  end
+
+  static proc unwrap JSValue -> JSUndefined:
+    dup .type JSTypes.Undefined == "Unwrap of JSValue failed, expected JSUndefined\n" assert
+    (JSUndefined)
+  end
+end
+
+struct (JSValue) JSArray
+  int length
+  [DYNAMIC_ARRAY_SIZE] JSValue value
+
+  sproc __init__ int [DYNAMIC_ARRAY_SIZE] JSValue:
+    JSTypes.String !self.type
+    !self.value !self.length
+  end
+
+  static proc unwrap JSValue -> JSArray:
+    dup .type JSTypes.Array == "Unwrap of JSValue failed, expected JSArray\n" assert
+    (JSArray)
+  end
+end
+
+#import __get_js_object_property cont_runtime_web.__get_js_object_property int @str -> JSValue;
+#import __set_js_object_property cont_runtime_web.__set_js_object_property int @str JSValue;
+#import __call_js_object_method cont_runtime_web.__call_js_object_method int @str [DYNAMIC_ARRAY_SIZE] JSValue -> JSValue;
+
+proc event_listener_type JSObject: drop end
+#import __add_event_listener cont_runtime_web.__add_event_listener @str addr event_listener_type int;
+
+var __temp_call_args [7] JSValue
+struct (JSValue) JSObject
+  int object_id
+
+  proc get @str -> JSValue:
+    .object_id rot swap  __get_js_object_property
+  end
+  nproc set @str JSValue val:
+    self.object_id len data val __set_js_object_property
+  end
+  nproc call_method @str [DYNAMIC_ARRAY_SIZE] JSValue args -> JSValue:
+    self.object_id len data args __call_js_object_method
+  end
+
+  sproc call_method0 @str -> JSValue:
+    NULL 1 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method1 @str JSValue -> JSValue:
+    0 __temp_call_args *[] !
+    NULL 1 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method2 @str JSValue JSValue -> JSValue:
+    1 __temp_call_args *[] !
+    0 __temp_call_args *[] !
+    NULL 2 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method3 @str JSValue JSValue JSValue -> JSValue:
+    2 __temp_call_args *[] !
+    1 __temp_call_args *[] !
+    0 __temp_call_args *[] !
+    NULL 3 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method4 @str JSValue JSValue JSValue JSValue -> JSValue:
+    3 __temp_call_args *[] !
+    2 __temp_call_args *[] !
+    1 __temp_call_args *[] !
+    0 __temp_call_args *[] !
+    NULL 4 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method5 @str JSValue JSValue JSValue JSValue JSValue -> JSValue:
+    4 __temp_call_args *[] !
+    3 __temp_call_args *[] !
+    2 __temp_call_args *[] !
+    1 __temp_call_args *[] !
+    0 __temp_call_args *[] !
+    NULL 5 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+  sproc call_method6 @str JSValue JSValue JSValue JSValue JSValue JSValue -> JSValue:
+    5 __temp_call_args *[] !
+    4 __temp_call_args *[] !
+    3 __temp_call_args *[] !
+    2 __temp_call_args *[] !
+    1 __temp_call_args *[] !
+    0 __temp_call_args *[] !
+    NULL 6 __temp_call_args *[] !
+    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  end
+
+  proc add_event_listener @str addr event_listener_type:
+    .object_id __add_event_listener
+  end
+
+  static proc unwrap JSValue -> JSObject:
+    dup .type JSTypes.Object == "Unwrap of JSValue failed, expected JSObject\n" assert
+    (JSObject)
+  end
+end
+
+#import __free_js_object cont_runtime_web.__free_js_object int;
+
+sproc [JSValue] free:
+  if self.type JSTypes.String == do
+    self (JSString) .data free
+  end
+  if self.type JSTypes.Array == do
+    var i int
+    while i self (JSArray) .length < do
+      i self (JSArray) .value [] .free
+      *i inc
+    end
+  end
+  if self.type JSTypes.Object == do
+    self (JSObject) .object_id __free_js_object
+  end
+  self free
+end
+
+JSTypes.Object 0 init var document JSObject
+#endif

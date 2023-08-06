@@ -147,6 +147,10 @@ nproc malloc int size -> ptr:
   end
 end
 
+#if platform Platform.wat64 ==;
+  #export malloc
+#endif
+
 proc free ptr: 
   1 over get_malloc_meta !.is_free
   dup get_malloc_meta .size swap clear_buf
@@ -411,6 +415,14 @@ nproc str_slice2 int start int _end @str -> @str:
     1 exit
   end
   _end start - data start ptr+
+end
+
+proc str_split @str @str -> [DYNAMIC_ARRAY_SIZE] str:
+  let len data sep_len sep_data;
+  len data sep_len sep_data str_count
+  sizeoftype *str * malloc let res;
+  sizeoftype str malloc drop
+  res
 end
 
 struct CursoredString

@@ -1,0 +1,14 @@
+include std.cn
+include web.cn
+
+var button_counter int
+
+nproc button_event JSObject e:
+  *button_counter inc
+  "target" e.get JSObject.unwrap let target;
+  "innerText" button_counter int_to_str JSString target.set
+end
+
+"click" *button_event
+"getElementById" "btn" JSString document.call_method1 JSObject.unwrap
+.add_event_listener
