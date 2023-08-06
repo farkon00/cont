@@ -840,7 +840,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         name = safe_next_token("Expected a procedure name")[0]
         assert name in State.procs, f'Procedure "{name}" not found'
         State.used_procs.add(State.procs[name])
-        State.procs[name].is_export = True
+        State.procs[name].is_exported = True
 
     elif token == "[]":
         return Op(OpType.INDEX)

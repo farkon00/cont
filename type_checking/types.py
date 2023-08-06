@@ -215,7 +215,8 @@ def parse_type(
         if end is not None:
             if end in name:
                 end_index = name.find(end)
-                State.tokens_queue.append((name[end_index + len(end):], loc))
+                if name[end_index + len(end):]:
+                    State.tokens_queue.append((name[end_index + len(end):], loc))
                 name = name[:end_index]
                 State.loc = loc
                 is_ended = True
