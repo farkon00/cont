@@ -184,7 +184,8 @@ def parse_type(
     var_type_scope: Optional[Dict[str, VarType]] = None,
 ):
     State.loc = token[1]
-    name = token[0]
+    og_name = name = token[0]
+    is_ended = False
     if end is not None:
         if end in name:
             end_index = name.find(end)
@@ -192,9 +193,9 @@ def parse_type(
                 State.tokens_queue.append((name[end_index + len(end):], token[1]))
             name = name[:end_index]
             if not name.strip():
-                return None
+                return (True, None)
     if name.startswith("*"):
-        return Ptr(
+        result = Ptr(
             parse_type(
                 (token[0][1:], token[1]), error,
                 auto_ptr, allow_unpack,
@@ -202,10 +203,11 @@ def parse_type(
             )
         )
     elif name == "int":
-        return Int()
+        result = Int()
     elif name == "ptr":
-        return Ptr()
+        result = Ptr()
     elif name == "addr":
+        assert end is None or end not in og_name, "Expected procedure name"
         try:
             name, loc = next(State.tokens)
         except StopIteration:
@@ -216,20 +218,19 @@ def parse_type(
                 State.tokens_queue.append((name[end_index + len(end):], loc))
                 name = name[:end_index]
                 State.loc = loc
+                is_ended = True
                 assert name, "Procedure name was not provided"
         assert name in State.procs, f"Procedure {name} was not found"
         proc = State.procs[name]
-        return Addr(proc.in_stack, proc.out_stack)
+        result = Addr(proc.in_stack, proc.out_stack)
     elif name in State.structures:
-        if auto_ptr:
-            return Ptr(State.structures[name])
-        else:
-            return State.structures[name]
+        result = Ptr(State.structures[name]) if auto_ptr else State.structures[name]
     elif name.startswith("@") and allow_unpack:
         if name[1:] not in State.structures:
             assert not throw_exc, f'structure "{name[1:]}" was not found'
-            return None
-        return State.structures[name[1:]].fields_types
+            result = None
+        else:
+            result = State.structures[name[1:]].fields_types
     elif name.startswith("[") and name.endswith("]"):
         if name[1:-1] in State.constants:
             length = State.constants[name[1:-1]]
@@ -237,34 +238,47 @@ def parse_type(
             length = int(name[1:-1])
         else:
             assert not throw_exc, f'constant "{name[1:-1]}" was not found'
-            return None
-        try:
-            arr_type = next(State.tokens)
-        except StopIteration:
-            State.throw_error("Expected array type")
-        arr = Array(
-            length,
-            parse_type(
-                arr_type, error,
-                True, False, end,
-                var_type_scope=var_type_scope,
-            ),
-        )
-        if arr is None:
-            assert not throw_exc, "array type was not defined"
-            return None
-        return Ptr(arr) if auto_ptr else arr
+            length = None
+            result = None
+        if length is not None:
+            assert end is None or end not in og_name, "Expected array type"
+            try:
+                arr_type_tok = next(State.tokens)
+            except StopIteration:
+                State.throw_error("Expected array type")
+            if end is not None:
+                is_ended, arr_type = parse_type(
+                    arr_type_tok, error,
+                    True, False, end,
+                    var_type_scope=var_type_scope,
+                )
+            else:
+                arr_type = parse_type(
+                    arr_type_tok, error,
+                    True, False, end,
+                    var_type_scope=var_type_scope,
+                )
+            arr = Array(length, arr_type)
+            if arr is None:
+                assert not throw_exc, "array type was not defined"
+                result = None
+            else:
+                result = Ptr(arr) if auto_ptr else arr
     elif name == "":
         State.throw_error(f"Expected token, but end was reached in {error}")
     else:
         if name in State.var_types():
-            return State.var_types()[name]
+            result = State.var_types()[name]
         else:
             if var_type_scope is not None:
-                var_type = VarType(name)
+                result = var_type = VarType(name)
                 var_type_scope[name] = var_type
-                return var_type
-            assert not throw_exc, f'Unknown type "{name}" in {error}'
+            else:
+                assert not throw_exc, f'Unknown type "{name}" in {error}'
+    if end is not None:
+        return ((end is None or end in og_name) or is_ended, result)
+    else:
+        return result
 
 
 def sizeof(_type) -> int:

@@ -181,7 +181,7 @@ def generate_data() -> Tuple[int, str, Dict[str, int]]:
     return (offset, buf, data_table)
 
 def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
-    buf = f"(table {len(State.referenced_procs)} funcref) "
+    buf = f"(table (export \"__addrtable\") {len(State.referenced_procs)} funcref) "
     buf += "(elem (i32.const 0)"
     procs_table = {}
     for index, proc in enumerate(State.referenced_procs):

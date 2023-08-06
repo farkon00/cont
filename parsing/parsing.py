@@ -99,7 +99,7 @@ def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType],
                 types.extend(struct.fields_types)
                 continue
 
-            res = parse_type(
+            is_ended, res = parse_type(
                 (proc_token_value, f"{State.filename}:{proc_token[1]}"),
                 "procedure contaract",
                 allow_unpack=True,
@@ -113,9 +113,12 @@ def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType],
             else:
                 types.append(res)
                 if State.is_named and types is in_types:
+                    assert not is_ended, "name for argument was not specified"
                     proc_token, proc_token_value = next_proc_contract_token(name)
                     assert proc_token_value, "name for argument was not specified"
                     names.append(proc_token_value)
+            if is_ended:
+                break
 
     if end_char in proc_token:
         queued_token = (proc_token[0].split(end_char)[1].strip(), proc_token[1])
