@@ -142,6 +142,8 @@ class State:
     bind_stack_size: int = 0
     compile_ifs_opened: int = 0
     false_compile_ifs: int = 0
+    # This is used for let, we do unbinds, becuase in wat64 main can be called multiple times
+    global_binded: int = 0
 
     memories: Dict[str, Memory] = {}
     variables: Dict[str, "Type"] = {}  # type: ignore

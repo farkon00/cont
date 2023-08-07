@@ -25,7 +25,7 @@ def main():
     State.filename = file_name
     State.dir = os.path.dirname(__file__)
 
-    ops = parse_to_ops(program, config.dump_tokens)
+    ops = parse_to_ops(program, config.dump_tokens, is_main=True)
 
     assert not State.compile_ifs_opened, "unclosed #if" 
     cont_assert(not State.false_compile_ifs, "Something went terribly wrong with #if")

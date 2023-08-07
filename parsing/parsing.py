@@ -565,7 +565,10 @@ def parse_bind(end_char: str = ":", unbind_on_block: bool = False):
         binded += 1
     op = Op(OpType.BIND, binded)
     if unbind_on_block:
-        State.block_stack[-1].binded += binded
+        if State.block_stack:
+            State.block_stack[-1].binded += binded
+        else:
+            State.global_binded += binded
     else:
         State.block_stack.append(Block(BlockType.BIND, State.get_new_ip(op)))
     return op
@@ -1030,7 +1033,7 @@ def parse_until_end() -> List[Op]:
     return ops
 
 
-def parse_to_ops(program: str, dump_tokens: bool = False) -> List[Op]:
+def parse_to_ops(program: str, dump_tokens: bool = False, is_main: int = False) -> List[Op]:
     saver = StateSaver()
     State.tokens = tokens(program)
     ops: List[Op] = []
@@ -1060,4 +1063,7 @@ def parse_to_ops(program: str, dump_tokens: bool = False) -> List[Op]:
 
     saver.load()
 
+    if is_main and State.global_binded:
+        State.bind_stack = []
+        ops.append(Op(OpType.UNBIND, State.global_binded))
     return ops
