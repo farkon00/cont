@@ -6,9 +6,10 @@ var button_counter int
 nproc button_event JSObject e:
   *button_counter inc
   "target" e.get JSObject.unwrap let target;
-  "innerText" button_counter int_to_str JSString target.set
+  button_counter int_to_str JSString "innerText" target.set
 end
 
+"btn" JSString "getElementById" document.call_method1 JSObject.unwrap let btn;
+
 "click" *button_event
-"getElementById" "btn" JSString document.call_method1 JSObject.unwrap
-.add_event_listener
+btn.add_event_listener

@@ -74,7 +74,7 @@ function upload_object(obj) {
     }
     else if (typeof obj === "string") {
         result_ptr = wasm_exports.malloc(BigInt(24));
-        const bytes = new TextEncoder().encode(string);
+        const bytes = new TextEncoder().encode(obj);
         mem_buf[Number(result_ptr)] = 1; // Type
         mem_buf.set(bnToBuf(BigInt(bytes.length)), Number(result_ptr) + 8); // Length
         const string_ptr = wasm_exports.malloc(BigInt(bytes.length));
@@ -137,6 +137,10 @@ const testImport = {
                 } else console.log(lines[i]);
             }
             puts_buffer += lines[lines.length - 1];
+        },
+        __js_eval(length, offset, args_array) {
+            let args = load_object(args_array);
+            return upload_object(eval(load_string(length, offset)));
         }
     }
 };

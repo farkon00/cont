@@ -72,7 +72,7 @@ struct (JSValue) JSArray
   [DYNAMIC_ARRAY_SIZE] JSValue value
 
   sproc __init__ int [DYNAMIC_ARRAY_SIZE] JSValue:
-    JSTypes.String !self.type
+    JSTypes.Array !self.type
     !self.value !self.length
   end
 
@@ -82,75 +82,104 @@ struct (JSValue) JSArray
   end
 end
 
-#import __get_js_object_property cont_runtime_web.__get_js_object_property int @str -> JSValue;
-#import __set_js_object_property cont_runtime_web.__set_js_object_property int @str JSValue;
-#import __call_js_object_method cont_runtime_web.__call_js_object_method int @str [DYNAMIC_ARRAY_SIZE] JSValue -> JSValue;
+#import __js_eval cont_runtime.__js_eval @str JSValue -> JSValue;
 
 proc event_listener_type JSObject: drop end
 #import __add_event_listener cont_runtime_web.__add_event_listener @str addr event_listener_type int;
 
-var __temp_call_args [7] JSValue
+var __temp_eval_args [6] JSValue
+6 __temp_eval_args ([DYNAMIC_ARRAY_SIZE]) JSValue
+init var __temp_eval_args_js JSArray
 struct (JSValue) JSObject
   int object_id
 
   proc get @str -> JSValue:
-    .object_id rot swap  __get_js_object_property
+    0 __temp_eval_args *[] !
+    init var property JSString
+    property 1 __temp_eval_args *[] !
+    2 !__temp_eval_args_js.length
+    "args[0][args[1]]" __temp_eval_args_js __js_eval
   end
-  nproc set @str JSValue val:
-    self.object_id len data val __set_js_object_property
+  proc set JSValue @str:
+    0 __temp_eval_args *[] !
+    init var property JSString
+    property 1 __temp_eval_args *[] !
+    2 __temp_eval_args *[] !
+    3 !__temp_eval_args_js.length
+    "args[0][args[1]] = args[2]" __temp_eval_args_js __js_eval .free
   end
-  nproc call_method @str [DYNAMIC_ARRAY_SIZE] JSValue args -> JSValue:
-    self.object_id len data args __call_js_object_method
+  nproc call_method [DYNAMIC_ARRAY_SIZE] JSValue args @str -> JSValue:
+    args array_length args init var js_args JSArray
+    self 0 __temp_eval_args *[] !
+    len data init var property JSString
+    property 1 __temp_eval_args *[] !
+    js_args 2 __temp_eval_args *[] !
+    3 !__temp_eval_args_js.length
+    "args[0][args[1]](...args[2])" __temp_eval_args_js __js_eval
   end
 
   sproc call_method0 @str -> JSValue:
-    NULL 1 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+    let len data;
+    var args [1] JSValue
+    NULL 0 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method1 @str JSValue -> JSValue:
-    0 __temp_call_args *[] !
-    NULL 1 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method1 JSValue @str -> JSValue:
+    let len data;
+    var args [2] JSValue
+    0 args *[] !
+    NULL 1 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method2 @str JSValue JSValue -> JSValue:
-    1 __temp_call_args *[] !
-    0 __temp_call_args *[] !
-    NULL 2 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method2 JSValue JSValue @str -> JSValue:
+    let len data;
+    var args [3] JSValue
+    1 args *[] !
+    0 args *[] !
+    NULL 2 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method3 @str JSValue JSValue JSValue -> JSValue:
-    2 __temp_call_args *[] !
-    1 __temp_call_args *[] !
-    0 __temp_call_args *[] !
-    NULL 3 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method3 JSValue JSValue JSValue @str -> JSValue:
+    let len data;
+    var args [4] JSValue
+    2 args *[] !
+    1 args *[] !
+    0 args *[] !
+    NULL 3 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method4 @str JSValue JSValue JSValue JSValue -> JSValue:
-    3 __temp_call_args *[] !
-    2 __temp_call_args *[] !
-    1 __temp_call_args *[] !
-    0 __temp_call_args *[] !
-    NULL 4 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method4 JSValue JSValue JSValue JSValue @str -> JSValue:
+    let len data;
+    var args [5] JSValue
+    3 args *[] !
+    2 args *[] !
+    1 args *[] !
+    0 args *[] !
+    NULL 4 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method5 @str JSValue JSValue JSValue JSValue JSValue -> JSValue:
-    4 __temp_call_args *[] !
-    3 __temp_call_args *[] !
-    2 __temp_call_args *[] !
-    1 __temp_call_args *[] !
-    0 __temp_call_args *[] !
-    NULL 5 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method5 JSValue JSValue JSValue JSValue JSValue @str -> JSValue:
+    let len data;
+    var args [6] JSValue
+    4 args *[] !
+    3 args *[] !
+    2 args *[] !
+    1 args *[] !
+    0 args *[] !
+    NULL 5 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
-  sproc call_method6 @str JSValue JSValue JSValue JSValue JSValue JSValue -> JSValue:
-    5 __temp_call_args *[] !
-    4 __temp_call_args *[] !
-    3 __temp_call_args *[] !
-    2 __temp_call_args *[] !
-    1 __temp_call_args *[] !
-    0 __temp_call_args *[] !
-    NULL 6 __temp_call_args *[] !
-    self.object_id rot swap __temp_call_args ([DYNAMIC_ARRAY_SIZE]) JSValue __call_js_object_method
+  sproc call_method6 JSValue JSValue JSValue JSValue JSValue JSValue @str -> JSValue:
+    let len data;
+    var args [7] JSValue
+    5 args *[] !
+    4 args *[] !
+    3 args *[] !
+    2 args *[] !
+    1 args *[] !
+    0 args *[] !
+    NULL 6 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
 
   proc add_event_listener @str addr event_listener_type:
@@ -162,8 +191,6 @@ struct (JSValue) JSObject
     (JSObject)
   end
 end
-
-#import __free_js_object cont_runtime_web.__free_js_object int;
 
 sproc [JSValue] free:
   if self.type JSTypes.String == do
@@ -177,7 +204,8 @@ sproc [JSValue] free:
     end
   end
   if self.type JSTypes.Object == do
-    self (JSObject) .object_id __free_js_object
+    self (JSObject) .object_id init var id JSInt
+    "delete serialized_objects[args];" id __js_eval .free
   end
   self free
 end

@@ -87,7 +87,7 @@
             }
             else if (typeof obj === "string") {
                 result_ptr = wasm_exports.malloc(BigInt(24));
-                const bytes = new TextEncoder().encode(string);
+                const bytes = new TextEncoder().encode(obj);
                 mem_buf[Number(result_ptr)] = 1; // Type
                 mem_buf.set(bnToBuf(BigInt(bytes.length)), Number(result_ptr) + 8); // Length
                 const string_ptr = wasm_exports.malloc(BigInt(bytes.length));
@@ -149,32 +149,13 @@
                         } else console.log(lines[i]);
                     }
                     puts_buffer += lines[lines.length - 1];
+                },
+                __js_eval(length, offset, args_array) {
+                    let args = load_object(args_array);
+                    return upload_object(eval(load_string(length, offset)));
                 }
             },
             cont_runtime_web: {
-                __free_js_object(id) {
-                    delete serialized_objects[id];
-                },
-                __get_js_object_property(id, length, offset) {
-                    return upload_object(serialized_objects[id][load_string(length, offset)]);
-                },
-                __set_js_object_property(id, length, offset, value) {
-                    serialized_objects[id][load_string(length, offset)] = load_object(value);
-                },
-                __call_js_object_method(id, length, offset, args) {
-                    let args_array = [];
-                    let i = 0;
-                    let elem = -1;
-                    do {
-                        elem = Number(bufToBn(
-                            new Uint8Array(static_mem.buffer, Number(args) + (i++) * 8, 8)
-                        ));
-                        if (elem != 0) {
-                            args_array.push(load_object(elem));
-                        }
-                    } while (elem != 0);
-                    return upload_object(serialized_objects[id][load_string(length, offset)](...args_array));
-                },
                 __add_event_listener(length, offset, addr, target) {
                     serialized_objects[target].addEventListener(
                         load_string(length, offset), function(e) {
@@ -196,8 +177,7 @@
                     obj.instance.exports.main();
                 }
             }
-        ).catch(r => document.getElementsByTagName("body")[0].innerHTML =
-                "Compile button.cn first using python cont.py examples/web/button.cn -t wat64")
+        )
     </script>
 </body>
 </html>

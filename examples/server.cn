@@ -2,7 +2,7 @@ include std.cn
 include io.cn
 include http.cn
 
-const PORT 6969;
+const PORT 8080;
 
 nproc check_exists str route -> int:
   1 route @ str_slice1 str_to_nstr
