@@ -3,7 +3,7 @@ include platform.cn
 
 #if platform Platform.wat64 ==;
 enum JSTypes
-  Int String Null Undefined Array Object 
+  Int String Null Undefined Array Object ExportedFunction
 end
 
 struct JSValue
@@ -83,9 +83,7 @@ struct (JSValue) JSArray
 end
 
 #import __js_eval cont_runtime.__js_eval @str JSValue -> JSValue;
-
 proc event_listener_type JSObject: drop end
-#import __add_event_listener cont_runtime_web.__add_event_listener @str addr event_listener_type int;
 
 var __temp_eval_args [6] JSValue
 6 __temp_eval_args ([DYNAMIC_ARRAY_SIZE]) JSValue
@@ -182,14 +180,26 @@ struct (JSValue) JSObject
     args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
 
-  proc add_event_listener @str addr event_listener_type:
-    .object_id __add_event_listener
-  end
-
   static proc unwrap JSValue -> JSObject:
     dup .type JSTypes.Object == "Unwrap of JSValue failed, expected JSObject\n" assert
     (JSObject)
   end
+end
+
+proc js_exported_proc: end
+struct (JSValue) JSExportedFunction
+  addr js_exported_proc function
+
+  sproc __init__ addr js_exported_proc:
+    JSTypes.ExportedFunction !self.type
+    !self.function
+  end
+end
+
+sproc [JSObject] add_event_listener @str addr event_listener_type:
+  init var listener JSExportedFunction
+  init var event JSString
+  event listener "addEventListener" self.call_method2 .free
 end
 
 sproc [JSValue] free:
