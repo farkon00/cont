@@ -3,5 +3,5 @@ include platform.cn
 #if platform Platform.fasm_x86_64_linux ==;
   include os_linux.cn
 #else #if platform Platform.wat64 ==;
-  include os_wasm.cn
+  include wasm/os_wasm.cn
 #endif #endif

@@ -1,16 +1,16 @@
 include std.cn
-include web.cn
+include wasm/web.cn
 
 var button_counter int
 
-nproc button_event JSObject e:
+nproc button_event JSEvent e:
   *button_counter inc
-  "target" e.get JSObject.unwrap let target;
+  e.target let target;
   button_counter int_to_str JSString "innerText" target.set
   e.free target.free
 end
 
-"btn" JSString "getElementById" document.call_method1 JSObject.unwrap let btn;
+"btn" JSString "getElementById" document.call_method1 JSEventTarget.full_unwrap let btn;
 
 "click" *button_event
 btn.add_event_listener

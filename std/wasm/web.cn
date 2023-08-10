@@ -1,0 +1,101 @@
+include std.cn
+include platform.cn
+
+#if platform Platform.wat64 ==;
+include wasm/js.cn
+
+struct (JSObject) JSEvent
+  sproc __init__ @str:
+    JSTypes.Object !self.type
+    init var string JSString
+    "new Event(args)" string __js_eval
+    JSObject.unwrap dup .object_id !self.object_id drop
+  end
+
+  // Properties
+  sproc bubbles -> int:
+    "bubbles" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc cancelable -> int:
+    "cancelable" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc composed -> int:
+    "composed" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc current_target -> JSObject:
+    "currentTarget" self.get JSObject.unwrap
+  end
+  sproc default_prevented -> int:
+    "defaultPrevented" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc event_phase -> @str:
+    "eventPhase" self.get JSString.unwrap let string;
+    string.value string free
+  end
+  sproc is_trusted -> int:
+    "isTrusted" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc target -> JSObject:
+    "target" self.get JSObject.unwrap
+  end
+  sproc time_stamp -> int:
+    "timeStamp" self.get let float;
+    "Math.round(args)" float __js_eval
+    JSInt.unwrap dup .value swap .free
+    float.free
+  end
+  sproc type -> @str:
+    "type" self.get JSString.unwrap let string;
+    string.value string free
+  end
+
+  // Methods
+  sproc composed_path -> JSArray:
+    "composedPath" self.call_method0 JSArray.unwrap
+  end
+  sproc prevent_default:
+    "preventDefault" self.call_method0 .free
+  end
+  sproc stop_immediate_propagation:
+    "stopImmediatePropagation" self.call_method0 .free
+  end
+  sproc stop_propagation:
+    "stopPropagation" self.call_method0 .free
+  end
+
+  static nproc unwrap JSObject self -> JSEvent:
+    "Event" self.unwrap_as (JSEvent)
+  end
+  proc full_unwrap JSValue -> JSEvent:
+    JSObject.unwrap JSEvent.unwrap
+  end
+end
+
+proc event_listener_type JSEvent: drop end
+struct (JSObject) JSEventTarget
+  sproc add_event_listener @str addr event_listener_type:
+    init var listener JSExportedFunction
+    init var event JSString
+    event listener "addEventListener" self.call_method2 .free
+  end
+
+  // TODO: doesn't work for now, because of listeners(issue #23)
+  sproc remove_event_listener @str addr event_listener_type:
+    init var listener JSExportedFunction
+    init var event JSString
+    event listener "removeEventListener" self.call_method2 .free
+  end
+
+  sproc dispatch_event JSEvent -> int:
+    "dispatchEvent" self.call_method1
+    JSInt.unwrap dup .value swap .free
+  end
+
+  static nproc unwrap JSObject self -> JSEventTarget:
+    "EventTarget" self.unwrap_as (JSEventTarget)
+  end
+  proc full_unwrap JSValue -> JSEventTarget:
+    JSObject.unwrap JSEventTarget.unwrap
+  end
+end
+#endif

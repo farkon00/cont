@@ -76,11 +76,25 @@
             }
             else if (type == 5) // Object
                 return serialized_objects[Number(bufToBn(new Uint8Array(static_mem.buffer, offset + 8, 8)))];
+            else if (type == 6) // ExportedFunction
+                return (function(addr) {
+                    return function(...args) {
+                        let result = wasm_exports.__addrtable.get(addr)(...args.map(upload_object));
+                        if (Array.isArray(result)) {
+                            console.warn("Cont function returned multiple values, they will be converted into an array");
+                            return result.map(load_object);
+                        } else if (result === undefined) {
+                            return undefined;
+                        } else {
+                            return load_object(result);
+                        }
+                    };
+                })(Number(bufToBn(new Uint8Array(static_mem.buffer, offset + 8, 8))));
         }
         function upload_object(obj) {
             const mem_buf = new Uint8Array(static_mem.buffer);
             let result_ptr = 0n;
-            if (typeof obj === "number" && obj % 1 == 0) {
+            if ((typeof obj === "number" && obj % 1 == 0) || typeof obj === "boolean") {
                 result_ptr = wasm_exports.malloc(BigInt(16));
                 mem_buf[Number(result_ptr)] = 0; // Type
                 mem_buf.set(bnToBuf(BigInt(obj)), Number(result_ptr) + 8); // Value
@@ -154,15 +168,6 @@
                     let args = load_object(args_array);
                     return upload_object(eval(load_string(length, offset)));
                 }
-            },
-            cont_runtime_web: {
-                __add_event_listener(length, offset, addr, target) {
-                    serialized_objects[target].addEventListener(
-                        load_string(length, offset), function(e) {
-                            wasm_exports.__addrtable.get(Number(addr))(upload_object(e));
-                        }
-                    );
-                },
             }
         };
         let params = new URLSearchParams(window.location.search);

@@ -83,7 +83,6 @@ struct (JSValue) JSArray
 end
 
 #import __js_eval cont_runtime.__js_eval @str JSValue -> JSValue;
-proc event_listener_type JSObject: drop end
 
 var __temp_eval_args [6] JSValue
 6 __temp_eval_args ([DYNAMIC_ARRAY_SIZE]) JSValue
@@ -180,6 +179,17 @@ struct (JSValue) JSObject
     args ([DYNAMIC_ARRAY_SIZE]) JSValue len data self.call_method
   end
 
+  sproc unwrap_as @str -> JSObject:
+    self 0 __temp_eval_args *[] !
+    init var string JSString
+    string 1 __temp_eval_args *[] !
+    2 !__temp_eval_args_js.length
+    "args[0] instanceof eval(args[1])" __temp_eval_args_js __js_eval
+    JSInt.unwrap dup .value swap .free
+    if not do "Unwrap of JSObject failed, expected " puts string.value println end
+    self
+  end
+
   static proc unwrap JSValue -> JSObject:
     dup .type JSTypes.Object == "Unwrap of JSValue failed, expected JSObject\n" assert
     (JSObject)
@@ -194,12 +204,6 @@ struct (JSValue) JSExportedFunction
     JSTypes.ExportedFunction !self.type
     !self.function
   end
-end
-
-sproc [JSObject] add_event_listener @str addr event_listener_type:
-  init var listener JSExportedFunction
-  init var event JSString
-  event listener "addEventListener" self.call_method2 .free
 end
 
 sproc [JSValue] free:
