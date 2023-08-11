@@ -20,32 +20,26 @@ nproc get_extension str route -> @str:
 end
 
 nproc handler HTTPRequest req:
-  var file File
   if req.route check_exists 0 == do
-    O_RDONLY 1 req.route @ str_slice1 file.__init__
-    file.read_all
-    bind len data:
-      req.route get_extension
-      bind ext_len ext_data:
-        if ext_len ext_data "html" streq do
-          "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: " req.conn.write
-        else
-          if ext_len ext_data "wasm" streq do
-            "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: application/wasm\r\nContent-Length: " req.conn.write
-          else
-            "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/plain\r\nContent-Length: " req.conn.write
-          end
-        end
+    O_RDONLY 1 req.route @ str_slice1
+    init var file File
+    file.read_all let len data;
+    req.route get_extension let ext_len ext_data;
+    if ext_len ext_data "html" streq do
+      "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/html\r\nContent-Length: " req.conn.write
+    else
+      if ext_len ext_data "wasm" streq do
+        "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: application/wasm\r\nContent-Length: " req.conn.write
+      else
+        "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Type: text/plain\r\nContent-Length: " req.conn.write
       end
-      len u_to_str
-      bind length_len length_data: 
-        length_len length_data req.conn.write
-        length_data free
-      end
-      "\r\n\r\n" req.conn.write
-      len data req.conn.write
-      data free
     end
+    len u_to_str let length_len length_data; 
+    length_len length_data req.conn.write
+    length_data free
+    "\r\n\r\n" req.conn.write
+    len data req.conn.write
+    data free
   else
     // One string for performance to minimize number of syscalls 
     "HTTP/1.1 404 Not found\r\nConnection: keep-alive\r\nContent-Length: 18\r\nContent-Type: text/html\r\n\r\n<h1>Not found</h1>" 
