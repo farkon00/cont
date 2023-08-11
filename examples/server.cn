@@ -5,9 +5,13 @@ include http.cn
 const PORT 8080;
 
 nproc check_exists str route -> int:
-  1 route @ str_slice1 str_to_nstr
-  R_OK over access
-  swap free
+  if route.len 1 > do
+    1 route @ str_slice1 str_to_nstr
+    R_OK over access
+    swap free
+  else
+    -1
+  end
 end
 
 nproc get_extension str route -> @str:
