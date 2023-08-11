@@ -98,4 +98,207 @@ struct (JSObject) JSEventTarget
     JSObject.unwrap JSEventTarget.unwrap
   end
 end
+ 
+struct (JSEventTarget) JSNode
+  // Properties
+  sproc base_URI -> @str:
+    "baseURI" self.get JSString.unwrap let string;
+    string.value string free
+  end
+  sproc node_name -> @str:
+    "nodeName" self.get JSString.unwrap let string;
+    string.value string free
+  end
+  sproc node_type -> int:
+    "nodeType" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc node_value -> JSValue:
+    "nodeValue" self.get
+  end
+  sproc text_content -> JSValue:
+    "textContent" self.get
+  end
+
+  // Setters
+  sproc !node_value JSValue:
+    "nodeValue" self.set
+  end
+  sproc !text_content @str:
+    init var string JSString
+    string "textContent" self.set
+  end
+
+  // Methods
+  sproc has_child_nodes -> int:
+    "hasChildNodes" self.call_method0 JSInt.unwrap dup .value swap .free
+  end
+  sproc normalize:
+    "normalize" self.call_method0 .free
+  end
+  sproc is_equal_node JSNode -> int:
+    if dup NULL ptr== do
+      drop 
+      init var null JSNull null
+    else (JSValue) end
+    "isEqualNode" self.call_method1 JSInt.unwrap dup .value swap .free
+  end
+  sproc is_same_node JSNode -> int:
+    if dup NULL ptr== do
+      drop 
+      init var null JSNull null
+    else (JSValue) end
+    "isSameNode" self.call_method1 JSInt.unwrap dup .value swap .free
+  end
+  sproc compare_document_position JSNode -> int:
+    "compareDocumentPosition" self.call_method1 JSInt.unwrap dup .value swap .free
+  end
+  sproc contains JSNode -> int:
+    if dup NULL ptr== do
+      drop 
+      init var null JSNull null
+    else (JSValue) end
+    "contains" self.call_method1 JSInt.unwrap dup .value swap .free
+  end
+  sproc lookup_prefix JSValue -> JSValue:
+    "lookupPrefix" self.call_method1
+  end
+  sproc lookup_namespace_URI JSValue -> JSValue:
+    "lookupNamespaceURI" self.call_method1
+  end
+  sproc is_default_namespace JSValue -> int:
+    "isDefaultNamespace" self.call_method1 JSInt.unwrap dup .value swap .free
+  end
+
+  static nproc unwrap JSObject self -> JSNode:
+    "Node" self.unwrap_as (JSNode)
+  end
+  proc full_unwrap JSValue -> JSNode:
+    JSObject.unwrap JSNode.unwrap
+  end
+end
+
+// Properties
+sproc [JSNode] first_child -> JSNode:
+  "firstChild" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+sproc [JSNode] is_connected -> int:
+  "isConnected" self.get JSInt.unwrap dup .value swap .free
+end
+sproc [JSNode] last_child -> JSNode:
+  "lastChild" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+sproc [JSNode] next_sibling -> JSNode:
+  "nextSibling" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+sproc [JSNode] owner_document -> JSNode: // TODO: JSDocument return type
+  "ownerDocument" self.get JSNode.full_unwrap
+end
+sproc [JSNode] parent_node -> JSNode:
+  "parentNode" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+sproc [JSNode] parent_element -> JSNode: // TODO: JSElement return type
+  "parentElement" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+sproc [JSNode] previous_sibling -> JSNode:
+  "previousSibling" self.get let res;
+  if JSTypes.Null res.type == do
+    res.free NULL
+  else
+    res JSNode.full_unwrap
+  end
+end
+
+// Methods
+sproc [JSNode] get_root_node -> JSNode:
+  "getRootNode" self.call_method0 JSNode.full_unwrap
+end
+sproc [JSNode] clone_node int -> JSNode:
+  init var deep JSInt
+  deep "cloneNode" self.call_method1 JSNode.full_unwrap
+end
+sproc [JSNode] insert_before JSNode JSNode -> JSNode:
+  if dup NULL ptr== do
+    drop 
+    init var null JSNull null
+  else (JSValue) end
+  "insertBefore" self.call_method2 JSNode.full_unwrap
+end
+sproc [JSNode] append_child JSNode -> JSNode:
+  "appendChild" self.call_method1 JSNode.full_unwrap
+end
+sproc [JSNode] replace_child JSNode JSNode -> JSNode:
+  "replaceChild" self.call_method2 JSNode.full_unwrap
+end
+sproc [JSNode] remove_child JSNode -> JSNode:
+  "removeChild" self.call_method1 JSNode.full_unwrap
+end
+
+struct (JSObject) JSNodeList
+  // Properties
+  sproc length -> int:
+    "length" self.get JSInt.unwrap dup .value swap .free
+  end
+
+  // Methods
+  sproc item int -> JSNode:
+    init var index JSInt
+    index "item" self.call_method1 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc entries -> JSObject:
+    "entries" self.call_method0 JSObject.unwrap
+  end
+  sproc keys -> JSObject:
+    "keys" self.call_method0 JSObject.unwrap
+  end
+  sproc values -> JSObject:
+    "values" self.call_method0 JSObject.unwrap
+  end
+
+  static nproc unwrap JSObject self -> JSNodeList:
+    "NodeList" self.unwrap_as (JSNodeList)
+  end
+  proc full_unwrap JSValue -> JSNodeList:
+    JSObject.unwrap JSNodeList.unwrap
+  end
+end
+
+proc for_each_node_type JSNode int NodeList: drop drop drop end
+sproc [JSNodeList] for_each addr for_each_node_type:
+  init var callback JSExportedFunction
+  callback "forEach" self.call_method1 .free
+end
+
+sproc [JSNode] child_nodes -> JSNodeList:
+  "childNodes" self.get JSNodeList.full_unwrap
+end
 #endif
