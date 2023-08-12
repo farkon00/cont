@@ -121,7 +121,7 @@ class Struct(Type):
         self.parent: Optional["Struct"] = parent
         self.children: List["Struct"] = []
         self.defaults: Dict[int, int] = defaults
-        self.static_methods: Dict[str, Proc] = {}
+        self.static_methods: Dict[str, Proc] = {} if parent is None else parent.static_methods.copy()
 
     def add_method(self, method: Proc):
         self.methods[method.name] = method

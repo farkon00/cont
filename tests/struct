@@ -11,6 +11,13 @@ unpack struct Vector2
       Vector2
     end
   end
+
+  static proc print_type_name:
+    "Vector2" println
+  end
+  proc lowest_ancestor_name -> @str:
+    "Vector2"
+  end
 end
 
 struct (Vector2) AutoVector2
@@ -32,6 +39,10 @@ end
 struct (Vector2) Vector4
   int z
   int w
+
+  static proc print_type_name:
+    "Vector4" println
+  end
 end
 
 proc [Vector2] 3diffy -> Vector3:
@@ -64,6 +75,10 @@ var arr [2] int
 arr Vector2.from_array
 dup .x print
 .y print
+Vector2.print_type_name
+Vector4.print_type_name
+Vector2.lowest_ancestor_name println
+Vector4.lowest_ancestor_name println
 :
 69
 42
@@ -76,3 +91,7 @@ Side effect
 42
 45
 123
+Vector2
+Vector4
+Vector2
+Vector2
