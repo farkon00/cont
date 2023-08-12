@@ -1020,6 +1020,9 @@ def parse_until_end() -> List[Op]:
         op = parse_token(token, ops)
 
         if isinstance(op, list):
+            for oper in op:
+                if oper.loc == "":
+                    oper.loc = f"{State.filename}:{loc}" 
             ops.extend(op)
         elif op is not None:
             op.loc = f"{State.filename}:{loc}"
