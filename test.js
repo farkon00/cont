@@ -1,5 +1,8 @@
 let static_mem = null;
 let wasm_exports = null;
+let serialized_objects = {};
+let serialized_objects_count = 0;
+let exported_function_cache = {};
 
 function ContExitException(message) {
     const error = new Error(message);
@@ -11,18 +14,18 @@ ContExitException.prototype = Object.create(Error.prototype);
 function bnToBuf(bn) {
     var hex = BigInt(bn).toString(16);
     hex = "0".repeat(16 - hex.length) + hex;
-  
+
     var len = hex.length / 2;
     var u8 = new Uint8Array(len);
-  
+
     var i = 0;
     var j = 14;
     while (i < len) {
-      u8[i] = parseInt(hex.slice(j, j+2), 16);
-      i += 1;
-      j -= 2;
+    u8[i] = parseInt(hex.slice(j, j+2), 16);
+    i += 1;
+    j -= 2;
     }
-  
+
     return u8;
 }
 function bufToBn(arr) {
@@ -63,11 +66,32 @@ function load_object(offset) {
     }
     else if (type == 5) // Object
         return serialized_objects[Number(bufToBn(new Uint8Array(static_mem.buffer, offset + 8, 8)))];
+    else if (type == 6) { // ExportedFunction
+        const addr = Number(bufToBn(new Uint8Array(static_mem.buffer, offset + 8, 8)));
+        if (exported_function_cache[addr] === undefined) {
+            const func = (function(addr) {
+                return function(...args) {
+                    let result = wasm_exports.__addrtable.get(addr)(...args.map(upload_object));
+                    if (Array.isArray(result)) {
+                        console.warn("Cont function returned multiple values, they will be converted into an array");
+                        return result.map(load_object);
+                    } else if (result === undefined) {
+                        return undefined;
+                    } else {
+                        return load_object(result);
+                    }
+                };
+            })(addr);
+            exported_function_cache[addr] = func;
+            return func;
+        } else return exported_function_cache[addr];
+
+    }
 }
 function upload_object(obj) {
     const mem_buf = new Uint8Array(static_mem.buffer);
     let result_ptr = 0n;
-    if (typeof obj === "number" && obj % 1 == 0) {
+    if ((typeof obj === "number" && obj % 1 == 0) || typeof obj === "boolean") {
         result_ptr = wasm_exports.malloc(BigInt(16));
         mem_buf[Number(result_ptr)] = 0; // Type
         mem_buf.set(bnToBuf(BigInt(obj)), Number(result_ptr) + 8); // Value

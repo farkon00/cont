@@ -79,7 +79,6 @@ struct (JSObject) JSEventTarget
     event listener "addEventListener" self.call_method2 .free
   end
 
-  // TODO: doesn't work for now, because of listeners(issue #23)
   sproc remove_event_listener @str addr event_listener_type:
     init var listener JSExportedFunction
     init var event JSString
