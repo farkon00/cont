@@ -2,18 +2,8 @@
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "Cont",
 	"patterns": [
-		{
-			"include": "#comments"
-		},
-		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#strings"
-		},
-		{
-			"include": "#chars"
-		}
+		{"include": "#comments"}, {"include": "#keywords"}, {"include": "#strings"},
+		{"include": "#chars"}, {"include": "#numeric"}
 	],
 	"repository": {
 		"comments": {
@@ -54,6 +44,27 @@
 				{
 					"name": "string.single.double.cont",
 					"match": "'.'"
+				}
+			]
+		},
+		"numeric": {
+			"name": "constant.numeric.cont",
+			"patterns": [
+				{
+					"name": "constant.numeric.dec.cont",
+					"match": "\\b[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.hex.cont",
+					"match": "\\b0x[0-9a-fA-F]+\\b"
+				},
+				{
+					"name": "constant.numeric.bin.cont",
+					"match": "\\b0b[01]+\\b"
+				},
+				{
+					"name": "constant.numeric.oct.cont",
+					"match": "\\b0o[0-7]+\\b"
 				}
 			]
 		}
