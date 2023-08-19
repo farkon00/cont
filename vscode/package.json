@@ -1,0 +1,25 @@
+{
+  "name": "cont-porgramming-language",
+  "displayName": "Cont Porgramming Language",
+  "description": "Cont Programming Language Support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.81.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "cont",
+      "aliases": ["Cont", "cont"],
+      "extensions": [".cn"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "cont",
+      "scopeName": "source.cont",
+      "path": "./syntaxes/cont.tmLanguage.json"
+    }]
+  }
+}
