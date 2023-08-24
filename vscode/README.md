@@ -1,4 +1,4 @@
-# cont-porgramming-language README
+# Cont Language Support
 
 Support for cont programming language for VS Code with syntax highlighting and language server features. 
 

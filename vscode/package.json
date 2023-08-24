@@ -1,5 +1,6 @@
 {
-  "name": "cont-porgramming-language",
+  "name": "cont",
+  "publisher": "farkon00",
   "displayName": "Cont Porgramming Language",
   "description": "Cont Programming Language Support",
   "version": "0.0.1",
@@ -21,14 +22,18 @@
       "scopeName": "source.cont",
       "path": "./syntaxes/cont.tmLanguage.json"
     }],
-    "commands": [
-      {
-        "command": "cont.helloWorld",
-        "title": "Hello World"
+    "configuration": {
+      "title": "Cont",
+      "properties": {
+        "cont.lspLocation": {
+          "type": "string",
+          "title": "LSP Location",
+          "default": "~/cont/lsp.py",
+          "description": "Path to the lsp.py file in your Cont installation folder."
+        }
       }
-    ]
+    }
   },
-  "activationEvents": [],
   "main": "./out/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",
