@@ -45,16 +45,11 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 				
-				lsp.stdin.uncork();
 				lsp.stdout.once("data", function(data) {
-					console.log(data);
 					handleCheckErrorsResponse(data, diagnostics);
 					is_lsp_busy = false;
 				});
 			});
-			
 		}
 	));
 }
-
-export function deactivate() {}
