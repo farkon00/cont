@@ -38,6 +38,7 @@ class Config:
         "input" : (["-i", "--input"], None),
         "error" : (["-e", "--error"], None),
     }
+    CONFIG_REGULAR_OPTIONS: List[str] = ["out", "target"]
 
     CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
         "re_IOR" : True,
@@ -101,7 +102,7 @@ class Config:
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
         return (
-            *self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
+            *self.CONFIG_REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
             *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS,
         )
 
@@ -157,8 +158,9 @@ class Config:
         return key in self._valid_keys
 
     def _validate(self, config_file: str):
-        for key in self.config:
+        for key in self.config.copy():
             if not self._check_key_validity(key):
+                del self.config[key]
                 if not self.lsp_mode:
                     print(
                         f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring"
