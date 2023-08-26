@@ -9,8 +9,8 @@ from generating.generating import compile_ops
 from type_checking.type_checking import type_check
 
 
-def main():
-    config = Config(sys.argv)
+def main(lsp_mode: bool = False):
+    config = Config(sys.argv, lsp_mode=lsp_mode)
     State.config = config
 
     file_name = os.path.splitext(config.program)[0]
@@ -23,6 +23,7 @@ def main():
     sys.stdin = open(config.input, "r") if config.input else sys.stdin
 
     State.filename = file_name
+    State.abs_path = os.path.abspath(config.program)
     State.dir = os.path.dirname(__file__)
 
     ops = parse_to_ops(program, config.dump_tokens, is_main=True)
@@ -79,6 +80,8 @@ def main():
                     f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}"
                 )
         return
+    
+    if lsp_mode: return
 
     State.compute_used_procs()
 

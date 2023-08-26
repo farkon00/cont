@@ -38,6 +38,7 @@ class Config:
         "input" : (["-i", "--input"], None),
         "error" : (["-e", "--error"], None),
     }
+    CONFIG_REGULAR_OPTIONS: List[str] = ["out", "target"]
 
     CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
         "re_IOR" : True,
@@ -56,7 +57,8 @@ class Config:
 
     CHECK_POSITIVE: List[str] = ["size_call_stack", "size_bind_stack"]
 
-    def __init__(self, argv):
+    def __init__(self, argv, lsp_mode: bool = False):
+        self.lsp_mode = lsp_mode
         self.args = self.setup_args_parser().parse_args(argv[1:])
         self.config, config_file = self.load_config(self.args.config)
         self.define_properties()
@@ -100,7 +102,7 @@ class Config:
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
         return (
-            *self.REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
+            *self.CONFIG_REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
             *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS,
         )
 
@@ -156,18 +158,21 @@ class Config:
         return key in self._valid_keys
 
     def _validate(self, config_file: str):
-        for key in self.config:
+        for key in self.config.copy():
             if not self._check_key_validity(key):
-                print(
-                    f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring"
-                )
+                del self.config[key]
+                if not self.lsp_mode:
+                    print(
+                        f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring"
+                    )
 
         for field in self.CHECK_POSITIVE:
             if getattr(self, field) <= 0:
-                print(
-                    f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default "
-                    + str(self.CONFIG_INT_OPTIONS[field])
-                )
+                if not self.lsp_mode:
+                    print(
+                        f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default "
+                        + str(self.CONFIG_INT_OPTIONS[field])
+                    )
                 del self.config[field]
                 assert getattr(self, field) > 0, "Wrong default value for field"
 

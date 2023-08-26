@@ -1,0 +1,73 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Cont",
+	"patterns": [
+		{"include": "#comments"}, {"include": "#keywords"}, {"include": "#strings"},
+		{"include": "#chars"}, {"include": "#numeric"}
+	],
+	"repository": {
+		"comments": {
+			"name": "comment.line.cont",
+			"begin": "//",
+			"end": "\n"
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.cont",
+					"match": "\\b(div|enum|struct|proc|nproc|sproc|named|bind|let|(syscall[1-6])|memory|var|memo|const|sizeoftype|unpack|init|asm|type|\\#import|\\#export|(sizeof*\\@)|base|upcast)\\b"
+				},
+				{
+					"name": "keyword.control.cont",
+					"match": "(\\b(if|else|end|while|for|do|include|call)\\b)|\\B(#if|#else|#endif)\\b"
+				},
+				{
+					"name": "keyword.operator.cont",
+					"match": "(\\+|-|\\*|\\/|%|<(?:(?!=))|>(?:(?!=))|<=|>=|->|:|\\.|@|!(?:(?!=))|==|!=)"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.cont",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.cont",
+					"match": "\\\\."
+				}
+			]
+		},
+		"chars": {
+			"name": "string.single.double.cont",
+			"patterns": [
+				{
+					"name": "string.single.double.cont",
+					"match": "'.'"
+				}
+			]
+		},
+		"numeric": {
+			"name": "constant.numeric.cont",
+			"patterns": [
+				{
+					"name": "constant.numeric.dec.cont",
+					"match": "\\b[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.hex.cont",
+					"match": "\\b0x[0-9a-fA-F]+\\b"
+				},
+				{
+					"name": "constant.numeric.bin.cont",
+					"match": "\\b0b[01]+\\b"
+				},
+				{
+					"name": "constant.numeric.oct.cont",
+					"match": "\\b0o[0-7]+\\b"
+				}
+			]
+		}
+	},
+	"scopeName": "source.cont"
+}

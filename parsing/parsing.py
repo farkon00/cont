@@ -610,18 +610,19 @@ def include_file():
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(f'include file "{name[0]}" not found')
 
-    if os.path.abspath(path) in State.included_files:
+    abs_path = os.path.abspath(path)
+    if abs_path in State.included_files:
         return []
 
-    State.included_files.append(os.path.abspath(path))
+    State.included_files.append(abs_path)
 
-    orig_file = State.filename
-    State.filename = os.path.basename(os.path.splitext(path)[0])
+    orig_file, orig_abs = State.filename, State.abs_path
+    State.filename, State.abs_path = os.path.basename(os.path.splitext(path)[0]), abs_path 
 
     with open(path, "r") as f:
         ops = parse_to_ops(f.read())
 
-    State.filename = orig_file
+    State.filename, State.abs_path = orig_file, orig_abs
 
     return ops
 

@@ -133,55 +133,63 @@ class StateSaver:
 
 
 class State:
-    config: Any = None
+    @classmethod
+    def initialize(cls):
+        cls.config: Any = None
 
-    block_stack: List[Block] = []
-    route_stack: List[Tuple[str, List["Type"]]] = []  # type: ignore
-    bind_stack: list = []
-    do_stack: List[List[Op]] = []
-    bind_stack_size: int = 0
-    compile_ifs_opened: int = 0
-    false_compile_ifs: int = 0
-    # This is used for let, we do unbinds, becuase in wat64 main can be called multiple times
-    global_binded: int = 0
+        cls.block_stack: List[Block] = []
+        cls.route_stack: List[Tuple[str, List["Type"]]] = []  # type: ignore
+        cls.bind_stack: list = []
+        cls.do_stack: List[List[Op]] = []
+        cls.bind_stack_size: int = 0
+        cls.compile_ifs_opened: int = 0
+        cls.false_compile_ifs: int = 0
+        # This is used for let, we do unbinds, becuase in wat64 main can be called multiple times
+        cls.global_binded: int = 0
 
-    memories: Dict[str, Memory] = {}
-    variables: Dict[str, "Type"] = {}  # type: ignore
-    procs: Dict[str, Proc] = {}
-    imported_procs: List[Tuple[str, str]] = []
-    referenced_procs: Set[Proc] = set() # The procedures, which were used for proc pointers
-    structures: Dict[str, "Struct"] = {}  # type: ignore
-    constants: Dict[str, int] = {}
-    enums: Dict[str, List[str]] = {}
-    var_type_scopes: List[Dict[str, "VarType"]] = []  # type: ignore
+        cls.memories: Dict[str, Memory] = {}
+        cls.variables: Dict[str, "Type"] = {}  # type: ignore
+        cls.procs: Dict[str, Proc] = {}
+        cls.imported_procs: List[Tuple[str, str]] = []
+        cls.referenced_procs: Set[Proc] = set() # The procedures, which were used for proc pointers
+        cls.structures: Dict[str, "Struct"] = {}  # type: ignore
+        cls.constants: Dict[str, int] = {}
+        cls.enums: Dict[str, List[str]] = {}
+        cls.var_type_scopes: List[Dict[str, "VarType"]] = []  # type: ignore
 
-    used_procs: Set[Proc] = set()
-    included_files: List[str] = []
-    runtimed_types_set: Set["Type"] = set()  # type: ignore
-    runtimed_types_list: List["Type"] = []  # type: ignore
-    curr_type_id: int = 3
+        cls.used_procs: Set[Proc] = set()
+        cls.included_files: List[str] = []
+        cls.runtimed_types_set: Set["Type"] = set()  # type: ignore
+        cls.runtimed_types_list: List["Type"] = []  # type: ignore
+        cls.curr_type_id: int = 3
 
-    string_data: List[bytes] = []
-    locs_to_include: List[str] = []
+        cls.string_data: List[bytes] = []
+        cls.locs_to_include: List[str] = []
 
-    tokens: Generator = (i for i in ())  # type: ignore
-    tokens_queue: List[Tuple[str, str]] = []
-    ops_by_ips: List[Op] = []
+        cls.tokens: Generator = (i for i in ())  # type: ignore
+        cls.tokens_queue: List[Tuple[str, str]] = []
+        cls.ops_by_ips: List[Op] = []
 
-    is_unpack = False
-    is_init = False
-    is_static = False
-    is_named = False
+        cls.is_unpack = False
+        cls.is_init = False
+        cls.is_static = False
+        cls.is_named = False
 
-    owner: Optional["Struct"] = None  # type: ignore
+        cls.owner: Optional["Struct"] = None  # type: ignore
 
-    loc: str = ""
-    filename: str = ""
+        cls.loc: str = ""
+        cls.filename: str = ""
+        cls.abs_path: str = ""
 
-    current_ip: int = -1
-    current_proc: Optional[Proc] = None
+        cls.current_ip: int = -1
+        cls.current_proc: Optional[Proc] = None
 
-    dir: str = ""
+        cls.dir: str = ""
+
+    @classmethod
+    def full_reset(cls):
+        cls.initialize()
+        Memory.global_offset = 0
 
     UNAVAILABLE_NAMES: List[str] = [
         "if", "else", "end", "while", "proc", "bind", 
@@ -270,3 +278,5 @@ class State:
     @staticmethod
     def is_oct(token: str) -> bool:
         return all(i.lower() in "01234567" for i in token)
+
+State.initialize()
