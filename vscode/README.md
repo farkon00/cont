@@ -3,8 +3,11 @@
 Support for cont programming language for VS Code with syntax highlighting and language server features. 
 
 ## Quick Start
-Create a symlink to this folder in `~/.vscode/extensions`. Restart VS Code afterwards.
+Compile the extension, create a symlink to this folder in `~/.vscode/extensions`. Restart VS Code afterwards.
 ```sh
+cd vscode
+npm install
+npm run compile
 ln -s $HOME/data/cont/vscode ~/.vscode/extensions/farkon00.cont-0.0.1
 code
 ```
