@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { spawn } from "child_process";
+import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 
 function handleCheckErrorsResponse(response_string: string, diagnostics: vscode.DiagnosticCollection) {
 	let response = JSON.parse(response_string);
@@ -22,18 +22,30 @@ function handleCheckErrorsResponse(response_string: string, diagnostics: vscode.
 	}
 }
 
+function initLsp(): ChildProcessWithoutNullStreams | undefined {
+	let path = vscode.workspace.getConfiguration().get("cont.lspLocation") as string;
+	if (path) {
+		console.log(`Starting cont lsp at ${path}`);
+		let lsp = spawn("python3", [path]);
+		lsp.stdout.setEncoding("utf-8");
+		return lsp;
+	} else {
+		return undefined;
+	}
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	// TODO: Update the process, when cont.lspLocation changes
 	if (vscode.workspace.workspaceFolders)
 		process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
-	const lsp = spawn("python3", [vscode.workspace.getConfiguration().get("cont.lspLocation") as string]);
-	lsp.stdout.setEncoding("utf-8");
-	const diagnostics = vscode.languages.createDiagnosticCollection();
+		const diagnostics = vscode.languages.createDiagnosticCollection();
 	let is_lsp_busy = false;
+	let lsp = initLsp();
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument((e) => {
 			if (e.languageId !== "cont") return;
 			while (is_lsp_busy) {}
+			if (!lsp) return;
 			if (lsp.exitCode !== null)
 				console.error(`Cont LSP process died with exit code ${lsp.exitCode}`)
 			is_lsp_busy = true;
@@ -45,11 +57,21 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 				
-				lsp.stdout.once("data", function(data) {
+				lsp?.stdout.once("data", function(data) {
 					handleCheckErrorsResponse(data, diagnostics);
 					is_lsp_busy = false;
 				});
 			});
 		}
 	));
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration((e) => {
+			if (e.affectsConfiguration("cont.lspLocation")) {
+				while (is_lsp_busy) {}
+				is_lsp_busy = true;
+				lsp = initLsp();
+				is_lsp_busy = false;
+			}
+		})
+	);
 }

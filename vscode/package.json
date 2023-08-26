@@ -28,7 +28,6 @@
         "cont.lspLocation": {
           "type": "string",
           "title": "LSP Location",
-          "default": "~/cont/lsp.py",
           "description": "Path to the lsp.py file in your Cont installation folder."
         }
       }
