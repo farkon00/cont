@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 
+let lsp: ChildProcessWithoutNullStreams | undefined = undefined;
+
 function handleCheckErrorsResponse(response_string: string, diagnostics: vscode.DiagnosticCollection) {
 	let response = JSON.parse(response_string);
 	if (!response.success) {
@@ -40,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 		process.chdir(vscode.workspace.workspaceFolders[0].uri.fsPath);
 		const diagnostics = vscode.languages.createDiagnosticCollection();
 	let is_lsp_busy = false;
-	let lsp = initLsp();
+	lsp = initLsp();
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument((e) => {
 			if (e.languageId !== "cont") return;
@@ -69,9 +71,15 @@ export function activate(context: vscode.ExtensionContext) {
 			if (e.affectsConfiguration("cont.lspLocation")) {
 				while (is_lsp_busy) {}
 				is_lsp_busy = true;
+				if (lsp !== undefined) lsp.kill();
 				lsp = initLsp();
 				is_lsp_busy = false;
 			}
 		})
 	);
+}
+
+export function deactivate() {
+	if (lsp !== undefined) lsp.kill();
+	lsp = undefined;
 }
