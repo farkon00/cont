@@ -175,13 +175,13 @@ def parse_proc_head(self_named: bool = False):
         State.throw_error("constructor cannot have out types")
 
     if (
-        name_value in State.DUNDER_METHODS and\
+        name_value in [*State.ONE_RETURN_DUNDER_METHODS, *State.NOT_SAME_TYPE_DUNDER_METHODS] and\
         owner is not None and\
         not (len(in_types) == 1 and len(out_types) == 1)
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
-            f"{name_value} method required to have 1 argument and 1 out type"
+            f"{name_value} method is required to have 1 argument and 1 out type"
         )
     if (
         name_value == "__div__" and\
@@ -190,14 +190,14 @@ def parse_proc_head(self_named: bool = False):
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
-            f"{name_value} method required to have 1 argument and 2 out types", False
+            f"{name_value} method is required to have 1 argument and 2 out types", False
         )
         sys.stdout.write(
             "\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n"
         )
         exit()
     if (
-        name_value in State.DUNDER_METHODS or\
+        name_value in State.ONE_RETURN_DUNDER_METHODS or\
         name_value == "__div__" and\
         owner is not None and\
         name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
@@ -209,10 +209,54 @@ def parse_proc_head(self_named: bool = False):
             if owner.typ is not in_types[1].typ:
                 State.loc = f"{State.filename}:{name[1]}"
                 State.throw_error(f"{name_value} must have owner structure as argument")
+    if name_value == "__index_ptr__" and owner is not None and\
+            not isinstance(out_types[0], Ptr):
+        State.throw_error("Method __index_ptr__ must return a pointer")
 
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
+    generated_ops = []
+    if (
+        name_value in State.DUNDER_NEGATION_MAP or
+        (name_value == "__index_ptr__" and not must_ptr(out_types[0].typ)) and
+        owner is not None
+    ):
+        generated_block = Block(BlockType.PROC, -1)
+        generated_name = "__index__" if name_value == "__index_ptr__" else State.DUNDER_NEGATION_MAP[name_value] 
+        generated_proc = Proc(generated_name, -1, in_types, 
+            [out_types[0].typ] if name_value == "__index_ptr__" else out_types,
+            generated_block, False, False, owner=owner)
+        generated_op = Op(OpType.DEFPROC, generated_proc)
+        generated_ip = State.get_new_ip(generated_op)
+        generated_block.start = generated_ip
+        generated_proc.ip = generated_ip
+        generated_op_end = Op(OpType.ENDPROC, generated_block)
+        generated_block.end = State.get_new_ip(generated_op_end)
+        generated_proc.used_procs.add(proc)
+        
+        if name_value == "__index_ptr__":
+            generated_ops = [
+                generated_op,
+                Op(OpType.CALL, proc),
+                Op(OpType.OPERATOR, Operator.LOAD),
+                generated_op_end
+            ]
+        else:
+            if State.config.target == "fasm_x86_64_linux":
+                asm = "pop rax\nnot rax\npush rax"            
+            elif State.config.target == "wat64":
+                asm = "i64.const -1) (i64.xor"
+            else:
+                cont_assert(False, "Target not found for dunder negation")
+            generated_ops = [
+                generated_op,
+                Op(OpType.CALL, proc),
+                Op(OpType.ASM, asm),
+                Op(OpType.PUSH_INT, 0xFFFFFFFFFFFFFFFF),
+                Op(OpType.OPERATOR, Operator.EQ),
+                generated_op_end
+            ]
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -228,11 +272,11 @@ def parse_proc_head(self_named: bool = False):
     if State.is_named:
         State.is_named = False
         State.bind_stack.extend(names)
-        return [op, Op(OpType.BIND, len(names))]
+        return [*generated_ops, op, Op(OpType.BIND, len(names))]
     if self_named:
         State.bind_stack.append("self")
-        return [op, Op(OpType.BIND, 1)]
-    return op
+        return [*generated_ops, op, Op(OpType.BIND, 1)]
+    return [*generated_ops, op]
 
 
 def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:

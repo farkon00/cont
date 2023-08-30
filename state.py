@@ -199,10 +199,17 @@ class State:
         "@8"
     ]
 
-    DUNDER_METHODS: List[str] = [
+    ONE_RETURN_DUNDER_METHODS: List[str] = [
         "__add__", "__sub__", "__mul__", "__gt__", "__lt__", "__ge__", "__le__", "__eq__", "__ne__"
     ]
     NOT_SAME_TYPE_DUNDER_METHODS: List[str] = ["__index__", "__index_ptr__"]
+    DUNDER_NEGATION_MAP: Dict[str, str] = {
+        "__eq__" : "__ne__",
+        "__gt__" : "__le__",
+        "__lt__" : "__ge__",
+    }
+    for from_, to in DUNDER_NEGATION_MAP.copy().items():
+        DUNDER_NEGATION_MAP[to] = from_
 
     TYPE_STRUCTS: List[str] = ["Type", "PtrType", "ArrayType", "AddrType", "Struct"]
     TYPE_IDS: Dict[str, int] = {

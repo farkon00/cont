@@ -3,7 +3,28 @@ include std.cn
 unpack struct Vector2
   int x
   int y
-  static 
+
+  nproc __add__ Vector2 other -> Vector2:
+    self.x other.x +
+    self.y other.y +
+    Vector2
+  end
+
+  nproc __eq__ Vector2 other -> int:
+    self.x other.x ==
+    self.y other.y ==
+    and
+  end
+
+  sproc print:
+    "(" puts
+    self.x int_to_str dup rot swap puts free
+    ", " puts
+    self.y int_to_str dup rot swap puts free
+    ")" println
+  end
+
+  static
   proc from_array [2] int -> Vector2:
     bind arr:
       0 arr []
@@ -79,6 +100,11 @@ Vector2.print_type_name
 Vector4.print_type_name
 Vector2.lowest_ancestor_name println
 Vector4.lowest_ancestor_name println
+
+1 2 Vector2 4 5 Vector2 + .print
+1 2 Vector2 1 2 Vector2 == print
+1 2 Vector2 1 2 Vector2 != print
+1 2 Vector2 2 2 Vector2 != print
 :
 69
 42
@@ -95,3 +121,7 @@ Vector2
 Vector4
 Vector2
 Vector2
+(5, 7)
+1
+0
+1
