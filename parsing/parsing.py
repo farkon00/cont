@@ -175,13 +175,13 @@ def parse_proc_head(self_named: bool = False):
         State.throw_error("constructor cannot have out types")
 
     if (
-        name_value in State.ONE_RETURN_DUNDER_METHODS and\
+        name_value in [*State.ONE_RETURN_DUNDER_METHODS, *State.NOT_SAME_TYPE_DUNDER_METHODS] and\
         owner is not None and\
         not (len(in_types) == 1 and len(out_types) == 1)
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
-            f"{name_value} method required to have 1 argument and 1 out type"
+            f"{name_value} method is required to have 1 argument and 1 out type"
         )
     if (
         name_value == "__div__" and\
@@ -190,7 +190,7 @@ def parse_proc_head(self_named: bool = False):
     ):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error(
-            f"{name_value} method required to have 1 argument and 2 out types", False
+            f"{name_value} method is required to have 1 argument and 2 out types", False
         )
         sys.stdout.write(
             "\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n"
@@ -209,6 +209,9 @@ def parse_proc_head(self_named: bool = False):
             if owner.typ is not in_types[1].typ:
                 State.loc = f"{State.filename}:{name[1]}"
                 State.throw_error(f"{name_value} must have owner structure as argument")
+    if name_value == "__index_ptr__" and owner is not None and\
+            not isinstance(out_types[0], Ptr):
+        State.throw_error("Method __index_ptr__ must return a pointer")
 
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
