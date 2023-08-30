@@ -488,7 +488,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
     elif op.type == OpType.OPERATOR:
         return type_check_operator(op, stack)
     elif op.type in (OpType.AUTO_INIT, OpType.ASM):
-        pass  # This operations are generation thing
+        pass  # These operations are a generation thing
     else:
         cont_assert(False, f"unknown op type in type_check_op: {op.type.name}")
 

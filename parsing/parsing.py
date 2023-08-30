@@ -175,7 +175,7 @@ def parse_proc_head(self_named: bool = False):
         State.throw_error("constructor cannot have out types")
 
     if (
-        name_value in State.DUNDER_METHODS and\
+        name_value in State.ONE_RETURN_DUNDER_METHODS and\
         owner is not None and\
         not (len(in_types) == 1 and len(out_types) == 1)
     ):
@@ -197,7 +197,7 @@ def parse_proc_head(self_named: bool = False):
         )
         exit()
     if (
-        name_value in State.DUNDER_METHODS or\
+        name_value in State.ONE_RETURN_DUNDER_METHODS or\
         name_value == "__div__" and\
         owner is not None and\
         name_value not in State.NOT_SAME_TYPE_DUNDER_METHODS
@@ -213,6 +213,32 @@ def parse_proc_head(self_named: bool = False):
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
+    neg_ops = []
+    if name_value in State.DUNDER_NEGATION_MAP and owner is not None:
+        neg_block = Block(BlockType.PROC, -1)
+        neg_proc = Proc(State.DUNDER_NEGATION_MAP[name_value], -1,
+                        [owner], out_types, neg_block, False, False, owner=owner)
+        neg_op = Op(OpType.DEFPROC, neg_proc)
+        neg_ip = State.get_new_ip(neg_op)
+        neg_block.start = neg_ip
+        neg_proc.ip = neg_ip
+        neg_op_end = Op(OpType.ENDPROC, neg_block)
+        neg_block.end = State.get_new_ip(neg_op_end)
+        
+        if State.config.target == "fasm_x86_64_linux":
+            asm = "pop rax\nnot rax\npush rax"            
+        elif State.config.target == "wat64":
+            asm = "i64.const -1) (i64.xor"
+        else:
+            cont_assert(False, "Target not found for dunder negation")
+        neg_ops = [
+            neg_op,
+            Op(OpType.CALL, proc),
+            Op(OpType.ASM, asm),
+            Op(OpType.PUSH_INT, 0xFFFFFFFFFFFFFFFF),
+            Op(OpType.OPERATOR, Operator.EQ),
+            neg_op_end
+        ]
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -228,11 +254,11 @@ def parse_proc_head(self_named: bool = False):
     if State.is_named:
         State.is_named = False
         State.bind_stack.extend(names)
-        return [op, Op(OpType.BIND, len(names))]
+        return [*neg_ops, op, Op(OpType.BIND, len(names))]
     if self_named:
         State.bind_stack.append("self")
-        return [op, Op(OpType.BIND, 1)]
-    return op
+        return [*neg_ops, op, Op(OpType.BIND, 1)]
+    return [*neg_ops, op]
 
 
 def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
