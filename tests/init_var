@@ -14,6 +14,8 @@ init var vec2 IntVector
 vec2 vec.extend_vec
 
 *print vec.iter
+0 vec [] print
+1 vec [] print
 
 #if platform Platform.fasm_x86_64_linux ==;
   nproc read_file @str -> @str:
@@ -59,6 +61,8 @@ init var arr [69] Vector2
 420
 1
 12
+84
+69
 include std.cn
 incl
 (69, 12)
