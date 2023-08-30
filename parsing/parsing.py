@@ -216,33 +216,47 @@ def parse_proc_head(self_named: bool = False):
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
-    neg_ops = []
-    if name_value in State.DUNDER_NEGATION_MAP and owner is not None:
-        neg_block = Block(BlockType.PROC, -1)
-        neg_proc = Proc(State.DUNDER_NEGATION_MAP[name_value], -1,
-                        [owner], out_types, neg_block, False, False, owner=owner)
-        neg_op = Op(OpType.DEFPROC, neg_proc)
-        neg_ip = State.get_new_ip(neg_op)
-        neg_block.start = neg_ip
-        neg_proc.ip = neg_ip
-        neg_op_end = Op(OpType.ENDPROC, neg_block)
-        neg_block.end = State.get_new_ip(neg_op_end)
-        neg_proc.used_procs.add(proc)
+    generated_ops = []
+    if (
+        name_value in State.DUNDER_NEGATION_MAP or
+        (name_value == "__index_ptr__" and not must_ptr(out_types[0].typ)) and
+        owner is not None
+    ):
+        generated_block = Block(BlockType.PROC, -1)
+        generated_name = "__index__" if name_value == "__index_ptr__" else State.DUNDER_NEGATION_MAP[name_value] 
+        generated_proc = Proc(generated_name, -1, in_types, 
+            [out_types[0].typ] if name_value == "__index_ptr__" else out_types,
+            generated_block, False, False, owner=owner)
+        generated_op = Op(OpType.DEFPROC, generated_proc)
+        generated_ip = State.get_new_ip(generated_op)
+        generated_block.start = generated_ip
+        generated_proc.ip = generated_ip
+        generated_op_end = Op(OpType.ENDPROC, generated_block)
+        generated_block.end = State.get_new_ip(generated_op_end)
+        generated_proc.used_procs.add(proc)
         
-        if State.config.target == "fasm_x86_64_linux":
-            asm = "pop rax\nnot rax\npush rax"            
-        elif State.config.target == "wat64":
-            asm = "i64.const -1) (i64.xor"
+        if name_value == "__index_ptr__":
+            generated_ops = [
+                generated_op,
+                Op(OpType.CALL, proc),
+                Op(OpType.OPERATOR, Operator.LOAD),
+                generated_op_end
+            ]
         else:
-            cont_assert(False, "Target not found for dunder negation")
-        neg_ops = [
-            neg_op,
-            Op(OpType.CALL, proc),
-            Op(OpType.ASM, asm),
-            Op(OpType.PUSH_INT, 0xFFFFFFFFFFFFFFFF),
-            Op(OpType.OPERATOR, Operator.EQ),
-            neg_op_end
-        ]
+            if State.config.target == "fasm_x86_64_linux":
+                asm = "pop rax\nnot rax\npush rax"            
+            elif State.config.target == "wat64":
+                asm = "i64.const -1) (i64.xor"
+            else:
+                cont_assert(False, "Target not found for dunder negation")
+            generated_ops = [
+                generated_op,
+                Op(OpType.CALL, proc),
+                Op(OpType.ASM, asm),
+                Op(OpType.PUSH_INT, 0xFFFFFFFFFFFFFFFF),
+                Op(OpType.OPERATOR, Operator.EQ),
+                generated_op_end
+            ]
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -258,11 +272,11 @@ def parse_proc_head(self_named: bool = False):
     if State.is_named:
         State.is_named = False
         State.bind_stack.extend(names)
-        return [*neg_ops, op, Op(OpType.BIND, len(names))]
+        return [*generated_ops, op, Op(OpType.BIND, len(names))]
     if self_named:
         State.bind_stack.append("self")
-        return [*neg_ops, op, Op(OpType.BIND, 1)]
-    return [*neg_ops, op]
+        return [*generated_ops, op, Op(OpType.BIND, 1)]
+    return [*generated_ops, op]
 
 
 def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:

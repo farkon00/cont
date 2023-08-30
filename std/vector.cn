@@ -117,8 +117,4 @@ struct IntVector
     end
     index self.data *[]
   end
-
-  nproc __index__ int index -> int:
-    index self.__index_ptr__ @
-  end
 end
