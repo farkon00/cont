@@ -224,6 +224,7 @@ def parse_proc_head(self_named: bool = False):
         neg_proc.ip = neg_ip
         neg_op_end = Op(OpType.ENDPROC, neg_block)
         neg_block.end = State.get_new_ip(neg_op_end)
+        neg_proc.used_procs.add(proc)
         
         if State.config.target == "fasm_x86_64_linux":
             asm = "pop rax\nnot rax\npush rax"            
