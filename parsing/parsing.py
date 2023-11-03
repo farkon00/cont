@@ -902,7 +902,8 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.SIZEOF, len(token) - 6)
 
     elif token in State.bind_stack:
-        return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index(token), token))
+        index = len(State.bind_stack) - State.bind_stack[::-1].index(token) - 1 # Search from the right
+        return Op(OpType.PUSH_BIND_STACK, (index, token))
 
     elif token == "base":
         assert "self" in State.bind_stack, "You must have a binded value self to use base"

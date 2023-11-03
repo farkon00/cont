@@ -1,0 +1,39 @@
+include std.cn
+
+2 1
+bind a b:
+  a print b print
+  b 1 + a 4 +
+  bind b c:
+    c b print print
+  end
+  a b / print
+end
+
+"\n" puts
+
+proc average int int -> int:
+  let b;
+  b print
+  dup b + 2 / let res;
+  res print
+  res 2 * swap - let b;
+  b print 
+  res
+end
+
+3 5 average
+7 average
+:
+2
+1
+2
+6
+2
+
+5
+4
+5
+7
+5
+6
