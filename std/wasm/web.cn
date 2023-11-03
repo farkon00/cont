@@ -283,6 +283,10 @@ struct (JSObject) JSNodeList
     "values" self.call_method0 JSObject.unwrap
   end
 
+  proc __index__ int -> JSNode:
+    .item
+  end
+
   static nproc unwrap JSObject self -> JSNodeList:
     "NodeList" self.unwrap_as (JSNodeList)
   end
@@ -299,5 +303,239 @@ end
 
 sproc [JSNode] child_nodes -> JSNodeList:
   "childNodes" self.get JSNodeList.full_unwrap
+end
+
+const JSNodeFilter.FILTER_ACCEPT 1;
+const JSNodeFilter.FILTER_REJECT 2;
+const JSNodeFilter.FILTER_SKIP 3;
+
+const JSNodeFilter.SHOW_ALL 0xFFFFFFFF;
+const JSNodeFilter.SHOW_ELEMENT 0x1;
+const JSNodeFilter.SHOW_ATTRIBUTE 0x2;
+const JSNodeFilter.SHOW_TEXT 0x4;
+const JSNodeFilter.SHOW_CDATA_SECTION 0x8;
+const JSNodeFilter.SHOW_PROCESSING_INSTRUCTION 0x40;
+const JSNodeFilter.SHOW_COMMENT 0x80;
+const JSNodeFilter.SHOW_DOCUMENT 0x100;
+const JSNodeFilter.SHOW_DOCUMENT_TYPE 0x200;
+const JSNodeFilter.SHOW_DOCUMENT_FRAGMENT 0x400;
+
+struct (JSObject) JSNodeIterator
+  // Properties
+  sproc root -> JSNode:
+    "root" self.get JSNode.full_unwrap
+  end
+  sproc reference_node -> JSNode:
+    "referenceNode" self.get JSNode.full_unwrap
+  end
+  sproc pointer_before_reference_node -> int:
+    "pointerBeforeReferenceNode" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc what_to_show -> int:
+    "whatToShow" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc filter -> JSValue:
+    "filter" self.get
+  end
+
+  // Methods
+  sproc next_node -> JSNode:
+    "nextNode" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc previous_node -> JSNode:
+    "previousNode" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+
+  static nproc unwrap JSObject self -> JSNodeIterator:
+    "NodeIterator" self.unwrap_as (JSNodeIterator)
+  end
+  proc full_unwrap JSValue -> JSNodeIterator:
+    JSObject.unwrap JSNodeIterator.unwrap
+  end
+end
+
+struct (JSObject) JSTreeWalker
+  // Properties
+  sproc root -> JSNode:
+    "root" self.get JSNode.full_unwrap
+  end
+  sproc what_to_show -> int:
+    "whatToShow" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc filter -> JSValue:
+    "filter" self.get
+  end
+  sproc current_node -> JSNode:
+    "currentNode" self.get JSNode.full_unwrap
+  end
+
+  // Setters
+  sproc !current_node JSValue:
+    "currentNode" self.set
+  end
+
+  // Methods
+  sproc parent_node -> JSNode:
+    "parentNode" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc first_child -> JSNode:
+    "firstChild" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc last_child -> JSNode:
+    "lastChild" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc next_sibling -> JSNode:
+    "nextSibling" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc previous_sibling -> JSNode:
+    "previousSibling" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc next_node -> JSNode:
+    "nextNode" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc previous_node -> JSNode:
+    "previousNode" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+
+  static nproc unwrap JSObject self -> JSTreeWalker:
+    "TreeWalker" self.unwrap_as (JSTreeWalker)
+  end
+  proc full_unwrap JSValue -> JSTreeWalker:
+    JSObject.unwrap JSTreeWalker.unwrap
+  end
+end
+
+struct (JSObject) JSDOMTokenList
+  // Properties
+  sproc length -> int:
+    "length" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc value -> @str:
+    "eventPhase" self.get JSString.unwrap let string;
+    string.value string free
+  end
+
+  // Methods
+  sproc item int -> @str:
+    init var index JSInt
+    index "item" self.call_method1 let res;
+    if JSTypes.Null res.type == do
+      res.free -1 NULL
+    else
+      res JSString.unwrap let string;
+      string.value string free
+    end
+  end
+  sproc contains @str -> int:
+    init var token JSString
+    token "contains" self.call_method1
+    JSInt.unwrap dup .value swap .free
+  end
+  sproc add @str:
+    init var token JSString
+    token "add" self.call_method1 .free
+  end
+  sproc add_list [DYNAMIC_ARRAY_SIZE] JSString:
+    "add" self.call_method .free
+  end
+  sproc remove @str:
+    init var token JSString
+    token "remove" self.call_method1 .free
+  end
+  sproc remove_list [DYNAMIC_ARRAY_SIZE] JSString:
+    "remove" self.call_method .free
+  end
+  sproc replace @str @str:
+    init var new_token JSString
+    init var old_token JSString
+    old_token new_token "replace" self.call_method2 .free
+  end
+  sproc supports @str -> int:
+    init var token JSString
+    token "supports" self.call_method1
+    JSInt.unwrap dup .value swap .free
+  end
+  sproc toggle @str -> int:
+    init var token JSString
+    token "toggle" self.call_method1
+    JSInt.unwrap dup .value swap .free
+  end
+  sproc toggle2 @str int -> int:
+    init var force JSInt
+    init var token JSString
+    token force "toggle" self.call_method2
+    JSInt.unwrap dup .value swap .free
+  end
+  sproc entries -> JSObject:
+    "keys" self.call_method0 JSObject.unwrap
+  end
+  sproc keys -> JSObject:
+    "keys" self.call_method0 JSObject.unwrap
+  end
+  sproc values -> JSObject:
+    "values" self.call_method0 JSObject.unwrap
+  end
+
+  proc __index__ int -> @str:
+    .item
+  end
+
+  static nproc unwrap JSObject self -> JSDOMTokenList:
+    "DOMTokenList" self.unwrap_as (JSDOMTokenList)
+  end
+  proc full_unwrap JSValue -> JSDOMTokenList:
+    JSObject.unwrap JSDOMTokenList.unwrap
+  end
+end
+
+proc for_each_token_type JSString int DOMTokenList: drop drop drop end
+sproc [JSDOMTokenList] for_each addr for_each_token_type:
+  init var callback JSExportedFunction
+  callback "forEach" self.call_method1 .free
 end
 #endif
