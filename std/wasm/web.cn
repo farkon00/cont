@@ -8,8 +8,12 @@ struct (JSObject) JSEvent
   sproc __init__ @str:
     JSTypes.Object !self.type
     init var string JSString
-    "new Event(args)" string __js_eval
-    JSObject.unwrap dup .object_id !self.object_id drop
+    var args [2] JSString
+    string 0 args *[] !
+    NULL 1 args *[] !
+    args ([DYNAMIC_ARRAY_SIZE]) JSString
+    "Event" JSObject.construct
+    dup .object_id !self.object_id free
   end
 
   // Properties
@@ -574,13 +578,13 @@ struct (JSNode) JSCharacterData
 
   // Methods
   sproc after JSNode:
-    token "after" self.call_method1 .free
+    "after" self.call_method1 .free
   end
   sproc after_list [DYNAMIC_ARRAY_SIZE] JSNode:
     "after" self.call_method .free
   end
   sproc before JSNode:
-    token "before" self.call_method1 .free
+    "before" self.call_method1 .free
   end
   sproc before_list [DYNAMIC_ARRAY_SIZE] JSNode:
     "before" self.call_method .free
@@ -609,15 +613,15 @@ struct (JSNode) JSCharacterData
     offset count data "deleteData" self.call_method3 .free
   end
   sproc replace_with JSNode:
-    token "replaceWith" self.call_method1 .free
+    "replaceWith" self.call_method1 .free
   end
   sproc replace_with_list [DYNAMIC_ARRAY_SIZE] JSNode:
     "replaceWith" self.call_method .free
   end
-  sproc substring_data int int:
+  sproc substring_data int int -> @str:
     init var count JSInt
     init var offset JSInt
-    offset count "substringData" self.call_method2 let string;
+    offset count "substringData" self.call_method2 JSString.unwrap let string;
     string.value string free
   end
 
@@ -639,17 +643,16 @@ struct (JSCharacterData) JSText
     string.value string free
   end
 
-  // Methods
-  sproc split_text int -> JSText:
-    init var offset JSInt
-    offset "splitText" self.call_method1 JSText.full_unwrap
-  end
-
   static nproc unwrap JSObject self -> JSText:
     "Text" self.unwrap_as (JSText)
   end
   proc full_unwrap JSValue -> JSText:
     JSObject.unwrap JSText.unwrap
   end
+end
+
+sproc [JSText] split_text int -> JSText:
+  init var offset JSInt
+  offset "splitText" self.call_method1 JSText.full_unwrap
 end
 #endif

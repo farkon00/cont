@@ -194,6 +194,16 @@ struct (JSValue) JSObject
     dup .type JSTypes.Object == "Unwrap of JSValue failed, expected JSObject\n" assert
     (JSObject)
   end
+  proc construct [DYNAMIC_ARRAY_SIZE] JSValue @str -> JSObject:
+    rot dup array_length swap init var args JSArray
+    let data len;
+    len 13 + malloc let eval_string;
+    "new " eval_string memcpy
+    len data eval_string 4 ptr+ memcpy
+    "(...args)" len 4 + eval_string +ptr memcpy
+    len 13 + eval_string args __js_eval JSObject.unwrap
+    eval_string free
+  end
 end
 
 proc js_exported_proc: end
