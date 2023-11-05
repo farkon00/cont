@@ -538,4 +538,118 @@ sproc [JSDOMTokenList] for_each addr for_each_token_type:
   init var callback JSExportedFunction
   callback "forEach" self.call_method1 .free
 end
+
+struct (JSNode) JSCharacterData
+  // Properties
+  sproc data -> @str:
+    "data" self.get JSString.unwrap let string;
+    string.value string free
+  end
+  sproc length -> int:
+    "length" self.get JSInt.unwrap dup .value swap .free
+  end
+  sproc next_element_sibling -> JSNode: // TODO: Element return type
+    "nextElementSibling" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  sproc previous_element_sibling -> JSNode: // TODO: Element return type
+    "previousElementSibling" self.call_method0 let res;
+    if JSTypes.Null res.type == do
+      res.free NULL
+    else
+      res JSNode.full_unwrap
+    end
+  end
+  
+
+  // Setters
+  sproc !data @str:
+    init var string JSString
+    string "data" self.set
+  end
+
+  // Methods
+  sproc after JSNode:
+    token "after" self.call_method1 .free
+  end
+  sproc after_list [DYNAMIC_ARRAY_SIZE] JSNode:
+    "after" self.call_method .free
+  end
+  sproc before JSNode:
+    token "before" self.call_method1 .free
+  end
+  sproc before_list [DYNAMIC_ARRAY_SIZE] JSNode:
+    "before" self.call_method .free
+  end
+  sproc append_data @str:
+    init var data JSString
+    data "appendData" self.call_method1 .free
+  end
+  sproc insert_data int @str:
+    init var data JSString
+    init var offset JSInt
+    offset data "insertData" self.call_method2 .free
+  end
+  sproc delete_data int int:
+    init var count JSInt
+    init var offset JSInt
+    offset count "deleteData" self.call_method2 .free
+  end
+  sproc remove:
+    "remove" self.call_method0 .free
+  end
+  sproc replace_data int int @str:
+    init var data JSString
+    init var count JSInt
+    init var offset JSInt
+    offset count data "deleteData" self.call_method3 .free
+  end
+  sproc replace_with JSNode:
+    token "replaceWith" self.call_method1 .free
+  end
+  sproc replace_with_list [DYNAMIC_ARRAY_SIZE] JSNode:
+    "replaceWith" self.call_method .free
+  end
+  sproc substring_data int int:
+    init var count JSInt
+    init var offset JSInt
+    offset count "substringData" self.call_method2 let string;
+    string.value string free
+  end
+
+  static nproc unwrap JSObject self -> JSCharacterData:
+    "CharacterData" self.unwrap_as (JSCharacterData)
+  end
+  proc full_unwrap JSValue -> JSCharacterData:
+    JSObject.unwrap JSCharacterData.unwrap
+  end
+end
+
+struct (JSCharacterData) JSText
+  // Properties
+  sproc assigned_slot -> JSNode: // TODO: Element return type(HTMLSlotElement to be exact)
+    "assignedSlot" self.get JSNode.full_unwrap
+  end
+  sproc whole_text -> @str:
+    "wholeText" self.get JSString.unwrap let string;
+    string.value string free
+  end
+
+  // Methods
+  sproc split_text int -> JSText:
+    init var offset JSInt
+    offset "splitText" self.call_method1 JSText.full_unwrap
+  end
+
+  static nproc unwrap JSObject self -> JSText:
+    "Text" self.unwrap_as (JSText)
+  end
+  proc full_unwrap JSValue -> JSText:
+    JSObject.unwrap JSText.unwrap
+  end
+end
 #endif
