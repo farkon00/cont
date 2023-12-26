@@ -39,17 +39,14 @@ def check_route_stack(
         )
         exit(1)
     for i in range(len(stack1)):
-        if (
-            not check_varient(stack1[i], stack2[i]) and\
-            stack1[i] is not None and stack2[i] is not None
-        ):
+        typ, is_succ = down_cast(stack1[i], stack2[i])
+        if not is_succ:
             State.throw_error(f"different types {error}", False)
             sys.stderr.write(
                 f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
             )
             exit(1)
-
-        stack1[i] = down_cast(stack1[i], stack2[i])
+        stack1[i] = typ
 
 
 def type_check(ops: List[Op], is_main: bool = False):
