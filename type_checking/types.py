@@ -330,11 +330,35 @@ def check_varient(got: object, exp: object):
     return False
 
 
-def down_cast(type1: object, type2: object) -> object:
+def down_cast(type1: Type, type2: Type) -> Type:
     """
-    Finds object lower in hierarchy and returns it
-    BEFORE CALLING ENSURE, THAT TYPES ARE RELATED
+    Finds a type, that matches both provided types
+    BEFORE CALLING ENSURE, THAT TYPES ARE RELATED, THAT NOT BEING TRUE
+    MIGHT RESULT IN INCORRECT RETURN VALUE, EXCEPTION OR AN ASSERT
     """
+    if isinstance(type1, Struct) and isinstance(type2, Struct):
+        type1_parents = set([type1.name])
+        curr_struct = type1
+        while curr_struct.parent is not None:
+            curr_struct = curr_struct.parent
+            type1_parents.add(curr_struct.name)
+        curr_struct = type2
+        while curr_struct is not None:
+            if curr_struct.name in type1_parents:
+                return curr_struct
+            curr_struct = curr_struct.parent
+        cont_assert(False, f"types.down_case() called with two structs, but they are unrelated: {type1.name} and {type2.name}")
+    if isinstance(type1, Ptr) and isinstance(type2, Ptr):
+        if type1.typ is None or type2.typ is None:
+            return Ptr(None)
+        return Ptr(down_cast(type1.typ, type2.typ))
+    if isinstance(type1, Array) and isinstance(type2, Array):
+        return Array(type1.len, down_cast(type1.typ, type2.typ))
+    if isinstance(type1, Addr) and isinstance(type2, Addr):
+        return Addr(
+            [down_cast(i, j) for i, j in zip(type1.in_types, type2.in_types)],
+            [down_cast(i, j) for i, j in zip(type1.out_types, type2.out_types)]
+        )
     if type1 == type2:
         return type2
     else:
