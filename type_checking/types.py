@@ -301,41 +301,55 @@ def must_ptr(_type) -> bool:
     return isinstance(_type, Struct) or isinstance(_type, Array)
 
 
-def check_contravariant(got: Struct, exp: Struct) -> bool:
+def down_cast(type1: Optional[Type], type2: Optional[Type]) -> Tuple[Optional[Type], bool]:
     """
-    Not recomended to use raw, use check_varient instead
-    If you only need contravariant check, refactor this function to work in all cases
-    Now it only works with structures
+    Finds a type, that matches both provided types.
+
+    Returns a tuple of a type and a bool, the bool indicates
+    whether the resulting type was found, the type is None if
+    the bool is False. If the bool is True the resulting type is
+    non-None unless one of the input types is None.
     """
-    for i in got.children:
-        if i is exp:
-            return True
-        if check_contravariant(i, exp):
-            return True
-
-    return False
-
-
-def check_varient(got: object, exp: object):
-    if isinstance(exp, Ptr) and isinstance(got, Ptr):
-        return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
-    if isinstance(exp, Array) and isinstance(got, Array):
-        return check_varient(got.typ, exp.typ) or exp.typ is None or got.typ is None
-    if isinstance(exp, Struct) and isinstance(got, Struct):
-        # equal is covariant
-        return got == exp or check_contravariant(got, exp)
-    if got == exp:
-        return True
-
-    return False
-
-
-def down_cast(type1: object, type2: object) -> object:
-    """
-    Finds object lower in hierarchy and returns it
-    BEFORE CALLING ENSURE, THAT TYPES ARE RELATED
-    """
+    if type1 is None: return (type2, True)
+    if type2 is None: return (type1, True)
+    if isinstance(type1, Struct) and isinstance(type2, Struct):
+        type1_parents = set([type1.name])
+        curr_struct = type1
+        while curr_struct.parent is not None:
+            curr_struct = curr_struct.parent
+            type1_parents.add(curr_struct.name)
+        curr_struct = type2
+        while curr_struct is not None:
+            if curr_struct.name in type1_parents:
+                return (curr_struct, True)
+            curr_struct = curr_struct.parent
+        return (None, False)
+    if isinstance(type1, Ptr) and isinstance(type2, Ptr):
+        if type1.typ is None or type2.typ is None:
+            return (Ptr(None), True)
+        typ, is_succ = down_cast(type1.typ, type2.typ)
+        if not is_succ: return (None, False)
+        return (Ptr(typ), True)
+    if isinstance(type1, Array) and isinstance(type2, Array):
+        if type1.len != type2.len: return (None, False)
+        typ, is_succ = down_cast(type1.typ, type2.typ)
+        if not is_succ: return (None, False)
+        return (Array(type1.len, typ), True)
+    if isinstance(type1, Addr) and isinstance(type2, Addr):
+        if len(type1.in_types) != len(type2.in_types): return (None, False)
+        if len(type1.out_types) != len(type2.out_types): return (None, False)
+        in_types, out_types = [], []
+        for i, j in zip(type1.in_types, type2.in_types):
+            typ, is_succ = down_cast(i, j)
+            if not is_succ: return (None, False)
+            in_types.append(typ)
+        for i, j in zip(type1.out_types, type2.out_types):
+            typ, is_succ = down_cast(i, j)
+            if not is_succ: return (None, False)
+            out_types.append(typ)
+        return (Addr(in_types, out_types), True)
     if type1 == type2:
-        return type2
-    else:
-        return type1
+        return (type2, True)
+    if type2 == type1:
+        return (type1, True)
+    return (None, False)
