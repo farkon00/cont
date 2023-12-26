@@ -77,7 +77,7 @@ class Addr(Type):
     def __eq__(self, other) -> bool:
         if other is None: return True
         if not isinstance(other, Addr): return False
-        return self.in_types == self.in_types and self.out_types == other.out_types
+        return self.in_types == other.in_types and self.out_types == other.out_types
 
     def text_repr(self) -> str:
         in_types = '__'.join([i.text_repr() for i in self.in_types])
