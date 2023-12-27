@@ -10,6 +10,10 @@ from type_checking.type_checking import type_check
 
 
 def main(lsp_mode: bool = False):
+    """
+    The entry point for the compiler. Set lsp_mode to True
+    if the function is used in code and not by calling the script from command line.  
+    """
     config = Config(sys.argv, lsp_mode=lsp_mode)
     State.config = config
 
