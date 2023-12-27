@@ -11,6 +11,19 @@ assert len(BlockType) == 6, "Unimplemented block type in type_checking.py"
 
 
 def check_stack(stack: List[Type], expected: List[Type], arg=0):
+    """
+    Checks whether the types at the top of the `stack` match those
+    in `expected`. If they are not throws an appropriate error.
+    
+    The `arg` is the amount of types before the `expected`. This will only be
+    used for error messages.
+
+    Examples:
+    * [int, ptr], [int, *int] -> does not throw
+    * [int, int, ptr], [int, *int] -> does not throw
+    * [ptr], [int, *int] -> error: the stack is too short
+    * [ptr, int, int], [int, *int] -> error: error: type mismatch
+    """
     assert len(stack) >= len(expected), "stack is too short"
     for i in range(len(expected)):
         got = stack.pop()
@@ -26,6 +39,12 @@ def check_stack(stack: List[Type], expected: List[Type], arg=0):
 def check_route_stack(
     stack1: List[Type], stack2: List[Type], error: str = "in different routes of if-end"
 ):
+    """
+    Checks whether the stacks can be collapsed into one stack(using types.down_stack).
+    Modifies `stack1` with the new types after the branches.
+
+    The error indicates the type of routes, which will be used for error messages.
+    """
     if len(stack1) > len(stack2):
         State.throw_error(f"stack has extra elements {error}", False)
         sys.stderr.write(
@@ -49,7 +68,14 @@ def check_route_stack(
         stack1[i] = typ
 
 
-def type_check(ops: List[Op], is_main: bool = False):
+def type_check(ops: List[Op], is_main: bool = False) -> list:
+    """
+    Type checks the list of operations `op`. Returns the stack at the end of execution.
+    Might modify the operations list because of desugaring or adding new information,
+    which can only be added if the types are known. 
+
+    The function should be called with is_main set to True only one time per compilation.
+    """
     stack: list = []
 
     if is_main and State.config.struct_malloc[1]:
@@ -97,6 +123,10 @@ def type_check(ops: List[Op], is_main: bool = False):
 
 
 def process_for_in(op: Op, stack: List[Type], iter_stack: list) -> list:
+    """
+    Type checks and desugars the FOR operation with type of in.
+    Returns the result of desugaring as a list of operations.
+    """
     type_ = iter_stack[0]
     check_stack(iter_stack, [Ptr(Array())])
     type_ = type_.typ
@@ -125,6 +155,10 @@ def process_for_in(op: Op, stack: List[Type], iter_stack: list) -> list:
 
 
 def process_for_until(op: Op, stack: List[Type], iter_stack: list) -> list:
+    """
+    Type checks and desugars the FOR operation with type of until.
+    Returns the result of desugaring as a list of operations.
+    """
     check_stack(iter_stack, [Ptr()])
     State.route_stack.append(("for", stack.copy()))
     State.bind_stack.extend((Ptr(), Int()))
@@ -151,6 +185,11 @@ def process_for_until(op: Op, stack: List[Type], iter_stack: list) -> list:
 
 
 def match_type_var(typ: Optional[Type], actual: Optional[Type]) -> Dict[int, Type]:
+    """
+    Matches type variables with concrete types. Returns a dictionary with one
+    pair of id of the VarType object to the actual type if it manages to match,
+    if there were no type variable values found returns an empty dict. 
+    """
     if typ is None or actual is None:
         return {}
     if isinstance(typ, VarType):
@@ -163,6 +202,11 @@ def match_type_var(typ: Optional[Type], actual: Optional[Type]) -> Dict[int, Typ
 
 
 def get_var_type_values(types: List[Type], stack: List[Type]) -> Dict[int, Type]:
+    """
+    Finds a concrete value for every type variable in `types`.
+
+    Returns a mapping from object ids of VarTypes to concrete types.
+    """
     var_types: Dict[int, Type] = {}
     assert len(stack) >= len(types), "Not enough elements on the stack"
     for typ, actual in zip(types, stack):
@@ -171,8 +215,14 @@ def get_var_type_values(types: List[Type], stack: List[Type]) -> Dict[int, Type]
 
 
 def get_concrete_type(typ: Type, var_types: Dict[int, Type]) -> Type:
+    """
+    Takes a type and a mapping from object ids of VarTypes to their values.
+
+    Returns a concrete type or throws an error if the value of a TypeVar
+    couldn't be found in the mapping.
+    """
     if isinstance(typ, VarType):
-        assert id(typ) in var_types, f'Cannot obtain value for type varaible "{typ.name}"'
+        assert id(typ) in var_types, f'Cannot obtain value for the type variable "{typ.name}"'
         return var_types[id(typ)]
     if isinstance(typ, Ptr):
         return Ptr(get_concrete_type(typ.typ, var_types))
@@ -182,6 +232,9 @@ def get_concrete_type(typ: Type, var_types: Dict[int, Type]) -> Type:
 
 
 def process_call(op: Op, stack: List[Type]) -> None:
+    """
+    Type checks an operation with the CALL type.
+    """
     in_types: List[object] = []
     out_types: List[object] = []
     var_types = get_var_type_values(
@@ -196,6 +249,15 @@ def process_call(op: Op, stack: List[Type]) -> None:
 
 
 def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
+    """
+    Type checks the operation `op` and modifies the stack appropriately.
+
+    Returns either a None, an operation or a list of operations.
+    A None means the caller can ignore it. An operation means, that the
+    operation provided should be replaced by the returned operation.
+    And if a list of operations means the caller must replace the given
+    operation with the operations in the list.
+    """
     cont_assert(len(OpType) == 40, "Unimplemented type in type_check_op")
 
     State.loc = op.loc
@@ -493,6 +555,16 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
 
 
 def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
+    """
+    Type checks the operation of type OPERATOR `op` and modifies the stack appropriately.
+
+    Returns either a None, an operation or a list of operations.
+    A None means the caller can ignore it. An operation means, that the
+    operation provided should be replaced by the returned operation.
+    And if a list of operations means the caller must replace the given
+    operation with the operations in the list.
+    """
+
     cont_assert(len(Operator) == 20, "Unimplemented operator in type_check_operator")
 
     if op.operand in (
