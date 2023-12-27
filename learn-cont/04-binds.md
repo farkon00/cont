@@ -40,7 +40,25 @@ And yes they could have, but if you have more than 4 values on the stack,
 then you probably shouldn't use stack operations unless absolutely needed.
 You can't access anything beyond the 4th element without popping some.
 Also bind can usually produce cleaner code, so it's recommended,
-unless you just need to perform 1-2 stack operations. 
+unless you just need to perform 1-2 stack operations.
+
+## Let Bindings
+Sometimes the nesting introduced by bind blocks can be annoying or ugly.
+In such a case you can use the `let` keyword, which will bind a value until
+the end of the current block. So for example
+```
+1 2 + let res1;
+3 4 + let res2;
+res1 res2 + // 10
+```
+But remember the values will get unbound as soon as the block closes
+```
+5
+if 4 3 > do
+  1 + let a;
+end
+a // compilation error: unknown token
+``` 
 
 ## Examples
 This is the program, that prints the first 50 [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number)
