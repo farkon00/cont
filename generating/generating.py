@@ -10,6 +10,7 @@ TARGETS = {
 }
 
 def compile_ops(ops: List[Op]):
+    """Compiles for the current target, which is determined by the config."""
     cont_assert(State.config.target in TARGETS, "taget not found")
 
     return TARGETS[State.config.target](ops)

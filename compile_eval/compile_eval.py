@@ -3,6 +3,12 @@ from parsing.op import *
 
 
 def evaluate_token(token: str, stack: list):
+    """
+    Takes a token to be evaluated and the current stack,
+    modifies the stack according to the token.
+
+    If the token couldn't be parsed an error will be thrown.
+    """
     if token.isnumeric():
         stack.append(int(token))
     elif token.startswith("0x") and State.is_hex(token[2:]):
@@ -67,6 +73,13 @@ def evaluate_token(token: str, stack: list):
 
 
 def evaluate_block(orig_loc: str, error: str):
+    """
+    Evaluates a compile-time eval block. 
+    The global token iterator should be placed at the beginning of the block.
+    
+    The original location `orig_loc` is used for the error in case of a non-closed
+    block. The `error` is used in error messages and should be the type of the block. 
+    """
     stack: List[int] = []
     while True:
         try:

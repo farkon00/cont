@@ -67,6 +67,15 @@ LOAD_CODE = "(i32.wrap_i64) (i64.load)"
 MEMORY_PAGE_SIZE = 65536 
 
 def compile_ops_wat64(ops: List[Op]):
+    """
+    The main entry point to the generation step of the compilation process
+    for the wat64 target.
+    Handles the generation of wat and assembling the wasm file.
+
+    `ops` is a list of operations to be compiled, which includes all the ops from the
+    included files and the ops from the main file, that is being compiled. The operations
+    should be processed by the type checker before being given to this function.
+    """
     if State.config.run:
         print("Can't use run flag for this target")
         exit(1)
@@ -82,13 +91,32 @@ def compile_ops_wat64(ops: List[Op]):
     subprocess.run(["wat2wasm", f"{out}.wat", "-o", f"{out}.wasm"], stdin=sys.stdin, stderr=sys.stderr)
 
 def byte_to_hex_code(byte: int):
-    """This can only accept positive integers below 265"""
+    """
+    Take a non-negative integer, that is less that 256 and
+    converts it to a string hex code e. g. 69 -> "\\45".
+    """
     return f"\\" + (hex(byte)[2:] if byte >= 16 else '0' + hex(byte)[2:])
 
 def generate_type(t: Type, offset: int, buf: List[Union[int, Type]],
                   queue_set: Set[Type], queue_list: List[Type],
                   types_table: Dict[Type, int]) -> int:
-    """Returns new offset"""
+    """
+    Generates and appends 64-bit non-negative integer values to `buf` based on the type `t`.
+    Also `Type` objects can be added to the buffer and
+    they will be later replaced with the pointer to that type.
+
+    * `t` is the runtimed type to be generated
+    * `offset` is the current offset of the data
+    * `buf` is the buffer, where the values and the types are appended
+    * `queue_set` is a queue, that includes all the types to be generated
+    * `queue_list` is a queue, that includes all the types to be generated
+    * `types_table` is a table mapping every type, that was already generated to its offset
+
+    The last 4 arguments should be the same objects for every call of this function
+    in a single compilation.
+
+    Returns the new offset.
+    """
     if isinstance(t, Int):
         buf += [State.TYPE_IDS["int"], 8, 1]
         offset += 24
@@ -147,6 +175,14 @@ def generate_type(t: Type, offset: int, buf: List[Union[int, Type]],
     return offset
 
 def generate_types(offset: int) -> Tuple[int, str, Dict[Type, int]]:
+    """
+    Generates the bytes for all the runtimed types.
+    The `offset` should be the pointer to the first byte, where a type can be written.
+    
+    Returns a tuple of the pointer to the next byte after the end of the last type,
+    the string with the wat for the data instruction and the table of `Type` objects
+    to their offsets. Or in other words (offset, text_buf, types_table).
+    """
     initial_offset = offset
     types_table: Dict[Type, int] = {}
     buf: List[Union[int, Type]] = []
@@ -169,6 +205,14 @@ def generate_types(offset: int) -> Tuple[int, str, Dict[Type, int]]:
     return offset, text_buf, types_table
 
 def generate_data() -> Tuple[int, str, Dict[str, int]]:
+    """
+    Generates a string with the wat data instruction,
+    that stores all the stings in static memory.
+    
+    Returns a tuple of the pointer to the next byte after the end of the last string,
+    the string with the wat for the data instruction and the table of strings
+    "str_{string_index}" to their offsets. Or in other words (offset, buf, data_table).
+    """
     data_table = {}
     buf = ""
     offset = 1
@@ -181,6 +225,12 @@ def generate_data() -> Tuple[int, str, Dict[str, int]]:
     return (offset, buf, data_table)
 
 def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
+    """
+    Generates a mapping of procedures to their position in the wasm function table and
+    a wat string, which creates the table and stores the functions in it.
+
+    Returns a tuple of the mapping and the wat string.
+    """
     buf = f"(table (export \"__addrtable\") {len(State.referenced_procs)} funcref) "
     buf += "(elem (i32.const 0)"
     procs_table = {}
@@ -190,10 +240,12 @@ def generate_proc_table() -> Tuple[Dict[Proc, int], str]:
     return procs_table, buf + ")"
 
 def get_static_size(data_offset: int) -> int:
+    """Gets size of the static memory from the state and the final data offset."""
     return data_offset + Memory.global_offset +\
         State.config.size_call_stack + State.config.size_bind_stack
 
 def generate_globals(data_offset: int) -> str:
+    """Generates a wat string, that defines the `$call_stack_ptr` and the `$bind_stack_ptr` globals."""
     call_stack_offset = data_offset + Memory.global_offset
     bind_stack_offset = call_stack_offset + State.config.size_call_stack
     call_stack = f"(global $call_stack_ptr (mut i32) (i32.const {call_stack_offset}))"
@@ -202,6 +254,10 @@ def generate_globals(data_offset: int) -> str:
     return call_stack + bind_stack
 
 def generate_imports() -> str:
+    """
+    Generates and returns a wat string of import instructions,
+    which import every procedure in `State.imported_procs`
+    """
     buf = ""
 
     for name, path in State.imported_procs:
@@ -214,13 +270,18 @@ def generate_imports() -> str:
 
     return buf
 
-def generate_call_types(call_types: List[str]):
+def generate_call_types(call_types: List[str]) -> str:
+    """
+    Generates and returns a wat string of type instructions, which
+    declare all type signatures in `call_types` and call them "$call_type_{index}"
+    """
     buf = ""
     for index, signature in enumerate(call_types):
         buf += f" (type $call_type_{index} {signature})"
     return buf
 
 def generate_wat64(ops: List[Op]) -> str:
+    """Generates a string of fasm assembly for the program from the list of operations `ops`."""
     offset, data, data_table = generate_data()
     procs_table, procs_table_wat = generate_proc_table()
     offset, types_wat, types_table = generate_types(offset)
@@ -249,6 +310,7 @@ def generate_wat64(ops: List[Op]) -> str:
     return buf
 
 def generate_block_type_info(block: Block) -> str:
+    """Generates and returns a wat string with the signature for the `block`."""
     if not block.stack_effect: return ""
 
     return f"(param{' i64' * block.stack_effect[0]}) (result{' i64' * block.stack_effect[1]})"
@@ -257,6 +319,19 @@ def generate_block_type_info(block: Block) -> str:
 def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
                       procs_table: Dict[Proc, int], call_types: List[str],
                       types_table: Dict[Type, int]) -> str:
+    """
+    Genetares and returns a wat string for the operation `op`.
+    
+    * `op` is the operation to be generated
+    * `offset` is the pointer to beginning of the static memory, where the memories and variables are stored
+    * `data_table` is a mapping of strings "str_{string_index}" to their offsets
+    * `procs_table` is a mapping of procedures to their position in the wasm function table
+    * `call_types` is a list of signatures for the ADDR_CALL operation, that will be generated later
+    * `types_table` is a mapping from types to pointers to their Type structs
+
+    The last 4 arguments should be the same objects for every call of this function
+    in a single compilation.
+    """
     if op.type == OpType.PUSH_INT:
         return f"(i64.const {op.operand})"
     elif op.type == OpType.PUSH_MEMORY:
@@ -442,6 +517,10 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         cont_assert(False, f"Generation isnt implemented for op type: {op.type.name}")
 
 def generate_operator_wat64(op: Op) -> str:
+    """
+    Generates and returns a wat string for an operation `op`,
+    which must have the type `OpType.OPERATOR`.
+    """
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_wat64")
     cont_assert(op.type == OpType.OPERATOR, f"generate_operator_wat64 cant generate {op.type.name}")
 
