@@ -1,7 +1,7 @@
 # Binds
 
-Binds are a way to give a name to value. Bindings are immutable and can only be changed after they go out of the scope.
-The bind has following syntax.
+Binds are a way to give a name to a value. Bindings are immutable and can only be changed after they go out of scope.
+Binds has the following syntax.
 
 ```
 <values>
@@ -10,7 +10,7 @@ bind <bind_name1> <bind_name2> <bind_name3>:
 end
 ```
 
-To access bindinded values you will need to push them onto the stack using their name.
+To access bound values you will need to push them onto the stack using their name.
 
 ```
 1
@@ -20,7 +20,7 @@ bind value:
 end
 ```
 
-You can see, that bind will pop the values off the stack. You can also bind multiple values.
+You can see, that bind will pop the values off the stack and has an ability to bind multiple values.
 ```
 1 2 3
 bind first second third:
@@ -34,11 +34,17 @@ bind result:
 end
 ```
 
-You might have saw, that some of the examples could have just used stack operations, that you learn in 
-[lesson 2](https://github.com/farkon00/cont/blob/master/learn-cont/02-basic-operations.md). And yes they could, but if you have more than 4 values on the stack, that you probably shouldn't unless absolutely needed, you can't really access last ones without popping some, also bind can usually produce cleaner code, so it's recomended unless you just need to perform 1-2 stack operations. 
+You might have seen, that some of the examples could have just used stack operations,
+which you've learned in [lesson 2](https://github.com/farkon00/cont/blob/master/learn-cont/02-basic-operations.md).
+And yes they could have, but if you have more than 4 values on the stack,
+then you probably shouldn't use stack operations unless absolutely needed.
+You can't access anything beyond the 4th element without popping some.
+Also bind can usually produce cleaner code, so it's recommended,
+unless you just need to perform 1-2 stack operations. 
 
 ## Examples
-This is the program, that prints 50 first [fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number) using bind inside a while loop
+This is the program, that prints the first 50 [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number)
+using a bind inside a while loop.
 ```
 include std.cn
 

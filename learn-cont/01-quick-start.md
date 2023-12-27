@@ -1,6 +1,6 @@
 # Quick start
 
-Run the following commands to setup cont:
+Run the following commands to set cont up:
 ```bash
 $ python3 -V
  Python >=3.10
@@ -18,14 +18,14 @@ $ python3 cont.py <source_code>.cn -r
 
 ## Hello world
 
-How let's write your first hello world in cont:
+Now let's write our first hello world in cont:
 ```
 include std.cn
 
 "Hello world" println
 ```
 
-Now you can run it using this command:
+Now you can run it using the following command:
 ```bash
 $ python3 cont.py hello_world.cn -r
 ```

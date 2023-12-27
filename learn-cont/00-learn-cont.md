@@ -1,8 +1,9 @@
 # Learn cont
-This is the place to learn cont programming language. Also you could go look at some example code in `tests`, `examples` or
+This is the place to learn cont. Also, you could go look at some example code in `tests`, `examples` or
 `std` folders.
 
-Don't be afraid of asking questions in issues or dming me on discord. I am farkon00#0500. 
+Don't be afraid of asking questions in the issues tab or dming me on Discord,
+I have the same username on Discord as on Github. 
 
 # Table of contents
 * [Quick Start](https://github.com/farkon00/cont/blob/master/learn-cont/01-quick-start.md)
