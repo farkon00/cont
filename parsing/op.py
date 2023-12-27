@@ -2,6 +2,7 @@ from enum import Enum, auto
 
 
 class OpType(Enum):
+    """An enum with types of operations"""
     PUSH_INT = auto()
     PUSH_MEMORY = auto()
     PUSH_LOCAL_MEM = auto()
@@ -45,6 +46,7 @@ class OpType(Enum):
 
 
 class Operator(Enum):
+    """An enum with sub-types of operations with type OpType.OPERATOR"""
     ADD = auto()
     SUB = auto()
     MUL = auto()
@@ -68,6 +70,7 @@ class Operator(Enum):
 
 
 class Op:
+    """An operation"""
     def __init__(self, type: OpType, operand=None, loc: str = "", loc_id=-1) -> None:
         self.type: OpType = type
         self.operand = operand
@@ -76,6 +79,7 @@ class Op:
         self.compiled: bool = True
 
     def copy(self):
+        """Creates a new `Op` object, that has all the same data except the loc_id."""
         op = Op(self.type, self.operand, self.loc)
         op.compiled = self.compiled
         return op
