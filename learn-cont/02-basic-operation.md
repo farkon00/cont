@@ -1,6 +1,6 @@
 # Basic operations
 
-## Stack
+## The stack
 
 Cont is a stack-based language, which means to perform actions
 we push parameters onto the stack and pop them for operations.
@@ -58,7 +58,7 @@ swap drop // [1 3]
 swap - // [2] 
 ```
 
-## A useful note
+### A useful note
 If you want to run the code yourself and maybe experiment with it,
 you would probably want to see what values are on the stack.
 You could use the `print` procedure from `std.cn` file for that.

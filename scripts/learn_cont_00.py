@@ -9,10 +9,11 @@ DIR = "learn-cont"
 MAIN_FILE = "00-learn-cont.md"
 PREFIX = \
 """# Learn cont
-This is the place to learn cont programming language. Also you could go look at some example code in `tests`, `examples` or
+This is the place to learn cont. Also, you could go look at some example code in `tests`, `examples` or
 `std` folders.
 
-Don't be afraid of asking questions in issues or dming me on discord. I am farkon00#0500. 
+Don't be afraid of asking questions in the issues tab or dming me on Discord,
+I have the same username on Discord as on Github. 
 
 # Table of contents
 """
@@ -38,12 +39,20 @@ for article in articles:
         )
         exit(1)
 
-    words = article[prefix_index + 1 : suffix_index].split("-")
+    words = article[prefix_index + 1:suffix_index].split("-")
     name = " ".join([word.capitalize() for word in words])
 
     table_of_contents += (
         f"* [{name}](https://github.com/farkon00/cont/blob/master/{DIR}/{article})\n"
     )
+    with open(f"{DIR}/{article}", "r") as f:
+        sections = filter(lambda x: x.startswith("## "), f.readlines())
+    for title in sections:
+        title = title.removeprefix("## ").removesuffix("\n")
+        anchor = "-".join(title.lower().split())
+        table_of_contents += (
+            f"  * [{title}](https://github.com/farkon00/cont/blob/master/{DIR}/{article}#{anchor})\n"
+        )
 
 with open(f"{DIR}/{MAIN_FILE}", "w") as f:
     f.write(PREFIX + table_of_contents)

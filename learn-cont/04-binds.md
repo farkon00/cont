@@ -42,7 +42,7 @@ You can't access anything beyond the 4th element without popping some.
 Also bind can usually produce cleaner code, so it's recommended,
 unless you just need to perform 1-2 stack operations.
 
-## Let Bindings
+## Let bindings
 Sometimes the nesting introduced by bind blocks can be annoying or ugly.
 In such a case you can use the `let` keyword, which will bind a value until
 the end of the current block. So for example
@@ -60,7 +60,7 @@ end
 a // compilation error: unknown token
 ``` 
 
-## Examples
+### Examples
 This is the program, that prints the first 50 [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number)
 using a bind inside a while loop.
 ```
