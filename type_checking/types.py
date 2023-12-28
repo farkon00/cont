@@ -113,8 +113,6 @@ class VarType(Type):
     """
     A cont variable type, can only be created in a function signature and
     has to be replaced by a concrete type on every call.
-    
-    Uses the name to detiremine whether the types are equal.
     """
     def __init__(self, name: str):
         self.name = name
