@@ -482,6 +482,12 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         assert len(stack) >= 1, "stack is too short"
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
+        if isinstance(op.operand, int):
+            offset = 0
+            for typ in ptr.typ.fields_types[:op.operand]:
+                offset += sizeof(typ)
+            stack.append(Ptr(ptr.typ.fields_types[op.operand]))
+            return Op(OpType.PUSH_FIELD_PTR, offset, op.loc)
         assert isinstance(ptr.typ, Struct),\
             f"can't access field of non-struct : {type_to_str(ptr.typ)}"
         assert op.operand in ptr.typ.fields,\

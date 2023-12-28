@@ -247,6 +247,7 @@ def parse_proc_head(self_named: bool = False) -> str:
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
     # TODO: Move generating dunder method into its own function  
     generated_ops = []
+    prefix_ops = []
     if (
         name_value in State.DUNDER_NEGATION_MAP or
         (name_value == "__index_ptr__" and not must_ptr(out_types[0].typ)) and
@@ -287,6 +288,16 @@ def parse_proc_head(self_named: bool = False) -> str:
                 Op(OpType.OPERATOR, Operator.EQ),
                 generated_op_end
             ]
+    if name_value == "__init__" and owner is not None:
+        assert isinstance(owner.typ, Struct)
+        for field_index, value in owner.typ.defaults.items():
+            prefix_ops.extend([
+                Op(OpType.PUSH_INT, value),
+                Op(OpType.OPERATOR, Operator.OVER),
+                Op(OpType.PUSH_FIELD_PTR, field_index),
+                Op(OpType.OPERATOR, Operator.STORE)
+            ])
+
     op = Op(OpType.DEFPROC, proc)
     ip = State.get_new_ip(op)
     block.start = ip
@@ -302,11 +313,11 @@ def parse_proc_head(self_named: bool = False) -> str:
     if State.is_named:
         State.is_named = False
         State.bind_stack.extend(names)
-        return [*generated_ops, op, Op(OpType.BIND, len(names))]
+        prefix_ops.append(Op(OpType.BIND, len(names)))
     if self_named:
         State.bind_stack.append("self")
-        return [*generated_ops, op, Op(OpType.BIND, 1)]
-    return [*generated_ops, op]
+        prefix_ops.append(Op(OpType.BIND, 1))
+    return [*generated_ops, op, *prefix_ops]
 
 
 def parse_struct_beginning() -> Tuple[Optional[Struct], Tuple[str, str]]:
