@@ -1,0 +1,42 @@
+include std.cn
+
+unpack struct Test
+  default x 1;
+  int y
+
+  sproc __init__ int:
+    !self.y
+  end
+end
+
+struct Test2
+  int a
+  default b 2 11 +;
+  int c
+  default d 123;
+end
+
+proc test:
+  2 init var t Test
+  var a int = 7 100 * 27 +;
+  t @ swap print print
+  a print
+end
+
+1 print
+test
+
+1 2 init var t2 Test2
+t2.a print
+t2.b print
+t2.c print
+t2.d print
+:
+1
+1
+2
+727
+1
+13
+2
+123
