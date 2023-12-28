@@ -246,7 +246,7 @@ def parse_type(
         result = Ptr(
             parse_type(
                 (token[0][1:], token[1]), error,
-                auto_ptr, allow_unpack,
+                auto_ptr=auto_ptr, allow_unpack=False,
                 var_type_scope=var_type_scope,
             )
         )
