@@ -416,13 +416,6 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
     elif op.type == OpType.TYPED_LOAD:
         return LOAD_CODE
     elif op.type == OpType.PACK:
-        """
-        (i64.const 16) (call $addr_116) (call $dup)
-        (i32.const 0) (call $bind) (global.get $bind_stack_ptr)
-        (i32.const 8) (i32.add) (global.set $bind_stack_ptr) (call $addr_211)
-        (global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (call $dup)
-        (global.set $bind_stack_ptr) (i64.load) (i64.const 8) (i64.add) (i32.wrap_i64) (i64.load)
-        """
         assert State.config.struct_malloc[1], "You must have malloc to you this operation on this platform"
         struct = State.structures[op.operand[0]]
         size = sizeof(struct)
@@ -439,12 +432,13 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
             offset = 0
             for index, field in list(enumerate(struct.fields_types))[::-1]:
                 offset += sizeof(field)
-                if index in struct.defaults:
-                    buf += f"(i64.const {struct.defaults[index]}) "
 
                 buf += f"(i64.const {size-offset}) (i64.add) "
-                buf += "(call $prepare_store) (i64.store) "
-                buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (i64.load) "
+                if index in struct.defaults:
+                    buf += f"(i32.wrap_i64) (i64.const {struct.defaults[index]}) "
+                else:
+                    buf += "(call $prepare_store) "
+                buf += "(i64.store) (global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (i64.load) "
             buf += "(global.get $bind_stack_ptr) (i32.const 8) (i32.sub) (global.set $bind_stack_ptr)"
         return buf
     elif op.type == OpType.UNPACK:
