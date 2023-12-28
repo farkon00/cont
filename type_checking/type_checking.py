@@ -650,6 +650,7 @@ def type_check_operator(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op
         op.loc_id = len(State.locs_to_include) - 1
         check_stack(stack, [Int(), Ptr()])
     elif op.operand == Operator.LOAD:
+        assert len(stack) >= 1, "stack is too short"
         ptr = stack[-1]
         check_stack(stack, [Ptr()])
         State.locs_to_include.append(op.loc)
