@@ -1,14 +1,15 @@
 # Cont
 
-__Cont__ is compiled statically-typed concatenative programming language, that has elements of OOP, written in Python and inspired by [Porth](https://gitlab.com/tsoding/porth).
+__Cont__ is a compiled statically-typed concatenative programming language,
+that has elements of OOP, is written in Python and is inspired by [Porth](https://gitlab.com/tsoding/porth).
 
 ## Where did the name come from
 From word concatinative. 
-How I came up with that specific word?
-I just mixed beggining of this word and tried to came up with something sounding good.
+How have I come up with that specific word?
+I just mixed beginning of that word and tried to come up with something, that sounds good.
 
 # Quick Start
-You can learn the language by using ["Learn cont" manual](https://github.com/farkon00/cont/blob/master/learn-cont/00-learn-cont.md)
+You can learn the language by using the ["Learn cont" manual](https://github.com/farkon00/cont/blob/master/learn-cont/00-learn-cont.md)
 
 ```bash
 $ python3 -V
@@ -26,7 +27,8 @@ $ python3 cont.py <source_code>.cn -r
 ```
 
 # Examples
-You can find more examples in `tests` or `examples` folders or in the standard library source, which can be found in `std`.
+You can find more examples in `tests` or `examples` folders or
+in the standard library source, which can be found in `std`.
 
 ## Hello world
 ```
@@ -54,7 +56,8 @@ end
 
 ## Memories
 
-Memories aren't recomended to use, because they don't have type safety in most cases you will want to use variables.
+Memories aren't recommended to use, because
+they don't have type safety in most cases you will want to use variables.
 
 ```
 include std.cn
@@ -94,7 +97,9 @@ init var coords [coords_len] Vector2 // Create array of Vector2 with size coodrs
 ```
 
 ## Structures
-Structures technically support OOP in cont. It doesn't have some really advanced features like interface, generics, but there is movement in that direction like dunder methods or static methods. 
+Structures technically support OOP in cont.
+It doesn't have some really advanced features like interfaces or generics,
+but there is movement in that direction like dunder methods or static methods. 
 
 ```
 struct Vector2

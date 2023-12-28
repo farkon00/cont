@@ -45,6 +45,15 @@ assert len(BlockType) == len(END_TYPES), "Unimplemented block type in parsing.py
 
 
 def safe_next_token(exception: str = "") -> Tuple[str, str]:
+    """
+    Gets the next token from the global iterator and
+    throws an error if the EOF was reached.
+
+    The error message will be `exception` if it's provided,
+    "Unexpected end of file" otherwise.
+
+    Returns the token.
+    """
     try:
         token = next(State.tokens)
         State.loc = token[1]
@@ -58,6 +67,13 @@ def safe_next_token(exception: str = "") -> Tuple[str, str]:
 
 
 def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], str]:
+    """
+    Gets the next token for the procedure contract and handles the colon.
+
+    Returns the tuple of the original token and the true value of the token.
+    The true value is the one is the whole or a part of the token value, that
+    was cut down to only include the part, that is inside the contract.
+    """
     try:
         proc_token = next(State.tokens)
     except StopIteration:
@@ -73,7 +89,15 @@ def next_proc_contract_token(name: Tuple[str, str]) -> Tuple[Tuple[str, str], st
 
 def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType], 
                     end_char: str) -> Tuple[List[Type], List[Type], List[str]]:
-    """Returns (in_types, out_types, names)"""
+    """
+    Parses a procedure signature from the global token iterator.
+
+    `end_char` is the character, that denotes the end of the signature
+    e. g. a colon if it's a signature for a regular procedure definition
+
+    Returns a tuple of argument types, output types and
+    names for named procedures(if the procedure is not named the list is empty).
+    """
     in_types: List[Type] = []
     out_types: List[Type] = []
     names: List[str] = []
@@ -127,7 +151,11 @@ def parse_signature(name: Tuple[str, str], var_types_scope: Dict[str, VarType],
 
     return in_types, out_types, names
 
-def parse_proc_head(self_named: bool = False):
+def parse_proc_head(self_named: bool = False) -> str:
+    """
+    Parses the head of a procedure, defines it and returns the operations for the head.
+    Does not consume the first token of the definition e. g. "proc".
+    """
     first_token: Tuple[str, str] = next(State.tokens)
     owner: Optional[Ptr] = (
         None if State.owner is None or State.is_static else Ptr(State.owner)
@@ -174,6 +202,7 @@ def parse_proc_head(self_named: bool = False):
         State.loc = f"{State.filename}:{name[1]}"
         State.throw_error("constructor cannot have out types")
 
+    # TODO: Fix this hell
     if (
         name_value in [*State.ONE_RETURN_DUNDER_METHODS, *State.NOT_SAME_TYPE_DUNDER_METHODS] and\
         owner is not None and\
@@ -216,6 +245,7 @@ def parse_proc_head(self_named: bool = False):
     State.var_type_scopes.pop()
     block = Block(BlockType.PROC, -1)
     proc = Proc(name_value, -1, in_types, out_types, block, State.is_named, self_named, owner=owner)
+    # TODO: Move generating dunder method into its own function  
     generated_ops = []
     if (
         name_value in State.DUNDER_NEGATION_MAP or
@@ -279,7 +309,13 @@ def parse_proc_head(self_named: bool = False):
     return [*generated_ops, op]
 
 
-def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
+def parse_struct_beginning() -> Tuple[Optional[Struct], Tuple[str, str]]:
+    """
+    Parses the name of the struct and its parent. Doesn't consume the "struct" token.
+
+    Returns the parent struct(None if there isn't one) and
+    the token with the name of the struct. 
+    """
     first_token = next(State.tokens)
     parent = None
     if first_token[0].startswith("(") and first_token[0].endswith(")"):
@@ -301,11 +337,17 @@ def parse_struct_begining() -> Tuple[Optional[Struct], Tuple[str, str]]:
 def parse_struct_default(
     field_type: Any, started_proc: bool, static_started: bool, loc: str
 ) -> Tuple[str, int]:
+    """
+    Parses a field of a struct, that has a default value.
+    Doesn't consume the "default" token.
+
+    Returns a tuple of the name and the value. 
+    """
     prev_loc = State.loc
     State.loc = f"{State.filename}:{loc}"
     assert field_type == -1, "field name was not defined"
-    assert not started_proc, "field defenition in methods segment"
-    assert not static_started, "field defenition in static segment"
+    assert not started_proc, "field defenition in the method segment"
+    assert not static_started, "field defenition in the static segment"
     State.loc = prev_loc
 
     def_name = next(State.tokens)
@@ -315,7 +357,12 @@ def parse_struct_default(
 
 def parse_struct_proc(
     struct: Struct, static_started: bool, current_token: Tuple[str, str]
-):
+) -> List[Op]:
+    """
+    Parses a procedure defined inside a struct definition.
+
+    Returns the list of operations for the procedure. 
+    """
     State.tokens_queue.append(current_token)
     State.owner = struct
     State.is_static = static_started
@@ -332,6 +379,7 @@ def register_struct(
     parent: Optional[Struct],
     defaults: Dict[int, int],
 ):
+    """Creates and registers a struct in the state. """
     struct = Struct(name[0], fields, struct_types, parent, defaults, State.is_unpack)
     State.is_unpack = False
     if parent is not None:
@@ -340,8 +388,13 @@ def register_struct(
     return struct
 
 
-def parse_struct() -> Union[Op, List[Op]]:
-    parent, name = parse_struct_begining()
+def parse_struct() -> List[Op]:
+    """
+    Parses a structure definition, defines the struct and
+    returns the operations for the definition. Does not
+    consume the "struct" token.
+    """
+    parent, name = parse_struct_beginning()
     struct = register_struct(name, {}, [], parent, {})
 
     current_token = ("", "")
@@ -405,6 +458,18 @@ def parse_struct() -> Union[Op, List[Op]]:
 
 
 def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> List[Op]:
+    """
+    Parses one token, which has multiple parts separated by a dot.
+    If `allow_var` is True the first part is allowed to be either of
+    the following: local or global variable, local or global memory,
+    a bound value, "base" if "self" is on the bind stack.
+    All other token have to be fields of structs chained.
+
+    If `auto_ptr` is True the last field acess operation
+    will be of type PUSH_FIELD_PTR.
+
+    Returns a list of operation for those tokens.
+    """
     res = []
     parts = token.split(".")
     if allow_var:
@@ -444,7 +509,7 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> Li
             parts = parts[1:]
         elif parts[0] == "base":
             assert "self" in State.bind_stack, "You must have a binded value self to use base"
-            return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base"))
+            return Op(OpType.PUSH_BIND_STACK, (State.bind_stack.index("self"), "base")) # TODO: why is this a return?
         else:
             State.throw_error(f'name "{parts[0]}" is not defined')
     for i in parts:
@@ -456,7 +521,12 @@ def parse_dot(token: str, allow_var: bool = False, auto_ptr: bool = False) -> Li
     return res
 
 
-def parse_var():
+def parse_var() -> Union[Op, List[Op]]:
+    """
+    Parses a variable declaration. Does not consume the "var" token.
+    Returns a list of operations or an operation for the declaration.
+    """
+    # TODO: this function is too long
     name = safe_next_token("Expected variable name")
     type_tok = safe_next_token("Expected variable type")
     _type = parse_type((type_tok[0], f"{State.filename}:{type_tok[1]}"), "variable", False)
@@ -526,7 +596,13 @@ def parse_var():
     return []
 
 
-def parse_end():
+def parse_end() -> Union[List[Op], Op]:
+    """
+    Parses an "end" token. Modifies all the state required
+    to close a block. Does not consume the "end" token itself.
+
+    Returns a list of operations or an operation to end the block.
+    """
     assert len(State.block_stack) > 0, "block for end not found"
     block = State.block_stack.pop()
     if block.binded != 0:
@@ -572,7 +648,12 @@ def parse_end():
     return op
 
 
-def parse_for():
+def parse_for() -> Op:
+    """
+    Parses a head of a for loop. Does not consume the "for" token itself.
+
+    Returns a FOR operation.
+    """
     bind         = safe_next_token("bind name for for loop was not found")[0]
     type_        = safe_next_token("separator for for loop was not found")[0]
     itr, itr_loc = safe_next_token("iterator for for loop was not found")
@@ -591,7 +672,17 @@ def parse_for():
     return op
 
 
-def parse_bind(end_char: str = ":", unbind_on_block: bool = False):
+def parse_bind(end_char: str = ":", unbind_on_block: bool = False) -> Op:
+    """
+    Parses a head of a bind block or a let binding.
+    Does not consume "bind" or "let" tokens.
+
+    * `end_char` is the character, which is going to end the list of bind names
+    * `unbind_on_block` indicates whether the bind will have its own block
+    or is going to use the current inner block for unbinding(True indicates the latter)
+
+    Returns a BIND operation.
+    """
     binded = 0
     name_token = ("", "")
     while end_char not in name_token[0]:
@@ -618,7 +709,14 @@ def parse_bind(end_char: str = ":", unbind_on_block: bool = False):
     return op
 
 
-def parse_do(ops: List[Op]):
+def parse_do(ops: List[Op]) -> Op:
+    """
+    Parses a "do" token, but does not consume it. Does
+    the required changes to the operation list `op` for
+    the do token.
+
+    Returns an operation for the "do" token.
+    """
     assert len(State.block_stack) > 0, "block for do not found"
     if State.block_stack[-1].type == BlockType.IF:
         assert State.ops_by_ips[State.block_stack[-1].start].compiled,\
@@ -640,7 +738,14 @@ def parse_do(ops: List[Op]):
         State.throw_error("do without if or while")
 
 
-def include_file():
+def include_file() -> List[Op]:
+    """
+    Includes a cont file using the path in the token
+    next in the global iterator. If the file has already
+    been included before returns an empty list and does nothing.
+
+    Returns a list of operations for the file.
+    """
     name = next(State.tokens)
 
     path = ""
@@ -672,6 +777,10 @@ def include_file():
 
 
 def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
+    """
+    Parses a token and returns either a list of operation or an operation
+    for the token. Might modify the list of operation for the file `ops`.
+    """
     cont_assert(len(OpType) == 40, "Unimplemented type in parse_token")
 
     assert not State.is_unpack or token == "struct", "unpack must be followed by struct"
@@ -1009,6 +1118,10 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
 
 
 def delete_comments(program: str) -> str:
+    """
+    Takes a program as a source code string and returns
+    the same program without all the comments. 
+    """
     while True:
         index = program.find("//")
         if index == -1:
@@ -1020,7 +1133,12 @@ def delete_comments(program: str) -> str:
     return program
 
 
-def tokens(program: str):
+def tokens(program: str) -> Generator[Tuple[str, str], None, None]:
+    """
+    An iterator, that yields tokens of the program as a
+    tuple of the token value and their location in the format of
+    "{row}:{column}".
+    """
     token = ""
     is_string = False
     is_escaped = False
@@ -1052,6 +1170,11 @@ def tokens(program: str):
 
 
 def parse_until_end() -> List[Op]:
+    """
+    Parses tokens from the global token iterator and returns
+    the list of operation for them. Stops parsing, when it meets
+    an "end" token, that doesn't match any block inside.
+    """
     ops: List[Op] = []
     initial_loc = State.loc
     initial_blocks = len(State.block_stack)
@@ -1083,6 +1206,16 @@ def parse_until_end() -> List[Op]:
 
 
 def parse_to_ops(program: str, dump_tokens: bool = False, is_main: int = False) -> List[Op]:
+    """
+    Parses a program from a raw source code string into a
+    list of operations. The function should be called exactly one
+    time with `is_main` set to True for each compilation.
+    
+    If `dump_tokens` is set the function will print all the tokens
+    to the stdout and exit.
+
+    Returns a list of operations for the program.
+    """
     saver = StateSaver()
     State.tokens = tokens(program)
     ops: List[Op] = []

@@ -4,10 +4,19 @@ import os
 
 from generating.generating import TARGETS
 
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Tuple, Optional 
 
 
 class Config:
+    """
+    A finalized configuration for the compiler run.
+    
+    The object deals with loading in all the options from different source,
+    verifying them and deciding what is the final value of the option.
+
+    The lsp_mode constructor argument indicates whether the compile is
+    being run from a CLI or via a function call to the entry point.
+    """
     DESCRIPTIONS: Dict[str, str] = {
         "program" : "The program to compile and optionally run",
         "run" : "Run program after compilation",
@@ -67,6 +76,7 @@ class Config:
         self._validate_target()
 
     def setup_args_parser(self) -> argparse.ArgumentParser:
+        """Creates, configures and returns an `ArgumentParser`"""
         args_parser = argparse.ArgumentParser()
 
         args_parser.add_argument("program", help=self.DESCRIPTIONS["program"])
@@ -95,18 +105,26 @@ class Config:
         return args_parser
 
     def _validate_target(self):
+        """Checks if the target is a valid one"""
         if self.target not in TARGETS:
             print(f"\033[1;31mError\033[0m: target not found: {self.target}")
             exit(1)
 
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
+        """Returns a tuple of all the valid option ids"""
         return (
             *self.CONFIG_REGULAR_OPTIONS, *self.CONFIG_BOOL_OPTIONS,
             *self.CONFIG_INT_OPTIONS, *self.CONFIG_BOOL_CLEAR_OPTIONS,
         )
 
-    def load_config(self, config_file) -> Tuple[Dict[str, Any], str]:
+    def load_config(self, config_file: Optional[str]) -> Tuple[Dict[str, Any], str]:
+        """
+        Loads a config at the path `config_file`.
+        If the path is None loads from the default location if it is present.
+
+        Returns a tuple of the deserialized json and the path to the config. 
+        """
         if config_file is None:
             if "cont_build.json" in os.listdir():
                 return self.load_config("cont_build.json")
@@ -116,6 +134,7 @@ class Config:
             return (json.load(f), config_file)
 
     def define_properties(self):
+        """Defines all the properties for the config options"""
         for name in self.BOOL_OPTIONS:
             setattr(
                 self.__class__, name,
@@ -154,12 +173,19 @@ class Config:
                 ),
             )
 
-    def _check_key_validity(self, key: str) -> bool:
+    def _is_key_valid(self, key: str) -> bool:
+        """Checks whether the option id in the config file is valid. Returns True if it is."""
         return key in self._valid_keys
 
     def _validate(self, config_file: str):
+        """
+        Validates the loaded config file.
+
+        The path to the config file is used for the warnings and
+        should be provided with the `config_file` argument.
+        """
         for key in self.config.copy():
-            if not self._check_key_validity(key):
+            if not self._is_key_valid(key):
                 del self.config[key]
                 if not self.lsp_mode:
                     print(
@@ -178,4 +204,5 @@ class Config:
 
     @property
     def program(self) -> str:
+        """The program to be compiled"""
         return self.args.program

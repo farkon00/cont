@@ -16,6 +16,15 @@ SYSCALL_ARGS = ["rax", "rdi", "rsi", "rdx", "r10", "r8", "r9"]
 
 
 def compile_ops_fasm_x86_64_linux(ops: List[Op]):
+    """
+    The main entry point to the generation step of the compilation process
+    for the fasm_x86_64_linux target. Handles the generation of assembly,
+    assembling the executable and running it if needed.
+
+    `ops` is a list of operations to be compiled, which includes all the ops from the
+    included files and the ops from the main file, that is being compiled. The operations
+    should be processed by the type checker before being given to this function.
+    """
     if subprocess.getstatusoutput("fasm")[0] == 127:
         print("Please install Flat Assembler (Fasm).")
         print("Use sudo apt install fasm if you are using Debian/Ubuntu")
@@ -101,7 +110,8 @@ NULL_POINTER_CODE = (
     "ret\n"
 )
 
-def generate_fasm_x86_64_linux(ops: List[Op]):
+def generate_fasm_x86_64_linux(ops: List[Op]) -> str:
+    """Generates a string of fasm assembly for the program from the list of operations `ops`."""
     buf = (
         "format ELF64 executable 3\n"
         "segment readable executable\n"
@@ -150,7 +160,11 @@ def generate_fasm_x86_64_linux(ops: List[Op]):
     return buf
 
 
-def generate_fasm_types():
+def generate_fasm_types() -> str:
+    """
+    Generates a string of assembly, which if put into the .data segment,
+    will define all the runtimed types in the static memmory.
+    """
     buf = ""
     queue_set = State.runtimed_types_set.copy()
     queue_list = State.runtimed_types_list.copy()
@@ -165,7 +179,19 @@ def generate_fasm_types():
     return buf
 
 
-def generate_fasm_type(typ, queue_set: Set[Type], queue_list: List[Type], generated_types: Set[str]):
+def generate_fasm_type(typ: Type, queue_set: Set[Type], queue_list: List[Type], generated_types: Set[str]):
+    """
+    Generates a fasm assembly string with the dq derictive,
+    which stores the bytes for the Type struct in static memory.
+    
+    * `typ` is the type to be runtimed.
+    * `queue_set` is a queue, that includes all the types to be generated
+    * `queue_list` is a queue, that includes all the types to be generated
+    * `generated_types` is a set of all types, that have already been generated
+    
+    The last three parameters should stay the same objects between
+    different calls of this function in the same compilations.
+    """
     addr = f"type_{typ.text_repr()}: "
     if isinstance(typ, Int):
         return addr + f"dq {State.TYPE_IDS['int']},8,1"
@@ -223,6 +249,7 @@ def generate_fasm_type(typ, queue_set: Set[Type], queue_list: List[Type], genera
 
 
 def generate_op_comment(op: Op):
+    """Generates a comment, describing the operation `op`."""
     buf = f";; {State.loc} {op.type.name} "
     if op.type == OpType.OPERATOR:
         buf += f"{op.operand.name}\n"
@@ -233,7 +260,11 @@ def generate_op_comment(op: Op):
     return buf
 
 
-def generate_op_fasm_x86_64_linux(op: Op):
+def generate_op_fasm_x86_64_linux(op: Op) -> str:
+    """
+    Generates and returns the string of assembly to be
+    put into the executable segment for the operation `op`.
+    """
     cont_assert(len(OpType) == 40, "Unimplemented type in generate_op")
 
     if not op.compiled:
@@ -593,6 +624,10 @@ def generate_op_fasm_x86_64_linux(op: Op):
 
 
 def generate_operator_fasm_x86_64_linux(op: Op):
+    """
+    Generates and returns a string of assembly for an operation `op`,
+    which must have the type `OpType.OPERATOR`.
+    """
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_fasm_x86_64_linux")
     cont_assert(op.type == OpType.OPERATOR, f"generate_operator_fasm_x86_64_linux cant generate {op.type.name}")
 

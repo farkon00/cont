@@ -1,9 +1,9 @@
 # Variables
-Variables in cont need to be firstly declared using, their type and name, like this
+Variables in cont need to be firstly declared using their type and their name, like this:
 ```
 var <name> <type>
 ```
-And then to use a variable value we just use its name. Variables are zero-initialized
+And then to use a variable value we just use its name. Global variables are zero-initialized
 ```
 include std.cn
 
@@ -13,7 +13,8 @@ x print // 0
 y print // 0
 ```
 
-But variables aren't really usefull unless you can write into them. For that we use `!<name>` syntax, for example
+But variables aren't really usefull unless you can write data into them.
+For that we use `!<name>` syntax, for example
 ```
 var a int
 var b int
@@ -28,7 +29,9 @@ b print // 2
 ```
 
 ## Local variables
-If you declare a variable inside a procedure, it will become local. That means it will allocate the variable on every call on the call stack. But the variable won't be zero-initialized on every call.
+If you declare a variable inside a procedure, it will become local.
+That means it will allocate the variable on every call using the call stack.
+But the variable won't be zero-initialized on every call.
 
 ```
 include std.cn

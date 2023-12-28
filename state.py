@@ -9,17 +9,16 @@ from parsing.op import Op
 
 
 class InternalAssertionError(Exception):
-    """
-    Error used in case there is assertion needed in cont
-    """
-    pass
+    """Error used in case there is an assertion needed in cont"""
 
 def cont_assert(condition: bool, message: str):
+    """Raise InternalAssertionError with the provided `message` if the `condition` is true"""
     if not condition:
         raise InternalAssertionError(message)
 
 
 class BlockType(Enum):
+    """The type of a `Block`"""
     IF = auto()
     ELSE = auto()
     WHILE = auto()
@@ -30,6 +29,7 @@ class BlockType(Enum):
 
 @dataclass
 class Block:
+    """A block in code, which should be used for all the blocks in the `BlockType` enum."""
     type: BlockType
     start: int
     end: int = -1
@@ -38,13 +38,18 @@ class Block:
 
 @dataclass
 class Memory:
+    """A memory defined with `memo` or `memory` keyword"""
     name: str
     offset: int
 
-    global_offset = 0
+    global_offset = 0 # NOTE: The field doesn't have an annotation, so it's a static one
 
     @staticmethod
     def new_memory(name: str, size: int) -> "Memory":
+        """
+        Defines a new local or global memory depending on the `State`.
+        Computes the offset of the memory and modifies `Memory.lobal_offset` if needed
+        """
         if State.current_proc is None:
             mem = Memory(name, Memory.global_offset)
             Memory.global_offset += size + (8 - size % 8 if size % 8 != 0 else 0)
@@ -59,6 +64,10 @@ class Memory:
 
 
 class Proc:
+    """
+    A procedure either defined in cont code or imported from an external source.
+    Whether it was imported is denoted by is_imported, which might make some fields None if it's True.
+    """
     def __init__(
         self, name: str, ip: int, in_stack: List["Type"],
         out_stack: List["Type"], block: Block, is_named: bool,
@@ -89,6 +98,7 @@ class Proc:
 
     @classmethod
     def create_imported(cls, name: str, in_stack: List["Type"], out_stack: List["Type"]) -> "Proc":
+        """Creates and returns a new Proc, which was imported from an external source."""
         self = cls.__new__(cls)
 
         self.name = name
@@ -119,6 +129,10 @@ class Proc:
 
 
 class StateSaver:
+    """
+    A class used for storing certain state from the `State` class, while parsing included modules.
+    The constructor will load in the fields automatically.
+    """
     def __init__(self):
         self.block_stack = State.block_stack
         self.tokens = State.tokens
@@ -126,6 +140,7 @@ class StateSaver:
         self.loc = State.loc
 
     def load(self):
+        """Loads the stored fields back into the `State` class"""
         State.block_stack = self.block_stack
         State.tokens = self.tokens
         State.tokens_queue = self.tokens_queue
@@ -135,6 +150,7 @@ class StateSaver:
 class State:
     @classmethod
     def initialize(cls):
+        """Sets all the static fields to their default values"""
         cls.config: Any = None
 
         cls.block_stack: List[Block] = []
@@ -144,7 +160,7 @@ class State:
         cls.bind_stack_size: int = 0
         cls.compile_ifs_opened: int = 0
         cls.false_compile_ifs: int = 0
-        # This is used for let, we do unbinds, becuase in wat64 main can be called multiple times
+        # This is used for the let keyowrd to unbind in the end, becuase main can be called multiple times on wat64
         cls.global_binded: int = 0
 
         cls.memories: Dict[str, Memory] = {}
@@ -188,6 +204,7 @@ class State:
 
     @classmethod
     def full_reset(cls):
+        """Resets the state to the default values including the static state of other classes."""
         cls.initialize()
         Memory.global_offset = 0
 
@@ -220,18 +237,29 @@ class State:
     }
 
     def var_types() -> Dict[str, "VarType"]:  # type: ignore
+        """Returns the union of all dictionaries in `State.var_type_scopes`"""
         if State.var_type_scopes:
             return reduce(lambda a, b: {**a, **b}, State.var_type_scopes)
         return {}
 
     @staticmethod
     def get_new_ip(op: Op):
+        """
+        Gets the next available instruction position for the op and
+        performs all the state changes required.
+        """
         State.current_ip += 1
         State.ops_by_ips.append(op)
         return State.current_ip
 
     @staticmethod
     def check_name(token: Tuple[str, str], error="procedure"):
+        """
+        Checks whether the provided token has a value, that is an available and valid name.
+
+        Throws an error if it isn't. The `error` parameter indicates what was the type of the thing,
+        that was supposed be named with the provided name e. g. a procedure.
+        """
         if token[0] in [*State.procs, *State.memories, 
             *State.constants, *State.structures, *State.enums]:
             State.loc = token[1]
@@ -242,17 +270,28 @@ class State:
 
     @staticmethod
     def get_proc_by_block(block: Block):
+        """
+        Gets the `Proc` object for the procedure, that uses the block `Block`.
+        If such a procedure is not found an exception will be raised.
+        """
         proc_op = State.ops_by_ips[block.start]
         return proc_op.operand
 
     @staticmethod
     def throw_error(error: str, do_exit: bool = True):
+        """
+        Throws a cont error with all the formatting.
+        The `State.loc` will be used for the location of the error.
+
+        If `do_exit` is false the message will be printed to stderr, but the script won't exit.
+        """
         sys.stderr.write(f"\033[1;31mError {State.loc}:\033[0m {error}\n")
         if do_exit:
             exit(1)
 
     @staticmethod
     def add_proc_use(proc):
+        """Modifies the directed graph of procedures usage according to the state"""
         if State.current_proc is None:
             State.used_procs.add(proc)
         else:
@@ -260,6 +299,7 @@ class State:
 
     @staticmethod
     def compute_used_procs():
+        """Modifies `State.used_procs` to include every single procedure, that should be compiled."""
         orig = State.used_procs.copy()
         State.used_procs = set()
         for i in orig:
@@ -268,6 +308,7 @@ class State:
 
     @staticmethod
     def _compute_used_procs(proc: Proc):
+        """A helper method for `State.compute_used_procs`"""
         for i in proc.used_procs:
             if i in State.used_procs:
                 continue
@@ -276,14 +317,32 @@ class State:
 
     @staticmethod
     def is_hex(token: str) -> bool:
+        """
+        A utils method, which determines whether a given string is a valid hex number.
+        The method does not need any prefixes.
+        
+        The token of "05aF" will result in a True, meanwhile "0xa0" will result in a False. 
+        """
         return all(i.lower() in "abcdef1234567890" for i in token)
 
     @staticmethod
     def is_bin(token: str) -> bool:
+        """
+        A utils method, which determines whether a given string is a valid binary number.
+        The method does not need any prefixes.
+        
+        The token of "0001010" will result in a True, meanwhile "0b110" will result in a False. 
+        """
         return all(i.lower() in "01" for i in token)
 
     @staticmethod
     def is_oct(token: str) -> bool:
+        """
+        A utils method, which determines whether a given string is a valid octal number.
+        The method does not need any prefixes.
+        
+        The token of "163" will result in a True, meanwhile "0o120" will result in a False. 
+        """
         return all(i.lower() in "01234567" for i in token)
 
 State.initialize()

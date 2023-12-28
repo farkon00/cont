@@ -5,6 +5,7 @@ from state import State, Proc, cont_assert
 
 
 class Type(ABC):
+    """An abstract class for all cont types"""
     def __hash__(self) -> int:
         return hash(self.text_repr())
 
@@ -16,6 +17,10 @@ class Type(ABC):
 
 
 class Ptr(Type):
+    """
+    A cont pointer type, where `typ` is the type the pointer to pointing to
+    or None if the pointer is `ptr`.
+    """
     def __init__(self, typ: Optional[Type] = None):
         self.typ = typ
 
@@ -33,6 +38,17 @@ class Ptr(Type):
 
 
 class Array(Type):
+    """
+    A cont array type, where `typ` is the type of the elements and `len` is the length.
+
+    Cannot exist on the stack, but Ptr(Array(...)) can. The `typ` has
+    to have a size of 8 bytes.
+
+    `typ` can be None and `len` can be -1, but such a type can only be
+    created internally in the language and cannot be used for certain operations
+    with types. If `typ` is None, that means an array with any type of element.
+    And if `len` is -1 it means an array with any length.
+    """
     def __init__(self, len: int = -1, typ: Optional[Type] = None):
         self.len = len
         self.typ = typ
@@ -59,6 +75,7 @@ class Array(Type):
 
 
 class Int(Type):
+    """A cont integer type"""
     def __eq__(self, other) -> bool:
         return isinstance(other, Int) or other is None
 
@@ -70,6 +87,10 @@ class Int(Type):
 
 
 class Addr(Type):
+    """
+    A cont address type, denotes a function pointer. Has `in_types` and
+    `out_types` which must match for addrs to be equal.
+    """
     def __init__(self, in_types: List[Type], out_types: List[Type]):
         self.in_types = in_types
         self.out_types = out_types
@@ -89,6 +110,10 @@ class Addr(Type):
 
 
 class VarType(Type):
+    """
+    A cont variable type, can only be created in a function signature and
+    has to be replaced by a concrete type on every call.
+    """
     def __init__(self, name: str):
         self.name = name
 
@@ -104,6 +129,12 @@ class VarType(Type):
 
 
 class Struct(Type):
+    """
+    A cont structure. Used both as a type and as a container for storing data about the struct.
+    
+    Cannot exist on the stack, but Ptr(Struct(...)) can.
+    The types of fields have to be 8 bytes in length.
+    """
     def __init__(
         self,
         name: str,
@@ -147,9 +178,9 @@ class Struct(Type):
         return hash(self.text_repr())
 
 
-def type_to_str(_type):
+def type_to_str(_type: Type) -> str:
     """
-    Converts cont type object to string
+    Converts cont type object to a human-readable string
     """
     if isinstance(_type, Int):
         return "int"
@@ -183,6 +214,23 @@ def parse_type(
     throw_exc: bool = True,
     var_type_scope: Optional[Dict[str, VarType]] = None,
 ):
+    """
+    Parses a cont type from a token. If parsing fails throws an error
+    if throw_exc is set to True. Might use the global token iterator to get more tokens
+    for a type if needed.
+
+    * `token` is the first token of the type to be parsed
+    * `error` is the context in which the type is being parsed e. g. a procedure contract
+    * `auto_ptr` is a flag, which determines if the types, that cannot exist on the stack
+    e. g. structs or array should be wrapper in a pointer
+    * `allow_unpack` is a flag, which determines if type unpacking is allowed in the current context
+    (a list of types will be returned if there is going to be unpacking and this flag is set)
+    * `end` is a string, which will end the current context
+    * `throw_exc` is a flag, which determines if the function should throw cont errors if parsing fails
+    * `var_type_scope` is the newest type variable scope, where the new variables are going to be added to
+    (this argument not being None indicates, that the caller wants an ability for new type variables to be declared)
+    """
+    # TODO: figure out if some asserts not checking for throw_exc is the intended behavior
     State.loc = token[1]
     og_name = name = token[0]
     is_ended = False
@@ -282,7 +330,11 @@ def parse_type(
         return result
 
 
-def sizeof(_type) -> int:
+def sizeof(_type: Optional[Type]) -> int:
+    """
+    Returns the size of a type. Will throw an error if
+    the any type or a type variable was given.
+    """
     if isinstance(_type, Int) or isinstance(_type, Ptr) or isinstance(_type, Addr):
         return 8
     elif isinstance(_type, Struct):
@@ -297,7 +349,8 @@ def sizeof(_type) -> int:
         cont_assert(False, f"Unimplemented type in sizeof: {type_to_str(_type)}")
 
 
-def must_ptr(_type) -> bool:
+def must_ptr(_type: Optional[Type]) -> bool:
+    """Returns True if the type cannot be present on the stack"""
     return isinstance(_type, Struct) or isinstance(_type, Array)
 
 
