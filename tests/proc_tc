@@ -1,0 +1,36 @@
+include std.cn
+
+proc a int -> ptr:
+  sizeoftype int malloc let res;
+  !res
+  res (*int)
+end
+
+proc a' int -> *int:
+  sizeoftype int malloc let res;
+  !res
+  res
+end
+
+struct A
+  int x
+end
+
+struct (A) B
+  int y
+end
+
+struct (A) C
+  int z
+end
+
+proc b int int -> B:
+  C
+end // A compilation error here
+:
+
+:
+
+:
+[1;31mError {source_file}:29:4:[0m different types in procedure definition
+[1;34mElement 1[0m: *C instead of *B
