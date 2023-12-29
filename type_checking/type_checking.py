@@ -37,11 +37,16 @@ def check_stack(stack: List[Type], expected: List[Type], arg=0):
 
 
 def check_route_stack(
-    stack1: List[Type], stack2: List[Type], error: str = "in different routes of if-end"
+    stack1: List[Type], stack2: List[Type], can_collapse_stack: bool = True,
+    error: str = "in different routes of if-end"
 ):
     """
     Checks whether the stacks can be collapsed into one stack(using types.down_stack).
-    Modifies `stack1` with the new types after the branches.
+
+    If the function `can_collapse_stack` it means, that
+    the checking becomes looser and `stack1` can be modified with types, that
+    will be on the stack after the branches' control flow joins. Otherwise a simple
+    equals check will be performed for every type.
 
     The error indicates the type of routes, which will be used for error messages.
     """
@@ -58,14 +63,22 @@ def check_route_stack(
         )
         exit(1)
     for i in range(len(stack1)):
-        typ, is_succ = down_cast(stack1[i], stack2[i])
-        if not is_succ:
-            State.throw_error(f"different types {error}", False)
-            sys.stderr.write(
-                f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
-            )
-            exit(1)
-        stack1[i] = typ
+        if can_collapse_stack:
+            typ, is_succ = down_cast(stack1[i], stack2[i])
+            if not is_succ:
+                State.throw_error(f"different types {error}", False)
+                sys.stderr.write(
+                    f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
+                )
+                exit(1)
+            stack1[i] = typ
+        else:
+            if stack1[i] != stack2[i] and stack1[i] is not None and stack2[i] is not None:
+                State.throw_error(f"different types {error}", False)
+                sys.stderr.write(
+                    f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
+                )
+                exit(1)
 
 
 def type_check(ops: List[Op], is_main: bool = False) -> list:
@@ -431,9 +444,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         State.current_proc = op.operand
     elif op.type == OpType.ENDPROC:
         check_route_stack(
-            stack,
-            State.get_proc_by_block(op.operand).out_stack,
-            "in procedure definition",
+            stack, State.get_proc_by_block(op.operand).out_stack,
+            can_collapse_stack=False, error="in procedure definition",
         )
         stack.clear()
         stack.extend(State.route_stack.pop()[1])
