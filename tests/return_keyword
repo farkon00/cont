@@ -1,0 +1,75 @@
+include std.cn
+
+proc safe_divide int int -> int int:
+  if dup 0 == do drop drop -1 0 return end
+  / 1
+end
+
+nproc get_speed_per_minute int km int h -> int int:
+  km h safe_divide not if let invalid_speed; -1 0 return end
+  60 safe_divide not if drop -1 0 return end
+  km print
+  1
+end
+
+0 let time;
+120 2 get_speed_per_minute swap print print
+20 time get_speed_per_minute swap print print
+
+nproc f int a int b -> int:
+  if a 2 % 0 == do
+    if b 2 % 0 == do
+      1 return 1 2
+    else
+      2 return 5 345
+    end
+    1 -4
+  end
+  0
+end
+nproc f1 int a int b -> int:
+  if a 2 % 0 == do
+    if b 2 % 0 == do
+      1 return 1 2
+    else
+      2
+    end
+    return
+  end
+  0
+end
+nproc f2 int a int b -> int:
+  0
+  if a 2 % 0 == do
+    drop
+    if b 2 % 0 == do
+      1
+    else
+      2 return 754
+    end
+  end
+end
+1 1 f print
+0 1 f print
+0 2 f print
+1 1 f1 print
+0 1 f1 print
+0 2 f1 print
+1 1 f2 print
+0 1 f2 print
+0 2 f2 print
+:
+120
+1
+1
+-1
+0
+0
+2
+1
+0
+2
+1
+0
+2
+1
