@@ -295,7 +295,7 @@ def generate_wat64(ops: List[Op]) -> str:
         if not op.compiled: continue
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
-                if op.type == OpType.ENDPROC:
+                if op.type == OpType.PROC_RETURN and op.operand[1]:
                     State.current_proc = None
                 continue
         
@@ -390,12 +390,12 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         args = "".join([f"(local.get {i})"
             for i in range(len(op.operand.in_stack))])
         return f"(func {name} (param{params}) (result{results}) {allocation} {args}"
-    elif op.type == OpType.ENDPROC:
+    elif op.type == OpType.PROC_RETURN:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
-        State.current_proc = None
-        memory_size = State.ops_by_ips[op.operand.start].operand.memory_size
-        return f"(global.get $call_stack_ptr) (i32.const {memory_size})" +\
-            "(i32.sub) (global.set $call_stack_ptr))"
+        if op.operand[1]: State.current_proc = None
+        memory_size = State.ops_by_ips[op.operand[0].start].operand.memory_size
+        return f"(global.get $call_stack_ptr) (i32.const {memory_size}) " +\
+            f"(i32.sub) (global.set $call_stack_ptr)) {'(return)' if not op.operand[1] else ''}"
     elif op.type == OpType.BIND:
         buf = ""
         State.bind_stack_size += op.operand
@@ -405,9 +405,9 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         buf += "(i32.add) (global.set $bind_stack_ptr)"
         return buf
     elif op.type == OpType.UNBIND:
-        State.bind_stack_size -= op.operand
+        if op.operand[1]: State.bind_stack_size -= op.operand[0]
         return \
-            f"(global.get $bind_stack_ptr) (i32.const {op.operand * 8}) (i32.sub) (global.set $bind_stack_ptr)"
+            f"(global.get $bind_stack_ptr) (i32.const {op.operand[0] * 8}) (i32.sub) (global.set $bind_stack_ptr)"
     elif op.type == OpType.PUSH_BIND_STACK:
         return \
             f"(global.get $bind_stack_ptr) (i32.const {(State.bind_stack_size - op.operand) * 8}) (i32.sub) (i64.load)"

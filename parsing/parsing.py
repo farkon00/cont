@@ -35,7 +35,7 @@ END_TYPES = {
     BlockType.ELSE : OpType.ENDIF,
     BlockType.WHILE : OpType.ENDWHILE,
     BlockType.FOR : OpType.ENDFOR,
-    BlockType.PROC : OpType.ENDPROC,
+    BlockType.PROC : OpType.PROC_RETURN,
     BlockType.BIND : OpType.UNBIND,
 }
 
@@ -163,7 +163,7 @@ def parse_proc_head(self_named: bool = False) -> str:
     var_types_scope: Dict[str, VarType] = {}
     State.var_type_scopes.append(var_types_scope)
 
-    assert State.current_proc is None, "nested procedures aren't allowed"
+    assert len(State.block_stack) == 0, "procedures must be located at the top-level"
 
     if first_token[0].startswith("[") and first_token[0].endswith("]"):
         if State.owner is not None:
@@ -262,7 +262,7 @@ def parse_proc_head(self_named: bool = False) -> str:
         generated_ip = State.get_new_ip(generated_op)
         generated_block.start = generated_ip
         generated_proc.ip = generated_ip
-        generated_op_end = Op(OpType.ENDPROC, generated_block)
+        generated_op_end = Op(OpType.PROC_RETURN, (generated_block, True))
         generated_block.end = State.get_new_ip(generated_op_end)
         generated_proc.used_procs.add(proc)
         
@@ -620,20 +620,20 @@ def parse_end() -> Union[List[Op], Op]:
         State.bind_stack = State.bind_stack[:-block.binded]
     if block.type == BlockType.BIND:
         unbinded = State.ops_by_ips[block.start].operand
-        op = Op(OpType.UNBIND, unbinded)
+        op = Op(OpType.UNBIND, (unbinded, True))
         State.bind_stack = State.bind_stack[:-unbinded]
     elif block.type == BlockType.PROC:
         proc = State.current_proc
         State.current_proc = None
-        op = Op(OpType.ENDPROC, block)
+        op = Op(OpType.PROC_RETURN, (block, True))
         if proc.is_named:
             State.bind_stack = State.bind_stack[:-len(proc.in_stack)]
             block.end = State.get_new_ip(op)
-            return [Op(OpType.UNBIND, len(proc.in_stack) + block.binded), op]
+            return [Op(OpType.UNBIND, (len(proc.in_stack) + block.binded, True)), op]
         if proc.is_self_named:
             State.bind_stack = State.bind_stack[:-1]
             block.end = State.get_new_ip(op)
-            return [Op(OpType.UNBIND, 1 + block.binded), op]
+            return [Op(OpType.UNBIND, (1 + block.binded, True)), op]
     elif block.type == BlockType.WHILE:
         cond = State.do_stack.pop()[::-1]
         for i in cond:
@@ -641,7 +641,7 @@ def parse_end() -> Union[List[Op], Op]:
         op = Op(OpType.ENDWHILE, block, State.loc)
         op.operand.end = State.get_new_ip(op)
         if block.binded != 0:
-            return [Op(OpType.UNBIND, block.binded), *cond, op]
+            return [Op(OpType.UNBIND, (block.binded, True)), *cond, op]
         return [*cond, op]
     elif block.type == BlockType.FOR:
         State.bind_stack.pop()
@@ -654,7 +654,7 @@ def parse_end() -> Union[List[Op], Op]:
 
     block.end = State.get_new_ip(op)
     if block.binded != 0:
-        return [Op(OpType.UNBIND, block.binded), op]
+        return [Op(OpType.UNBIND, (block.binded, True)), op]
     
     return op
 
@@ -857,7 +857,7 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         new_block.start = block.end
         if block.binded != 0:
             State.bind_stack = State.bind_stack[:-block.binded]
-            return [Op(OpType.UNBIND, block.binded), op]
+            return [Op(OpType.UNBIND, (block.binded, True)), op]
         else:
             return op
 
@@ -933,6 +933,17 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
     elif token == "sproc":
         assert not State.is_named, "Procedure cannot be named and self-named at the same time"
         return parse_proc_head(self_named=True)
+
+    elif token == "return":
+        block = State.block_stack[0]
+        proc = State.current_proc
+        op = Op(OpType.PROC_RETURN, (block, False))
+        total_bound = sum([i.binded for i in State.block_stack])
+        if proc.is_named:
+            return [Op(OpType.UNBIND, (len(proc.in_stack) + total_bound, False)), op]
+        if proc.is_self_named:
+            return [Op(OpType.UNBIND, (1 + total_bound, False)), op]
+        return op
 
     # prefix tokens
     elif token == "unpack":
@@ -1258,5 +1269,5 @@ def parse_to_ops(program: str, dump_tokens: bool = False, is_main: int = False) 
 
     if is_main and State.global_binded:
         State.bind_stack = []
-        ops.append(Op(OpType.UNBIND, State.global_binded))
+        ops.append(Op(OpType.UNBIND, (State.global_binded, False)))
     return ops

@@ -390,7 +390,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
                 Op(OpType.PUSH_INT, op.operand[2].len, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.LT, loc=op.loc),
-                Op(OpType.UNBIND, 2, loc=op.loc),
+                Op(OpType.UNBIND, (2, True), loc=op.loc),
                 end_while,
                 Op(OpType.OPERATOR, Operator.DROP, loc=op.loc),
             ]
@@ -416,7 +416,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                 Op(OpType.OPERATOR, Operator.DUP, loc=op.loc),
                 Op(OpType.PUSH_INT, 0, loc=op.loc),
                 Op(OpType.OPERATOR, Operator.NE, loc=op.loc),
-                Op(OpType.UNBIND, 2, loc=op.loc),
+                Op(OpType.UNBIND, (2, True), loc=op.loc),
                 end_while,
             ]
     elif op.type == OpType.BIND:
@@ -424,7 +424,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         State.bind_stack.extend(stack[-op.operand:])
         stack[-op.operand:] = []
     elif op.type == OpType.UNBIND:
-        for _ in range(op.operand):
+        if not op.operand[1]: return
+        for _ in range(op.operand[0]):
             State.bind_stack.pop()
     elif op.type == OpType.PUSH_BIND_STACK:
         typ = State.bind_stack[op.operand[0]]
@@ -442,14 +443,15 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         stack.clear()
         stack.extend(op.operand.in_stack)
         State.current_proc = op.operand
-    elif op.type == OpType.ENDPROC:
+    elif op.type == OpType.PROC_RETURN:
         check_route_stack(
-            stack, State.get_proc_by_block(op.operand).out_stack,
+            stack, State.get_proc_by_block(op.operand[0]).out_stack,
             can_collapse_stack=False, error="in procedure definition",
         )
         stack.clear()
-        stack.extend(State.route_stack.pop()[1])
-        State.current_proc = None
+        if op.operand[1]:
+            stack.extend(State.route_stack.pop()[1])
+            State.current_proc = None
     elif op.type == OpType.CALL:
         process_call(op, stack)
     elif op.type == OpType.TYPED_LOAD:

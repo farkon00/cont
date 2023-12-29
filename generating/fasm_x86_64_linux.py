@@ -124,7 +124,7 @@ def generate_fasm_x86_64_linux(ops: List[Op]) -> str:
     for op in ops:
         if State.current_proc is not None and State.config.o_UPR:
             if State.current_proc not in State.used_procs:
-                if op.type == OpType.ENDPROC:
+                if op.type == OpType.PROC_RETURN and op.operand[1]:
                     State.current_proc = None
                 continue
         buf += generate_op_fasm_x86_64_linux(op)
@@ -371,7 +371,7 @@ def generate_op_fasm_x86_64_linux(op: Op) -> str:
             "add rbx, 8\n"
             "mov [call_stack_ptr], rbx\n"
         )
-    elif op.type == OpType.ENDPROC:
+    elif op.type == OpType.PROC_RETURN:
         cont_assert(State.current_proc is not None, "Bug in parsing of procedures")
         asm = comment + (
             "mov rbx, [call_stack_ptr]\n"
@@ -382,10 +382,11 @@ def generate_op_fasm_x86_64_linux(op: Op) -> str:
             f"sub rbx, {State.current_proc.memory_size}\n"
             "mov [call_stack_ptr], rbx\n"
             "ret\n"
-            f"addr_{op.operand.end}:\n"
         )
 
-        State.current_proc = None
+        if op.operand[1]:
+            asm += f"addr_{op.operand[0].end}:\n"
+            State.current_proc = None
         return asm
     elif op.type == OpType.BIND:
         buf = comment
@@ -405,10 +406,10 @@ def generate_op_fasm_x86_64_linux(op: Op) -> str:
 
         return buf
     elif op.type == OpType.UNBIND:
-        State.bind_stack_size -= op.operand
+        if op.operand[1]: State.bind_stack_size -= op.operand[0]
         return comment + (
             "mov rbx, [bind_stack_ptr]\n"
-            f"sub rbx, {op.operand * 8}\n"
+            f"sub rbx, {op.operand[0] * 8}\n"
             "mov [bind_stack_ptr], rbx\n"
         )
     elif op.type == OpType.PUSH_BIND_STACK:

@@ -63,7 +63,7 @@ def main(lsp_mode: bool = False):
                 print(
                     f"{op.loc} {op.type.name} {op.operand if op.type.name != 'OPERATOR' else op.operand.name}"
                 )
-            if is_printing and op.type == OpType.ENDPROC:
+            if is_printing and op.type == OpType.PROC_RETURN and op.operand[1]:
                 break
         exit(0)
 

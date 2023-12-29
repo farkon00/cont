@@ -22,7 +22,7 @@ class OpType(Enum):
     FOR = auto()
     ENDFOR = auto()
     DEFPROC = auto()
-    ENDPROC = auto()
+    PROC_RETURN = auto()
     BIND = auto()
     PUSH_BIND_STACK = auto()
     UNBIND = auto()
