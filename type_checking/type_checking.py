@@ -146,7 +146,7 @@ def process_for_in(op: Op, stack: List[Type], iter_stack: list) -> list:
     State.ops_by_ips[op.operand[0].end].operand = (*op.operand[:2], type_)
     if type_.len == 0:
         return []
-    State.route_stack.append(("for", stack.copy()))
+    State.route_stack.append(("for", stack.copy(), False))
     State.bind_stack.extend((Int(), type_.typ))
     if State.config.re_IOR:
         State.locs_to_include.append(op.loc)
@@ -173,7 +173,7 @@ def process_for_until(op: Op, stack: List[Type], iter_stack: list) -> list:
     Returns the result of desugaring as a list of operations.
     """
     check_stack(iter_stack, [Ptr()])
-    State.route_stack.append(("for", stack.copy()))
+    State.route_stack.append(("for", stack.copy(), False))
     State.bind_stack.extend((Ptr(), Int()))
     op.operand[0].type = BlockType.WHILE
 
@@ -342,23 +342,34 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         )
     elif op.type == OpType.IF:
         check_stack(stack, [Int()])
-        State.route_stack.append(("if-end", stack.copy()))
+        State.route_stack.append(("if-end", stack.copy(), False, []))
     elif op.type == OpType.ELSE:
-        original_stack = State.route_stack.pop()[1]
-        op.operand.stack_effect = (len(original_stack), len(stack))
-        State.route_stack.append(("if-else", stack.copy()))
+        original_route = State.route_stack.pop()
+        State.route_stack.append(("if-else", stack.copy(), False, [original_route[2]]))
         stack.clear()
-        stack.extend(original_stack)
+        stack.extend(original_route[1])
     elif op.type == OpType.ENDIF:
-        route_stack = State.route_stack.pop()
-        if route_stack[0] == "if-end":
-            op.operand.stack_effect = (len(stack), len(stack))
-            check_route_stack(stack, route_stack[1])
+        route = State.route_stack.pop()
+        op.operand.stack_effect = (len(route[1]), len(stack))
+        if route[0] == "if-end":
+            if route[2]:
+                stack.clear()
+                stack.extend(route[1])
+            else: check_route_stack(stack, route[1])
         else:
-            check_route_stack(stack, route_stack[1], "in different routes of if-else")
+            if route[2] and all(route[3]):
+                State.route_stack[-1] = (
+                    State.route_stack[-1][0], State.route_stack[-1][1],
+                    True, State.route_stack[-1][3]
+                )
+            elif route[2]:
+                stack.clear()
+                stack.extend(route[1])
+            elif not route[3][0]:
+                check_route_stack(stack, route[1], "in different routes of if-else")
     elif op.type == OpType.WHILE:
         check_stack(stack, [Int()])
-        State.route_stack.append(("while", stack.copy()))
+        State.route_stack.append(("while", stack.copy(), False, []))
     elif op.type == OpType.ENDWHILE:
         check_stack(stack, [Int()])
         pre_while_stack = State.route_stack.pop()[1]
@@ -439,7 +450,7 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
             stack.append(State.bind_stack[op.operand[0]])
         return Op(OpType.PUSH_BIND_STACK, op.operand[0], loc=op.loc, loc_id=op.loc_id)
     elif op.type == OpType.DEFPROC:
-        State.route_stack.append(("proc", stack.copy()))
+        State.route_stack.append(("proc", stack.copy(), False, []))
         stack.clear()
         stack.extend(op.operand.in_stack)
         State.current_proc = op.operand
@@ -452,6 +463,8 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         if op.operand[1]:
             stack.extend(State.route_stack.pop()[1])
             State.current_proc = None
+        else:
+            State.route_stack[-1] = (State.route_stack[-1][0], State.route_stack[-1][1], True, State.route_stack[-1][3])
     elif op.type == OpType.CALL:
         process_call(op, stack)
     elif op.type == OpType.TYPED_LOAD:

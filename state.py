@@ -154,7 +154,10 @@ class State:
         cls.config: Any = None
 
         cls.block_stack: List[Block] = []
-        cls.route_stack: List[Tuple[str, List["Type"]]] = []  # type: ignore
+        # (type, stack_before, does_return, do_other_branches_returns)
+        # The last one is used for determining if there will be a return in all cases
+        # So for example if it's an "else" block it would have the does_return for the if there
+        cls.route_stack: List[Tuple[str, List["Type"], bool, List[bool]]] = []  # type: ignore
         cls.bind_stack: list = []
         cls.do_stack: List[List[Op]] = []
         cls.bind_stack_size: int = 0
