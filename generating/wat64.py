@@ -368,9 +368,21 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
             type_info = generate_block_type_info(op.operand)
         return f"(i64.const 0) (i64.ne) (if {type_info} (then"
     elif op.type == OpType.ELSE:
-        return f") (else"
+        buf = ""
+        if len(op.operand.stack_effect) == 4:
+            for _ in range(op.operand.stack_effect[2]):
+                buf += "(i64.const -1) "
+            for _ in range(-op.operand.stack_effect[2]):
+                buf += "(drop) "
+        return buf + ") (else "
     elif op.type == OpType.ENDIF:
-        return "))"
+        buf = ""
+        if len(op.operand.stack_effect) == 4:
+            for _ in range(op.operand.stack_effect[3]):
+                buf += "(i64.const -1) "
+            for _ in range(-op.operand.stack_effect[3]):
+                buf += "(drop) "
+        return buf + "))"
     elif op.type == OpType.WHILE:
         type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand)
         return f"(i64.const 0) (i64.ne) (if {type_info} (then (loop $addr_{op.operand.start} {type_info}"
@@ -395,7 +407,7 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
         if op.operand[1]: State.current_proc = None
         memory_size = State.ops_by_ips[op.operand[0].start].operand.memory_size
         return f"(global.get $call_stack_ptr) (i32.const {memory_size}) " +\
-            f"(i32.sub) (global.set $call_stack_ptr)) {'(return)' if not op.operand[1] else ''}"
+            f"(i32.sub) (global.set $call_stack_ptr){' (return)' if not op.operand[1] else ')'} "
     elif op.type == OpType.BIND:
         buf = ""
         State.bind_stack_size += op.operand

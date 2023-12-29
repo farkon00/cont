@@ -1,7 +1,7 @@
 import sys
 
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Set, Optional, Any, Generator
+from typing import Any, Dict, Generator, List, Tuple, Set, Optional, Union
 from enum import Enum, auto
 from functools import reduce
 
@@ -33,7 +33,7 @@ class Block:
     type: BlockType
     start: int
     end: int = -1
-    stack_effect: Optional[Tuple[int, int]] = None
+    stack_effect: Optional[Union[Tuple[int, int], Tuple[int, int, int, int]]] = None
     binded: int = 0
 
 @dataclass

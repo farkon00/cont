@@ -345,13 +345,14 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         State.route_stack.append(("if-end", stack.copy(), False, []))
     elif op.type == OpType.ELSE:
         original_route = State.route_stack.pop()
+        op.operand.stack_effect = (len(original_route[1]), len(stack))
         State.route_stack.append(("if-else", stack.copy(), False, [original_route[2]]))
         stack.clear()
         stack.extend(original_route[1])
     elif op.type == OpType.ENDIF:
         route = State.route_stack.pop()
-        op.operand.stack_effect = (len(route[1]), len(stack))
         if route[0] == "if-end":
+            op.operand.stack_effect = (len(route[1]), len(route[1]), 0 , len(route[1]) - len(stack))
             if route[2]:
                 stack.clear()
                 stack.extend(route[1])
@@ -362,10 +363,23 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
                     State.route_stack[-1][0], State.route_stack[-1][1],
                     True, State.route_stack[-1][3]
                 )
+                op.operand.stack_effect = (
+                    op.operand.stack_effect[0], len(stack),
+                    len(stack) - op.operand.stack_effect[1], 0
+                )
             elif route[2]:
                 stack.clear()
                 stack.extend(route[1])
-            elif not route[3][0]:
+                op.operand.stack_effect = (
+                    op.operand.stack_effect[0], len(stack),
+                    0, op.operand.stack_effect[0] - len(stack)
+                )
+            elif route[3][0]:
+                op.operand.stack_effect = (
+                    op.operand.stack_effect[0], len(stack),
+                    len(stack) - op.operand.stack_effect[1], 0
+                )
+            else:
                 check_route_stack(stack, route[1], "in different routes of if-else")
     elif op.type == OpType.WHILE:
         check_stack(stack, [Int()])
