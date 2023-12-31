@@ -353,10 +353,13 @@ def generate_op_fasm_x86_64_linux(op: Op) -> str:
             f"jz addr_{op.operand.end}\n"
         )
     elif op.type == OpType.ENDWHILE:
-        return comment + (
-            f"jmp addr_{op.operand.start}\n"
-            f"addr_{op.operand.end}:\n"
-        )
+        if op.operand[1]:
+            return comment + (
+                f"jmp addr_{op.operand[0].start}\n" +
+                f"addr_{op.operand[0].end}:\n"
+            )
+        else:
+            return comment + f"jmp addr_{op.operand[0].end}\n"
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:

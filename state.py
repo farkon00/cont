@@ -1,6 +1,6 @@
 import sys
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Generator, List, Tuple, Set, Optional, Union
 from enum import Enum, auto
 from functools import reduce
@@ -35,6 +35,41 @@ class Block:
     end: int = -1
     stack_effect: Optional[Union[Tuple[int, int], Tuple[int, int, int, int]]] = None
     binded: int = 0
+
+@dataclass
+class Route:
+    type: str
+    initial_stack: List["Type"]
+    does_return: bool = False
+    do_other_branches_return: List[bool] = field(default_factory=lambda: [])
+    does_skip: bool = False # For break and continue
+    do_other_branches_skip: List[bool] = field(default_factory=lambda: [])
+
+    def make_with_patch(self, type: Optional[str] = None,
+                        initial_stack: Optional[List["Type"]] = None,
+                        does_return: Optional[bool] = None,
+                        do_other_branches_return: Optional[List[bool]] = None,
+                        does_skip: Optional[bool] = None,
+                        do_other_branches_skip: Optional[List[bool]] = None) -> "Route":
+        """
+        Makes a new route with the values of the old one,
+        changed as indicated by the arguments.
+        
+        Returns the route.
+        """
+        new_type = type if type is not None else self.type
+        new_initial_stack = initial_stack if initial_stack is not None else self.initial_stack
+        new_does_return = does_return if does_return is not None else self.does_return
+        new_do_other_branches_return = (do_other_branches_return
+            if do_other_branches_return is not None
+            else self.do_other_branches_return)
+        new_does_skip = does_skip if does_skip is not None else self.does_skip
+        new_do_other_branches_skip = (do_other_branches_skip
+            if do_other_branches_skip is not None
+            else self.do_other_branches_skip)
+        return Route(type=new_type, initial_stack=new_initial_stack,
+                     does_return=new_does_return, do_other_branches_return=new_do_other_branches_return,
+                     does_skip=new_does_skip, do_other_branches_skip=new_do_other_branches_skip)
 
 @dataclass
 class Memory:
@@ -154,10 +189,7 @@ class State:
         cls.config: Any = None
 
         cls.block_stack: List[Block] = []
-        # (type, stack_before, does_return, do_other_branches_returns)
-        # The last one is used for determining if there will be a return in all cases
-        # So for example if it's an "else" block it would have the does_return for the if there
-        cls.route_stack: List[Tuple[str, List["Type"], bool, List[bool]]] = []  # type: ignore
+        cls.route_stack: List[Route] = []
         cls.bind_stack: list = []
         cls.do_stack: List[List[Op]] = []
         cls.bind_stack_size: int = 0

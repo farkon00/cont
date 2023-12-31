@@ -384,10 +384,17 @@ def generate_op_wat64(op: Op, offset: int, data_table: Dict[str, int],
                 buf += "(drop) "
         return buf + "))"
     elif op.type == OpType.WHILE:
-        type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand)
-        return f"(i64.const 0) (i64.ne) (if {type_info} (then (loop $addr_{op.operand.start} {type_info}"
+        type_info = generate_block_type_info(State.ops_by_ips[op.operand.end].operand[0])
+        return (
+            f"(i64.const 0) (i64.ne) (if {type_info} (then "
+            f"(block $addr_{op.operand.start}_block {type_info} "
+            f"(loop $addr_{op.operand.start} {type_info} "
+        )
     elif op.type == OpType.ENDWHILE:
-        return f"(i64.const 0) (i64.ne) (br_if $addr_{op.operand.start}))))"
+        if op.operand[1]:
+            return f"(i64.const 0) (i64.ne) (br_if $addr_{op.operand[0].start}))))) "
+        else:
+            return f"(br $addr_{op.operand[0].start}_block) "
     elif op.type == OpType.DEFPROC:
         State.current_proc = op.operand
         if op.operand not in State.used_procs and State.config.o_UPR:

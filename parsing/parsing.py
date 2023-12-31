@@ -638,15 +638,15 @@ def parse_end() -> Union[List[Op], Op]:
         cond = State.do_stack.pop()[::-1]
         for i in cond:
             i.loc = State.loc
-        op = Op(OpType.ENDWHILE, block, State.loc)
-        op.operand.end = State.get_new_ip(op)
+        op = Op(OpType.ENDWHILE, (block, True), State.loc)
+        op.operand[0].end = State.get_new_ip(op)
         if block.binded != 0:
             return [Op(OpType.UNBIND, (block.binded, True)), *cond, op]
         return [*cond, op]
     elif block.type == BlockType.FOR:
         State.bind_stack.pop()
         State.bind_stack.pop()
-        op = Op(OpType.ENDFOR, State.ops_by_ips[block.start].operand, State.loc)
+        op = Op(OpType.ENDFOR, (State.ops_by_ips[block.start].operand, True), State.loc)
         ip = State.get_new_ip(op)
         block.end = ip
     else:
@@ -938,11 +938,33 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         block = State.block_stack[0]
         proc = State.current_proc
         op = Op(OpType.PROC_RETURN, (block, False))
-        total_bound = sum([i.binded for i in State.block_stack])
+        total_bound = 0
+        for curr_block in State.block_stack:
+            total_bound += curr_block.binded
+            if curr_block.type == BlockType.BIND:
+                total_bound += State.ops_by_ips[curr_block.start].operand
         if proc.is_named:
             return [Op(OpType.UNBIND, (len(proc.in_stack) + total_bound, False)), op]
         if proc.is_self_named:
             return [Op(OpType.UNBIND, (1 + total_bound, False)), op]
+        return op
+    elif token == "break":
+        block = None
+        total_bound = 0
+        for curr_block in reversed(State.block_stack):
+            total_bound += curr_block.binded
+            if curr_block.type == BlockType.BIND:
+                total_bound += State.ops_by_ips[curr_block.start].operand
+            if curr_block.type in (BlockType.WHILE, BlockType.FOR):
+                block = curr_block
+                break
+        assert block is not None, "break without a loop"
+        op = Op(
+            OpType.ENDWHILE if block.type == BlockType.WHILE else OpType.ENDFOR,
+            (block, False)
+        )
+        if total_bound:
+            return [Op(OpType.UNBIND, (total_bound, False)), op]
         return op
 
     # prefix tokens
