@@ -1,0 +1,18 @@
+proc a int -> int:
+  while 1 do
+    if 0 do
+      break -1
+    else
+      drop 1 break 133
+    end
+    1231224 32 21
+  end
+  1
+end
+:
+
+:
+
+:
+[1;31mError {source_file}:11:3:[0m stack has extra elements in procedure definition
+[1;34mTypes[0m: int

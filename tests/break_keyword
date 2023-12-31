@@ -1,0 +1,28 @@
+include std.cn
+
+1
+while 1 do
+  let i;
+  if i 3 % 0 == do "Fizz" println
+  else
+    if i 5 % 0 == do "Buzz" println
+    else i print end
+  end
+  if i 3 % 2 == i 5 % 4 == and do i break -1 1 345 end
+  i 1 +
+end drop
+:
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
