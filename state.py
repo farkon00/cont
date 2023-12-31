@@ -40,15 +40,11 @@ class Block:
 class Route:
     type: str
     initial_stack: List["Type"]
-    does_return: bool = False
-    do_other_branches_return: List[bool] = field(default_factory=lambda: [])
     does_skip: bool = False # For break and continue
     do_other_branches_skip: List[bool] = field(default_factory=lambda: [])
 
     def make_with_patch(self, type: Optional[str] = None,
                         initial_stack: Optional[List["Type"]] = None,
-                        does_return: Optional[bool] = None,
-                        do_other_branches_return: Optional[List[bool]] = None,
                         does_skip: Optional[bool] = None,
                         do_other_branches_skip: Optional[List[bool]] = None) -> "Route":
         """
@@ -59,16 +55,11 @@ class Route:
         """
         new_type = type if type is not None else self.type
         new_initial_stack = initial_stack if initial_stack is not None else self.initial_stack
-        new_does_return = does_return if does_return is not None else self.does_return
-        new_do_other_branches_return = (do_other_branches_return
-            if do_other_branches_return is not None
-            else self.do_other_branches_return)
         new_does_skip = does_skip if does_skip is not None else self.does_skip
         new_do_other_branches_skip = (do_other_branches_skip
             if do_other_branches_skip is not None
             else self.do_other_branches_skip)
         return Route(type=new_type, initial_stack=new_initial_stack,
-                     does_return=new_does_return, do_other_branches_return=new_do_other_branches_return,
                      does_skip=new_does_skip, do_other_branches_skip=new_do_other_branches_skip)
 
 @dataclass

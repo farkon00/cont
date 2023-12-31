@@ -397,12 +397,17 @@ def type_check_op(op: Op, stack: List[Type]) -> Optional[Union[Op, List[Op]]]:
         if op.operand[1]:
             check_stack(stack, [Int()])
             State.route_stack.pop()
+            if route.does_skip:
+                stack.clear()
+                stack.extend(pre_while_stack)
+            else:
+                check_route_stack(stack, pre_while_stack, "in different routes of while")
         else:
             State.route_stack[-1] = State.route_stack[-1].make_with_patch(
                 does_skip=True
             )
+            check_route_stack(stack, pre_while_stack, "in different routes of while")
         op.operand[0].stack_effect = (len(pre_while_stack), len(stack))
-        check_route_stack(stack, pre_while_stack, "in different routes of while")
     elif op.type == OpType.FOR:
         iter_stack = type_check(op.operand[2])
         assert len(iter_stack) == 1, "iterable expression should return one value"
