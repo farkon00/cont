@@ -18,8 +18,8 @@ $ python3 -V
 $ git clone https://github.com/farkon00/cont.git
 $ cd cont
 
-# Install fasm with your package manager, nodejs for testing wasm
-$ sudo apt install fasm nodejs 
+# Install fasm with your package manager, nodejs and wabt (https://github.com/WebAssembly/wabt) for testing wasm
+$ sudo apt install fasm nodejs wabt
 $ python3 -m pip install pytest
 $ pytest test.py
 
