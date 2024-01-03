@@ -631,11 +631,14 @@ def generate_operator_fasm_x86_64_linux(op: Op):
     cont_assert(len(Operator) == 20, "Unimplemented operator in generate_operator_fasm_x86_64_linux")
     cont_assert(op.type == OpType.OPERATOR, f"generate_operator_fasm_x86_64_linux cant generate {op.type.name}")
 
-    call_npd_code = (
-        f"mov r15, loc_{op.loc_id}\n"
-        f"mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
-        "call check_null_ptr\n"
-    )
+    if op.loc_id != -1 and State.config.re_NPD:
+        call_npd_code = (
+            f"mov r15, loc_{op.loc_id}\n"
+            f"mov r12, {len(State.locs_to_include[op.loc_id]) + 1}\n"
+            "call check_null_ptr\n"
+        )
+    else:
+        call_npd_code = ""
 
     if op.operand in (Operator.ADD, Operator.SUB):
         return (
@@ -691,17 +694,16 @@ def generate_operator_fasm_x86_64_linux(op: Op):
             "push rcx\n"
         )
     elif op.operand == Operator.STORE:
-        
         return (
             "pop rax\n"
             "pop rbx\n"
-            f"{call_npd_code if State.config.re_NPD else ''}"
+            f"{call_npd_code}"
             "mov [rax], rbx\n"
         )
     elif op.operand == Operator.LOAD:
         return (
             "pop rax\n"
-            f"{call_npd_code if State.config.re_NPD else ''}"
+            f"{call_npd_code}"
             "mov rbx, [rax]\n"
             "push rbx\n"
         )
@@ -709,13 +711,13 @@ def generate_operator_fasm_x86_64_linux(op: Op):
         return (
             "pop rax\n"
             "pop rbx\n"
-            f"{call_npd_code if State.config.re_NPD else ''}"
+            f"{call_npd_code}"
             "mov [rax], bl\n"
         )
     elif op.operand == Operator.LOAD8:
         return (
             "pop rax\n"
-            f"{call_npd_code if State.config.re_NPD else ''}"
+            f"{call_npd_code}"
             "xor rbx, rbx\n"
             "mov bl, [rax]\n"
             "push rbx\n"
