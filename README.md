@@ -15,10 +15,11 @@ To use the language you need to install the following dependencies:
 - python3
 - pip
 - fasm
+- wabt(required only for the `wat64` target)
+Also we recommend installing the following dependencies for testing purposes:
 - nodejs
-- wabt
 
-On debian/ubuntu based systems with APT you can do:
+To setup directly on your machine:
 ```console
 $ python3 -V
  Python >=3.10
