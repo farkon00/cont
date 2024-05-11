@@ -11,11 +11,11 @@ RUN apt install -y git \
     wabt 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-RUN groupadd -g 2000 bischebis \
-&& useradd -m -u 2001 -g bischebis bischebis
+RUN groupadd -g 2000 bitchebis \
+&& useradd -m -u 2001 -g bitchebis bitchebis
 
-USER bischebis
-WORKDIR /home/bischebis
+USER bitchebis
+WORKDIR /home/bitchebis
 RUN mkdir cont
-COPY --chown=bischebis:bischebis . cont
+COPY --chown=bitchebis:bitchebis . cont
 WORKDIR cont

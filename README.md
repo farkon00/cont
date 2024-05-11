@@ -47,16 +47,16 @@ docker run -it cont /bin/bash
 ```
 ```console
 cont $ docker run -it cont /bin/bash
-bischebis@6caa64b7c4b9:~/cont$ pytest test.py
+bitchebis@6caa64b7c4b9:~/cont$ pytest test.py
 =================================== test session starts ===================================
 platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack
-rootdir: /home/bischebis/cont
+rootdir: /home/bitchebis/cont
 collected 40 items                                                                        
 
 test.py ........................................                                    [100%]
 
 =================================== 40 passed in 2.52s ====================================
-bischebis@6caa64b7c4b9:~/cont$ 
+bitchebis@6caa64b7c4b9:~/cont$ 
 ```
 
 If you want to mount your local filesystem to the container then:
