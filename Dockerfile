@@ -16,5 +16,6 @@ RUN groupadd -g 2000 bischebis \
 
 USER bischebis
 WORKDIR /home/bischebis
-RUN git clone https://github.com/farkon00/cont
+RUN mkdir cont
+COPY --chown=bischebis:bischebis . cont
 WORKDIR cont
