@@ -59,6 +59,14 @@ test.py ........................................                                
 bischebis@6caa64b7c4b9:~/cont$ 
 ```
 
+If you want to mount your local filesystem to the container then:
+```sh
+LOCALDIR=~/code/cont
+```
+```sh
+docker run -v $(LOCALDIR):/code -it cont /bin/bash
+```
+
 # Examples
 You can find more examples in `tests` or `examples` folders or
 in the standard library source, which can be found in `std`.
