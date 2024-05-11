@@ -64,7 +64,7 @@ If you want to mount your local filesystem to the container then:
 LOCALDIR=~/code/cont
 ```
 ```sh
-docker run -v $(LOCALDIR):/code -it cont /bin/bash
+docker run --mount type=bind,source=$LOCALDIR,target=/code -it cont /bin/bash
 ```
 
 # Examples
