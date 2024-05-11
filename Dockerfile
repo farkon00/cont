@@ -11,11 +11,7 @@ RUN apt install -y git \
     wabt 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-RUN groupadd -g 2000 bitchebis \
-&& useradd -m -u 2001 -g bitchebis bitchebis
-
-USER bitchebis
-WORKDIR /home/bitchebis
+WORKDIR /
 RUN mkdir cont
-COPY --chown=bitchebis:bitchebis . cont
+COPY . cont
 WORKDIR cont
