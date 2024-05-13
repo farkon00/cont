@@ -1,0 +1,20 @@
+include std.cn
+
+struct Vector2
+  int x
+  int y
+end
+
+struct (Vector2) Vector3
+  int z
+end
+
+// If you use named procedures, the owner of the method will be binded to self implicitly
+nproc [Vector2] 3diffy -> Vector3:
+  self.x self.y 0
+  Vector3 // Allocate a new Vector3 instance on the heap
+end
+
+42 69 Vector2 .3diffy // Call the 3diffy method on the newly created vector
+.x print // Print the value in the x field of the return value of 3diffy
+// Btw you can call 3diffy on Vector3

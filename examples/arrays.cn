@@ -1,0 +1,16 @@
+include std.cn
+
+const coords_len 69 end
+
+struct Vector2
+  int x
+  int y
+end
+
+init var coords [coords_len] Vector2 // Create array of Vector2 with size coodrs_len and init all of the pointers to the structure 
+
+42 68 coords [] !.x // Write 42 into x of 69th element of array
+420 12 coords [] !.x // Write 420 into x of 13th element of array
+68 coords [] .x print // Read x of 69th element of array
+12 coords [] .x print // Read x of 13th element of array
+4 2 Vector2 23 coords *[] ! // Writes new Vector in 24th array element
