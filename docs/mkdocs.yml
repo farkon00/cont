@@ -1,0 +1,31 @@
+site_name: cont
+repo_url: https://github.com/farkon00/cont
+docs_dir: content
+theme:
+  name: material
+  custom_dir: overrides
+  features:
+    - navigation.sections
+  palette:
+    - scheme: default
+      primary: purple
+      toggle:
+        icon: material/brightness-7
+        name: Dark Mode
+    - scheme: slate
+      primary: purple
+      toggle:
+        icon: material/brightness-4
+        name: Light Mode
+nav:
+  - Home: index.md
+  - 'learn/01-quick-start.md'
+  - Learn:
+      - 'learn/02-basic-operation.md'
+      - 'learn/03-loops-and-conditions.md'
+      - 'learn/04-binds.md'
+      - 'learn/05-procedures.md'
+      - 'learn/06-variables.md'
+extra:
+  generator: false
+
