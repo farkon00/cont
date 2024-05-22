@@ -9,7 +9,7 @@ How have I come up with that specific word?
 I just mixed beginning of that word and tried to come up with something, that sounds good.
 
 # Quick Start
-You can learn the language by using the ["Learn cont" manual](https://github.com/farkon00/cont/blob/master/learn-cont/00-learn-cont.md)
+The documentation is available at https://farkon00.github.io/cont/.
 
 ```bash
 $ python3 -V
