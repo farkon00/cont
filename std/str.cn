@@ -3,7 +3,7 @@ include core.cn
 proc streq @str @str -> int:
   let len data len2 data2;
   len2 len == if
-    var i int
+    var i int = 0;
     var res int = 1;
     while len i - 8 >=
           res and do
