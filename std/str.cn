@@ -7,12 +7,12 @@ proc streq @str @str -> int:
     var res int = 1;
     while len i - 8 >=
           res and do
-      data @ data2 @ == res and !res
+      data i ptr+ @ data2 i ptr+ @ == res and !res
       *i 8 incby
     end
     while i len <
           res and do
-      data @8 data2 @8 == res and !res
+      data i ptr+ @8 data2 i ptr+ @8 == res and !res
       *i inc
     end
     res
@@ -128,18 +128,35 @@ proc str_rfind @str @str -> int:
 end
 
 proc str_count @str @str -> int:
-  var counter int
+  var counter int = 0;
   let len1 data1 len2 data2;
-  0 
-  len1 0 != len1 len2 >= and while
-    if len2 over data1 +ptr len2 data2 streq do
-      *counter inc
-      len2 +
-    else
-      1 +
+  if len2 16 < len1 len2 - 16 < or do
+    0 
+    len1 0 != len1 len2 >= and while
+      if len2 over data1 +ptr len2 data2 streq do
+        *counter inc
+        len2 +
+      else
+        1 +
+      end
+      dup len1 len2 - <=
+    end drop
+  counter print
+  else
+    len1 len2 + malloc let data3;
+    len2 data2 data3 memcpy
+    len1 data1 data3 len2 ptr+ memcpy
+    len1 len2 + data3 z_array let z;
+    data3 free
+    var i int = 0;
+    while i len1 len2 - <= do
+      if i len2 + z [] len2 >= do
+        *counter inc
+        *i len2 incby
+      else *i inc end
     end
-    dup len1 len2 - <=
-  end drop
+    z free
+  end
   counter
 end
 
@@ -164,14 +181,6 @@ nproc str_slice2 int start int _end @str -> @str:
     1 exit
   end
   _end start - data start ptr+
-end
-
-proc str_split @str @str -> [DYNAMIC_ARRAY_SIZE] str:
-  let len data sep_len sep_data;
-  len data sep_len sep_data str_count
-  sizeoftype *str * malloc let res;
-  sizeoftype str malloc drop
-  res
 end
 
 struct CursoredString
