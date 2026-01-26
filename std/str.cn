@@ -21,24 +21,78 @@ proc streq @str @str -> int:
   end
 end
 
+nproc z_array @str -> [DYNAMIC_ARRAY_SIZE] int:
+  var l int = 0;
+  var r int = 0;
+  len sizeoftype int * malloc ([DYNAMIC_ARRAY_SIZE]) int let z;
+  len 0 z *[] !
+  var i int = 1;
+  while i len < do
+    var done int = 0;
+    if i r <= do
+      if i l - z [] i + r <= do
+        i l - z [] i z *[] ! 
+        1 !done
+      end
+    else
+      i 1 - !r
+    end
+    if done not do
+      i !l
+      if r len 1 - < do
+        data r 1 + ptr+ @8 data r 1 + i - ptr+ @8 ==
+      else 0 end
+      while
+        *r inc
+        if r len 1 - < do
+          data r 1 + ptr+ @8 data r 1 + i - ptr+ @8 ==
+        else 0 end
+      end
+      r i - 1 + i z *[] !
+    end
+    *i inc
+  end
+  z
+end
+
 proc str_find @str @str -> int:
   let len1 data1 len2 data2;
-  if len2 0 > len1 len2 >= and do
-    0
-    1 while
-      if len2 over data1 +ptr len2 data2 streq do
+  if len1 len2 >= do
+    if len2 16 < len1 len2 - 16 < or do
+      if len2 0 > len1 len2 >= and do
         0
+        1 while
+          if len2 over data1 +ptr len2 data2 streq do
+            0
+          else
+            1 +
+            dup len1 len2 - <=
+          end
+        end
+        if dup len1 len2 - 1 + == do
+          drop -1
+        end
       else
-        1 +
-        dup len1 len2 - <=
+        -1
       end
+    else
+      len1 len2 + malloc let data3;
+      len2 data2 data3 memcpy
+      len1 data1 data3 len2 ptr+ memcpy
+      len1 len2 + data3 z_array let z;
+      data3 free
+      var i int = 0;
+      var res int = 0 1 -;
+      while i len1 < res -1 == and do
+        if i len2 + z [] len2 >= do
+          i !res
+        end
+        *i inc
+      end
+      z free
+      res
     end
-    if dup len1 len2 - 1 + == do
-      drop -1
-    end
-  else
-    -1
-  end
+  else -1 end
 end
 
 proc str_rfind @str @str -> int:
