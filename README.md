@@ -12,7 +12,16 @@ I just mixed beginning of that word and tried to come up with something, that so
 
 # Quick Start
 
-```bash
+To use the language you need to install the following dependencies:
+- python3
+- pip
+- fasm
+- wabt(required only for the `wat64` target)
+Also we recommend installing the following dependencies for testing purposes:
+- nodejs
+
+To setup directly on your machine:
+```console
 $ python3 -V
  Python >=3.10
 
@@ -25,6 +34,38 @@ $ python3 -m pip install pytest
 $ pytest test.py
 
 $ python3 cont.py <source_code>.cn -r
+```
+
+Alternatively you may use the Dockerfile provided and work inside a container.
+
+In the cont directory
+```bash
+docker build --tag cont .  
+```
+Then
+```bash
+docker run -it cont /bin/bash
+```
+```console
+cont $ docker run -it cont /bin/bash
+bitchebis@6caa64b7c4b9:~/cont$ pytest test.py
+=================================== test session starts ===================================
+platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack
+rootdir: /home/bitchebis/cont
+collected 40 items                                                                        
+
+test.py ........................................                                    [100%]
+
+=================================== 40 passed in 2.52s ====================================
+bitchebis@6caa64b7c4b9:~/cont$ 
+```
+
+If you want to mount your local filesystem to the container then:
+```sh
+LOCALDIR=~/code/cont
+```
+```sh
+docker run --mount type=bind,source=$LOCALDIR,target=/code -it cont /bin/bash
 ```
 
 # Examples
