@@ -15,6 +15,7 @@ def main(lsp_mode: bool = False):
     if the function is used in code and not by calling the script from command line.  
     """
     config = Config(sys.argv, lsp_mode=lsp_mode)
+
     State.config = config
 
     file_name = os.path.splitext(config.program)[0]

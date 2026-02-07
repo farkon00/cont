@@ -1,5 +1,8 @@
 include platform.cn
 include stack.cn
+#if platform Platform.fasm_x86_64_linux ==;
+  include ffi.cn
+#endif
 
 proc / int int -> int: div drop end
 proc % int int -> int: div swap drop end

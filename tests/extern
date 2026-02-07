@@ -1,0 +1,7 @@
+#import puts ptr -> int;
+#import exit int;
+
+"Hello, World!\0" puts drop
+0 exit
+:
+Hello, World!

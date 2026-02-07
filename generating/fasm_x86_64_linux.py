@@ -36,6 +36,11 @@ def compile_ops_fasm_x86_64_linux(ops: List[Op]):
         f.write(generate_fasm_x86_64_linux(ops))
 
     subprocess.run(["fasm", f"{out}.asm"], stdin=sys.stdin, stderr=sys.stderr)
+
+    linker_args = ["ld", f"{out}.o", "-o", f"{out}"]
+    if State.config.link_with_libc:
+        linker_args += ["-lc", "--static"]
+    subprocess.run(linker_args, stdin=sys.stdin, stderr=sys.stderr)
     os.chmod(
         out, os.stat(out).st_mode | stat.S_IEXEC
     )  # Give execution permission to the file
@@ -113,9 +118,10 @@ NULL_POINTER_CODE = (
 def generate_fasm_x86_64_linux(ops: List[Op]) -> str:
     """Generates a string of fasm assembly for the program from the list of operations `ops`."""
     buf = (
-        "format ELF64 executable 3\n"
-        "segment readable executable\n"
-        "entry _start\n"
+        "format ELF64\n"
+        f"{generate_imports()}"
+        "section '.text' executable\n"
+        "public _start\n"
         f"{INDEX_ERROR_CODE if State.config.re_IOR else ''}"
         f"{NULL_POINTER_CODE if State.config.re_NPD else ''}"
         "_start:\n"
@@ -135,7 +141,7 @@ def generate_fasm_x86_64_linux(ops: List[Op]) -> str:
         "mov rax, 60\n"
         "xor rdi, rdi\n"
         "syscall\n"
-        "segment readable writeable\n"
+        "section '.data' writeable\n"
         f"{ior_code if State.config.re_IOR else ''}\n"
         f"{npd_code if State.config.re_NPD else ''}\n"
         f"{generate_fasm_types()}\n"
@@ -159,6 +165,15 @@ def generate_fasm_x86_64_linux(ops: List[Op]) -> str:
 
     return buf
 
+
+def generate_imports() -> str:
+    buf = ""
+    for (proc_name, _) in State.imported_procs:
+        buf += (
+            f"extrn {proc_name}\n"
+        )
+
+    return buf
 
 def generate_fasm_types() -> str:
     """
@@ -419,6 +434,19 @@ def generate_op_fasm_x86_64_linux(op: Op) -> str:
             "push rax\n"
         )
     elif op.type == OpType.CALL:
+        buf = ""
+        
+        if op.operand.is_imported:
+            calling_convention = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
+            in_stack = op.operand.in_stack
+            while len(in_stack) != 0 and len(calling_convention) != 0:
+                buf += f"pop {calling_convention[0]}\n"
+                calling_convention.pop(0)
+                in_stack.pop(0)
+            
+            buf += f"call {op.operand.name}\npush rax\n"
+            return comment + buf
+    
         return comment + f"call addr_{op.operand.ip}\n"
     elif op.type == OpType.TYPED_LOAD:
         cont_assert(not isinstance(op.operand, Struct), "Bug in parsing of structure types")

@@ -37,7 +37,7 @@ def test(test_name):
 
     subprocess.run(
         [
-            "python", "cont.py", f"tests/temp/code_{test_name}.cn",
+            "python", "cont.py", "-lc", f"tests/temp/code_{test_name}.cn",
             "-t", "fasm_x86_64_linux",
             "-i", f"tests/temp/stdin_{test_name}",
             "-e", f"tests/results/{test_name}_stderr",
@@ -68,6 +68,9 @@ if subprocess.getstatusoutput("node -v")[0] != 0:
 else:
     @pytest.mark.parametrize("test_name", tests)
     def test_node_wat64(test_name):
+        if test_name == "extern":
+            return
+
         with open(f"tests/{test_name}", "r") as f:
             test = f.read()
 

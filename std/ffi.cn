@@ -1,0 +1,2 @@
+typealias c_int int
+typealias c_void void

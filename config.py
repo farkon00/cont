@@ -30,6 +30,9 @@ class Config:
         "stdout" : "File to output stdout of complier and program",
         "input" : "Stdin for program",
         "error" : "Stderr for program",
+        "link_with_libc" : "Statically link with libc",
+        # "library_path" : "add library path 'dir'",
+        # "link_with" : "link with dynamic or static library 'lib'"
     }
 
     BOOL_OPTIONS: Dict[str, Tuple[List[str], bool]] = {
@@ -37,9 +40,10 @@ class Config:
         "dump" : (["-d", "-dump"], False),
         "dump_tokens" : (["-dt", "-dump_tokens"], False),
         "dump_tc" : (["-dtc", "-dump_tc"], False),
+        "link_with_libc": (["-lc", "--libc"], False),
     }
 
-    REGULAR_OPTIONS: Dict[str, List[str]] = {
+    REGULAR_OPTIONS: Dict[str, Tuple[List[str], bool]] = {
         "out" : (["-o", "--out"], None),
         "target" : (["-t", "--target"], "fasm_x86_64_linux"),
         "dump_proc" : (["-dp", "--dump_proc"], None),
@@ -47,6 +51,12 @@ class Config:
         "input" : (["-i", "--input"], None),
         "error" : (["-e", "--error"], None),
     }
+
+    ARRAY_OPTIONS: Dict[str, Tuple[List[str], bool]] = {
+        # "library_path" : ((["-L", "--library-path"]), None),
+        # "link_with" : ((["-l", "--link-with"]), None),
+    }
+
     CONFIG_REGULAR_OPTIONS: List[str] = ["out", "target"]
 
     CONFIG_BOOL_OPTIONS: Dict[str, bool] = {
@@ -102,6 +112,11 @@ class Config:
                 *args[0], default=None, dest=name, help=self.DESCRIPTIONS[name]
             )
 
+        for name, args in self.ARRAY_OPTIONS.items():
+            args_parser.add_argument(
+                *args[0], default=None, dest=name, help=self.DESCRIPTIONS[name], action='append'
+            )
+
         return args_parser
 
     def _validate_target(self):
@@ -147,6 +162,17 @@ class Config:
                 property(
                     fget=lambda self, name=name: self.config.get(
                         name, getattr(self.args, name) 
+                        if getattr(self.args, name) is not None 
+                        else self.REGULAR_OPTIONS[name][1])
+                )
+            )
+
+        for name in self.ARRAY_OPTIONS:
+            setattr(
+                self.__class__, name,
+                property(
+                    fget=lambda self, name=name: self.config.get(
+                        name, getattr(self.args, name)
                         if getattr(self.args, name) is not None 
                         else self.REGULAR_OPTIONS[name][1])
                 )

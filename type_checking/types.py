@@ -184,6 +184,20 @@ class Struct(Type):
         return hash(self.text_repr())
 
 
+class Void(Type):
+    """
+    Void type. Provided for C FFI Purposes.
+    """
+    def __eq__(self, other) -> bool:
+        return true
+
+    def text_repr(self) -> str:
+        return f"void"
+
+    def __hash__(self) -> int:
+        return hash(self.text_repr())
+
+
 def type_to_str(_type: Type) -> str:
     """
     Converts cont type object to a human-readable string
@@ -260,6 +274,8 @@ def parse_type(
         result = Int()
     elif name == "ptr":
         result = Ptr()
+    elif name == "void":
+        result = Void()
     elif name == "addr":
         assert end is None or end not in og_name, "Expected procedure name"
         try:

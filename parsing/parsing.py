@@ -991,10 +991,14 @@ def parse_token(token: str, ops: List[Op]) -> Union[Op, List[Op]]:
         return Op(OpType.CALL_ADDR, None)
 
     elif token == "#import":
-        assert State.config.target == "wat64", "Current target does not support imports"
-        
+        assert State.config.target == "wat64" or State.config.target == "fasm_x86_64_linux", "Current target does not support imports"
+
+        path = ""
         name, name_loc = safe_next_token("Expected a function name")
-        path, _ = safe_next_token("Expected a path")
+        
+        if State.config.target == "wat64":
+            path, _ = safe_next_token("Expected a path")
+        
         State.check_name((name, name_loc))
         if ";" not in name:
             in_types, out_types, _ = parse_signature((name, name_loc), {}, ";")

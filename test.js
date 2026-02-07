@@ -6,6 +6,7 @@ function ContExitException(message) {
     error.name = "ContExitException";
     return error;
 }
+
 ContExitException.prototype = Object.create(Error.prototype);
 
 function bnToBuf(bn) {
