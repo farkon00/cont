@@ -38,6 +38,7 @@ def test(test_name):
     subprocess.run(
         [
             "python", "cont.py", f"tests/temp/code_{test_name}.cn",
+            "--no-color",
             "-t", "fasm_x86_64_linux",
             "-i", f"tests/temp/stdin_{test_name}",
             "-e", f"tests/results/{test_name}_stderr",
@@ -87,6 +88,7 @@ else:
         subprocess.run(
             [
                 "python", "cont.py", f"tests/temp/code_{test_name}_wasm.cn",
+                "--no-color",
                 "-t", "wat64",
                 "-o", f"tests/temp/code_{test_name}",
                 "-e", f"tests/results/{test_name}_stderr_wasm",

@@ -24,6 +24,7 @@ class Config:
         "dump_proc" : "Dump operations of a specific procedure",
         "dump_tokens" : "Dump tokens without parsing or compilating",
         "dump_tc" : "Dump operations after type checking",
+        "no_color" : "Disable ANSI colors in compiler output",
         "out" : "The name for output file(s)",
         "target" : "A taget to compile to",
         "config" : "Config file",
@@ -37,6 +38,7 @@ class Config:
         "dump" : (["-d", "-dump"], False),
         "dump_tokens" : (["-dt", "-dump_tokens"], False),
         "dump_tc" : (["-dtc", "-dump_tc"], False),
+        "no_color" : (["-nc", "--no-color"], False),
     }
 
     REGULAR_OPTIONS: Dict[str, List[str]] = {
@@ -107,8 +109,14 @@ class Config:
     def _validate_target(self):
         """Checks if the target is a valid one"""
         if self.target not in TARGETS:
-            print(f"\033[1;31mError\033[0m: target not found: {self.target}")
+            print(f"{self.color('Error', '1;31')}: target not found: {self.target}")
             exit(1)
+
+    def color(self, text: str, code: str) -> str:
+        """Wraps `text` in an ANSI color code when colors are enabled."""
+        if self.no_color:
+            return text
+        return f"\033[{code}m{text}\033[0m"
 
     @property
     def _valid_keys(self) -> Tuple[str, ...]:
@@ -189,14 +197,14 @@ class Config:
                 del self.config[key]
                 if not self.lsp_mode:
                     print(
-                        f"\033[1;33mWarning {config_file}\033[0m: config option {key} not found, ignoring"
+                        f"{self.color(f'Warning {config_file}', '1;33')}: config option {key} not found, ignoring"
                     )
 
         for field in self.CHECK_POSITIVE:
             if getattr(self, field) <= 0:
                 if not self.lsp_mode:
                     print(
-                        f"\033[1;33mWarning {config_file}\033[0m: invalid value for {field}, using default "
+                        f"{self.color(f'Warning {config_file}', '1;33')}: invalid value for {field}, using default "
                         + str(self.CONFIG_INT_OPTIONS[field])
                     )
                 del self.config[field]
