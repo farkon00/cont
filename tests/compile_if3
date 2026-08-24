@@ -22,4 +22,4 @@ end
 :
 
 :
-[1;31mError {source_file}:19:13:[0m unknown token: Vector3
+Error {source_file}:19:13: unknown token: Vector3

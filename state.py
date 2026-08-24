@@ -286,9 +286,16 @@ class State:
 
         If `do_exit` is false the message will be printed to stderr, but the script won't exit.
         """
-        sys.stderr.write(f"\033[1;31mError {State.loc}:\033[0m {error}\n")
+        sys.stderr.write(f"{State.color(f'Error {State.loc}:', '1;31')} {error}\n")
         if do_exit:
             exit(1)
+
+    @staticmethod
+    def color(text: str, code: str) -> str:
+        """Wraps `text` in an ANSI color code when colors are enabled."""
+        if getattr(State.config, "no_color", False):
+            return text
+        return f"\033[{code}m{text}\033[0m"
 
     @staticmethod
     def add_proc_use(proc):

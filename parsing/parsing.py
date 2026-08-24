@@ -222,7 +222,7 @@ def parse_proc_head(self_named: bool = False) -> str:
             f"{name_value} method is required to have 1 argument and 2 out types", False
         )
         sys.stdout.write(
-            "\033[1;34mNote\033[0m: __div__ is called on div operator, not when you call /\n"
+            f"{State.color('Note', '1;34')}: __div__ is called on div operator, not when you call /\n"
         )
         exit()
     if (
@@ -339,7 +339,7 @@ def parse_struct_beginning() -> Tuple[Optional[Struct], Tuple[str, str]]:
     State.check_name(name, "structure")
     if name[0].endswith(":"):
         sys.stderr.write(
-            f"\033[1;33mWarning {State.filename}:{name[1]}\033[0m: structure definition doesn't need :\n"
+            f"{State.color(f'Warning {State.filename}:{name[1]}', '1;33')}: structure definition doesn't need :\n"
         )
 
     return parent, name

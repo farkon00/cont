@@ -31,7 +31,7 @@ def check_stack(stack: List[Type], expected: List[Type], arg=0):
         if got != exp and exp is not None and got is not None:
             State.throw_error(f"unexpected argument type", False)
             sys.stderr.write(
-                f"\033[1;34mArgument {i+1+arg}\033[0m: {type_to_str(got)} instead of {type_to_str(exp)}\n"
+                f"{State.color(f'Argument {i+1+arg}', '1;34')}: {type_to_str(got)} instead of {type_to_str(exp)}\n"
             )
             exit(1)
 
@@ -53,13 +53,13 @@ def check_route_stack(
     if len(stack1) > len(stack2):
         State.throw_error(f"stack has extra elements {error}", False)
         sys.stderr.write(
-            f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}\n"
+            f"{State.color('Types', '1;34')}: {', '.join(type_to_str(i) for i in stack1[len(stack2)-len(stack1):])}\n"
         )
         exit(1)
     if len(stack1) < len(stack2):
         State.throw_error(f"stack has not enought elements {error}", False)
         sys.stderr.write(
-            f"\033[1;34mTypes\033[0m: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n"
+            f"{State.color('Types', '1;34')}: {', '.join(type_to_str(i) for i in stack2[len(stack1)-len(stack2):])}\n"
         )
         exit(1)
     for i in range(len(stack1)):
@@ -68,7 +68,7 @@ def check_route_stack(
             if not is_succ:
                 State.throw_error(f"different types {error}", False)
                 sys.stderr.write(
-                    f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
+                    f"{State.color(f'Element {len(stack1)-i}', '1;34')}: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
                 )
                 exit(1)
             stack1[i] = typ
@@ -76,7 +76,7 @@ def check_route_stack(
             if stack1[i] != stack2[i] and stack1[i] is not None and stack2[i] is not None:
                 State.throw_error(f"different types {error}", False)
                 sys.stderr.write(
-                    f"\033[1;34mElement {len(stack1)-i}\033[0m: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
+                    f"{State.color(f'Element {len(stack1)-i}', '1;34')}: {type_to_str(stack1[i])} instead of {type_to_str(stack2[i])}\n"
                 )
                 exit(1)
 

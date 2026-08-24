@@ -41,7 +41,7 @@ def main(lsp_mode: bool = False):
         elif "." in config.dump_proc:
             parts = config.dump_proc.split(".", 1)
             if parts[0] not in State.structures:
-                sys.stderr.write(f"\033[1;31mError:\033[0m Incorrect procedure name for dump_proc\n")
+                sys.stderr.write(f"{State.color('Error:', '1;31')} Incorrect procedure name for dump_proc\n")
                 exit(1)
             struct = State.structures[parts[0]]
             if parts[1] in struct.methods:
@@ -49,10 +49,10 @@ def main(lsp_mode: bool = False):
             elif parts[1] in struct.static_methods:
                 proc = struct.static_methods[parts[1]]
             else:
-                sys.stderr.write(f"\033[1;31mError:\033[0m Incorrect procedure name for dump_proc\n")
+                sys.stderr.write(f"{State.color('Error:', '1;31')} Incorrect procedure name for dump_proc\n")
                 exit(1)   
         else:
-            sys.stderr.write(f"\033[1;31mError:\033[0m Incorrect procedure name for dump_proc\n")
+            sys.stderr.write(f"{State.color('Error:', '1;31')} Incorrect procedure name for dump_proc\n")
             exit(1)
         proc_op = State.ops_by_ips[proc.ip]
         is_printing = False

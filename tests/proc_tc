@@ -32,5 +32,5 @@ end // A compilation error here
 :
 
 :
-[1;31mError {source_file}:29:4:[0m different types in procedure definition
-[1;34mElement 1[0m: *C instead of *B
+Error {source_file}:29:4: different types in procedure definition
+Element 1: *C instead of *B
